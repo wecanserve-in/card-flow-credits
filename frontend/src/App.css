@@ -1,0 +1,357 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  background: #eef7fb;
+  color: #102a43;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.bgGlow {
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.35;
+}
+
+.glowOne {
+  background: #2bbfc3;
+  top: -100px;
+  left: -80px;
+}
+
+.glowTwo {
+  background: #3a7bd5;
+  bottom: -120px;
+  right: -80px;
+}
+
+.ocrCard {
+  width: 100%;
+  max-width: 900px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 28px;
+  padding: 42px;
+  box-shadow: 0 30px 90px rgba(16, 42, 67, 0.16);
+  position: relative;
+  z-index: 1;
+}
+
+.badge {
+  display: inline-flex;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #e1f7f7;
+  color: #078c90;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 18px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 42px;
+  color: #061943;
+  letter-spacing: -1px;
+}
+
+.subtitle {
+  margin: 14px 0 28px;
+  max-width: 640px;
+  color: #5b7083;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.uploadBox {
+  display: block;
+  border: 2px dashed #9fdadc;
+  background: linear-gradient(135deg, #f8ffff, #eef9ff);
+  border-radius: 22px;
+  padding: 34px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.uploadBox:hover {
+  border-color: #078c90;
+  transform: translateY(-2px);
+}
+
+.uploadBox input {
+  display: none;
+}
+
+.uploadIcon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 14px;
+  border-radius: 22px;
+  background: white;
+  display: grid;
+  place-items: center;
+  font-size: 34px;
+  box-shadow: 0 14px 35px rgba(7, 140, 144, 0.16);
+}
+
+.uploadBox h3 {
+  margin: 0;
+  color: #061943;
+  font-size: 20px;
+}
+
+.uploadBox p {
+  margin: 8px 0 0;
+  color: #6f8293;
+  font-size: 14px;
+}
+
+.fileList {
+  margin-top: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.fileList span {
+  padding: 10px 14px;
+  border: 1px solid #dceef7;
+  background: #f8fcff;
+  color: #334e68;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.primaryBtn {
+  width: 100%;
+  margin-top: 22px;
+  padding: 16px 22px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #078c90, #086bd8);
+  color: white;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 16px 32px rgba(8, 107, 216, 0.24);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.previewTable {
+  margin-top: 28px;
+  border: 1px solid #e3eef5;
+  border-radius: 20px;
+  overflow: hidden;
+  background: white;
+}
+
+.tableHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  background: #f7fbfd;
+  border-bottom: 1px solid #e3eef5;
+}
+
+.tableHeader h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #061943;
+}
+
+.tableHeader span {
+  font-size: 12px;
+  font-weight: 800;
+  color: #078c90;
+  background: #e1f7f7;
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+
+.emptyState {
+  padding: 26px 22px;
+  color: #6f8293;
+  font-size: 15px;
+}
+
+.multiCards {
+  padding: 22px;
+  display: grid;
+  gap: 22px;
+}
+
+.resultCard {
+  border: 1px solid #dceef7;
+  background: #f8fcff;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.resultCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.resultCardHeader h3 {
+  margin: 0;
+  color: #078c90;
+  font-size: 18px;
+}
+
+.resultCardHeader span {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #086bd8;
+  background: #eaf4ff;
+  font-weight: 800;
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+
+.resultCard p {
+  margin: 8px 0;
+  padding: 12px 14px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e3eef5;
+  color: #334e68;
+  line-height: 1.45;
+}
+
+.resultCard b {
+  color: #061943;
+}
+
+@media (max-width: 600px) {
+  .ocrCard {
+    padding: 26px;
+    border-radius: 22px;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
+
+  .uploadBox {
+    padding: 26px 18px;
+  }
+
+  
+}
+
+.downloadBtn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 15px 22px;
+  border: 1px solid #078c90;
+  border-radius: 16px;
+  background: white;
+  color: #078c90;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.downloadBtn:hover {
+  background: #078c90;
+  color: white;
+}
+
+.loadingOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 25, 67, 0.45);
+  backdrop-filter: blur(8px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.loadingModal {
+  width: 100%;
+  max-width: 360px;
+  background: white;
+  border-radius: 24px;
+  padding: 34px 28px;
+  text-align: center;
+  box-shadow: 0 30px 90px rgba(6, 25, 67, 0.25);
+}
+
+.loadingModal h2 {
+  margin: 18px 0 8px;
+  color: #061943;
+  font-size: 22px;
+}
+
+.loadingModal p {
+  margin: 0;
+  color: #6f8293;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.loader {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto;
+  border: 5px solid #e1f7f7;
+  border-top-color: #078c90;
+  border-radius: 50%;
+  animation: spin 0.85s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.downloadArea {
+  padding: 0 22px 22px;
+}
+
+.downloadBtn {
+  width: 100%;
+  padding: 15px 22px;
+  border: 1px solid #078c90;
+  border-radius: 16px;
+  background: white;
+  color: #078c90;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.downloadBtn:hover {
+  background: #078c90;
+  color: white;
+}

@@ -1,0 +1,48 @@
+# Virtual Environment
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment Variables
+.env
+
+# Database
+*.db
+*.sqlite3
+
+# Uploads
+backend/uploads/*
+
+# Exports
+backend/exports/*
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Build
+build/
+dist/
+
+# Python Packaging
+*.egg-info/
+.eggs/
+
+# Cache
+.pytest_cache/
+.mypy_cache/
+.cache/
+
+# Jupyter
+.ipynb_checkpoints/
