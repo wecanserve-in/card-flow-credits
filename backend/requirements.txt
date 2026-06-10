@@ -9,7 +9,7 @@ torchvision
 opencv-python-headless
 pillow
 numpy
-
+pycountry
 pandas
 openpyxl
 
