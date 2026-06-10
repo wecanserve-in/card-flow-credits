@@ -147,9 +147,9 @@ function App() {
                     <p>
                       <b>Website:</b> {card.website || "Not available"}
                     </p>
-                    <p>
+                    {/* <p>
                       <b>Address:</b> {card.address || "Not available"}
-                    </p>
+                    </p> */}
                   </div>
                 ))}
               </div>
