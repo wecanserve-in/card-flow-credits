@@ -1,16 +1,18 @@
-https://cardflow.wecanserve.in/
-
 # CardFlow
 
 Transform business cards into organized contact data in seconds.
 
 CardFlow is an AI-powered business card scanner that extracts contact information from visiting cards and automatically converts it into structured digital records. Users can upload one or multiple business cards, review extracted details, and export contacts directly to Excel.
 
+**Live Demo:** https://cardflow.wecanserve.in/
+
 ---
 
 ## Overview
 
-Managing business cards manually is time-consuming and error-prone. CardFlow eliminates manual data entry by combining OCR and AI-powered extraction to instantly capture:
+Managing business cards manually is time-consuming and error-prone. CardFlow eliminates manual data entry by leveraging Google's multimodal AI capabilities to instantly capture and structure contact information from business card images.
+
+The system extracts:
 
 * Full Name
 * Company Name
@@ -27,25 +29,25 @@ The extracted information is displayed in a clean interface and automatically sa
 
 ## Key Features
 
-### Business Card OCR
+### AI-Powered Business Card Recognition
 
-Extract text from business cards using advanced optical character recognition.
+Upload business card images and let Gemini Vision analyze the card content directly from the image.
 
-### AI-Powered Data Extraction
+### Intelligent Contact Extraction
 
-Convert raw OCR text into structured contact information with high accuracy.
+Convert unstructured card data into organized contact records with AI-assisted parsing.
 
 ### Multi-Card Processing
 
-Upload and process multiple business cards in a single session.
+Process multiple business cards in a single upload session.
 
-### Excel Export
+### Automatic Excel Export
 
-Automatically append extracted contacts to a centralized Excel file.
+All extracted contacts are automatically stored and exported into a centralized Excel spreadsheet.
 
 ### Smart Contact Detection
 
-Identify and organize:
+Automatically identifies:
 
 * Names
 * Companies
@@ -53,14 +55,14 @@ Identify and organize:
 * Phone Numbers
 * Email Addresses
 * Websites
-* Addresses
 * Countries
+* Addresses
 
 ### Modern User Experience
 
 * Responsive interface
-* Loading states
-* File management
+* Drag-and-drop uploads
+* Loading indicators
 * Downloadable Excel records
 * Mobile-friendly design
 
@@ -74,19 +76,19 @@ Upload one or more business card images.
 
 ### Step 2
 
-CardFlow extracts text using OCR.
+Gemini Vision analyzes the card image and extracts visible text and layout information.
 
 ### Step 3
 
-AI analyzes the extracted text and identifies contact details.
+AI processes the extracted content and identifies structured contact details.
 
 ### Step 4
 
-Results are displayed in a structured format for review.
+Results are displayed in a clean, organized format for review.
 
 ### Step 5
 
-All contacts are automatically saved and can be exported to Excel.
+Contacts are automatically saved and exported to Excel.
 
 ---
 
@@ -99,8 +101,9 @@ All contacts are automatically saved and can be exported to Excel.
 For best results:
 
 * Upload clear images
-* Keep cards straight and properly aligned
+* Keep cards properly aligned
 * Avoid blurry or low-resolution photos
+* Ensure text is clearly visible
 
 ---
 
@@ -132,18 +135,21 @@ For best results:
 * FastAPI
 * Python
 
-### OCR Engine
+### AI Vision & Extraction
 
-* EasyOCR
+* Google Gemini Vision
+* Gemini Multimodal Models
 
-### AI Extraction
+### Data Processing
 
-* Google Gemini
+* Pandas
+* Regular Expressions
+* PyCountry
 
 ### Data Export
 
-* Pandas
 * OpenPyXL
+* Pandas
 
 ---
 
@@ -151,15 +157,15 @@ For best results:
 
 ### Sales Teams
 
-Digitize visiting cards collected during meetings and events.
+Digitize visiting cards collected during meetings, exhibitions, and client visits.
 
 ### Business Development
 
-Maintain an organized contact database without manual entry.
+Build and maintain a structured contact database without manual entry.
 
 ### Events & Conferences
 
-Capture hundreds of leads and export them instantly.
+Capture hundreds of leads and organize them instantly.
 
 ### Recruiters
 
@@ -167,13 +173,13 @@ Store candidate and professional contact information efficiently.
 
 ### Startups & SMEs
 
-Create a centralized contact repository from physical business cards.
+Create a centralized repository of business contacts from physical cards.
 
 ---
 
 ## Security & Privacy
 
-CardFlow processes uploaded business cards solely for information extraction. Contact data remains under the user's control and is exported locally through Excel files.
+Uploaded images are processed solely for contact information extraction. Users retain full ownership and control of their extracted data and exported Excel files.
 
 ---
 
@@ -183,13 +189,14 @@ Future enhancements include:
 
 * Google Sheets Integration
 * CRM Integration
-* Bulk Import Processing
-* Duplicate Detection
+* Advanced Duplicate Detection
 * Contact Search & Filtering
 * PDF Business Card Support
 * Contact Management Dashboard
 * QR Code Detection
 * Lead Categorization
+* CSV Export
+* API Access
 
 ---
 
