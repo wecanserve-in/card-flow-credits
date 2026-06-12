@@ -28,6 +28,15 @@ function App() {
 
       const result = await response.json();
 
+console.log(result);
+
+if (result.error) {
+  alert(result.error);
+  return;
+}
+
+setCards(result.cards || []);
+
       console.log("OCR RESULT:", result);
 
       setCards(result.cards || []);

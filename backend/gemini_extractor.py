@@ -1,12 +1,16 @@
 import os
 import json
+import mimetypes
+
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
 load_dotenv()
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+client = genai.Client(
+    api_key=os.getenv("GEMINI_API_KEY")
+)
 
 CARD_SCHEMA = {
     "type": "object",
@@ -22,8 +26,15 @@ CARD_SCHEMA = {
         "address": {"type": "string"}
     },
     "required": [
-        "card_no", "name", "company", "designation",
-        "phone", "country", "email", "website", "address"
+        "card_no",
+        "name",
+        "company",
+        "designation",
+        "phone",
+        "country",
+        "email",
+        "website",
+        "address"
     ]
 }
 
@@ -33,58 +44,77 @@ BATCH_SCHEMA = {
 }
 
 
-def extract_multiple_with_gemini(ocr_cards):
-    cards_text = ""
+def extract_multiple_with_gemini(image_cards):
 
-    for card in ocr_cards:
-        cards_text += f"""
-CARD {card["card_no"]}:
-{card["raw_text"]}
+    contents = []
 
----
-"""
+    prompt = """
+You will receive multiple business card images.
 
-    prompt = f"""
-Extract business card details from OCR text.
+Extract details from EVERY image.
 
-Return only JSON array.
+Return ONLY a valid JSON array.
 
 Rules:
-- Each card must be separate.
-- Preserve card_no exactly.
-- If missing, use "Not available".
-- Fix obvious OCR mistakes:
-  gmail com -> gmail.com
-  condotsystems com -> condotsystems.com
-  WWWE -> www
-- Join split company names.
-- Join split phone numbers.
-- Do not invent missing values.
-- Keep address complete but clean.
-
-OCR CARDS:
-{cards_text}
+- First image = card_no 1
+- Second image = card_no 2
+- Continue sequentially.
+- Never skip an image.
+- If field missing return "Not available".
+- Do not invent values.
+- Extract:
+name
+company
+designation
+phone
+country
+email
+website
+address
 """
+
+    contents.append(
+        types.Part.from_text(text=prompt)
+    )
+
+    for card in image_cards:
+
+        mime_type = mimetypes.guess_type(
+            card["file_path"]
+        )[0]
+
+        if mime_type is None:
+            mime_type = "image/jpeg"
+
+        with open(card["file_path"], "rb") as f:
+            image_bytes = f.read()
+
+        contents.append(
+            types.Part.from_bytes(
+                data=image_bytes,
+                mime_type=mime_type
+            )
+        )
 
     response = client.models.generate_content(
         model="gemini-2.5-flash-lite",
-        contents=prompt,
+        contents=contents,
         config=types.GenerateContentConfig(
             temperature=0,
-            max_output_tokens=900,
+            max_output_tokens=2000,
             response_mime_type="application/json",
             response_schema=BATCH_SCHEMA
         )
     )
 
-    print("========== GEMINI BATCH RESPONSE ==========")
+    print("========== GEMINI ==========")
     print(response.text)
-    print("===========================================")
+    print("============================")
 
     data = json.loads(response.text)
 
     for item in data:
-        for key in CARD_SCHEMA["properties"].keys():
+        for key in CARD_SCHEMA["properties"]:
             if not item.get(key):
                 item[key] = "Not available"
 

@@ -4,26 +4,12 @@ from fastapi.responses import FileResponse
 
 import os
 import shutil
+import traceback
 
-from ocr import extract_text_from_image
 from gemini_extractor import extract_multiple_with_gemini
-from extractor import extract_contact_details
 from export_excel import save_cards_to_excel
 
 app = FastAPI()
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=[
-#     "http://localhost:5173",
-#     "http://127.0.0.1:5173",
-#     "https://cardflow.wecanserve.in"
-# ],
-
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,7 +33,13 @@ def home():
 
 @app.post("/upload")
 async def upload_cards(files: list[UploadFile] = File(...)):
-    ocr_cards = []
+
+    if len(files) > 10:
+        return {
+            "message": "Maximum 10 cards allowed per upload."
+        }
+
+    image_cards = []
 
     for index, file in enumerate(files, start=1):
         file_path = os.path.join(UPLOAD_DIR, file.filename)
@@ -55,45 +47,46 @@ async def upload_cards(files: list[UploadFile] = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        raw_text = extract_text_from_image(file_path)
-
-        print(f"========== CARD {index} RAW OCR TEXT ==========")
-        print(raw_text)
-        print("===============================================")
-
-        ocr_cards.append({
+        image_cards.append({
             "card_no": index,
             "filename": file.filename,
-            "raw_text": raw_text
+            "file_path": file_path
         })
 
     try:
-        results = extract_multiple_with_gemini(ocr_cards)
+        print("STEP 1")
+        print(image_cards)
+
+        results = extract_multiple_with_gemini(image_cards)
+
+        print("STEP 2")
+        print(results)
 
         for card in results:
             card["source"] = "gemini"
 
     except Exception as e:
-        print("Gemini batch failed, using fallback extractor")
-        print(e)
 
-        results = []
+        print("\n========== GEMINI ERROR ==========")
+        traceback.print_exc()
+        print("=================================\n")
 
-        for card in ocr_cards:
-            extracted_data = extract_contact_details(card["raw_text"])
-            extracted_data["card_no"] = card["card_no"]
-            extracted_data["source"] = "fallback"
-            results.append(extracted_data)
+        return {
+            "error": str(e)
+        }
 
     for card in results:
         matched = next(
-            (item for item in ocr_cards if item["card_no"] == card["card_no"]),
+            (
+                item
+                for item in image_cards
+                if item["card_no"] == card["card_no"]
+            ),
             None
         )
 
         if matched:
             card["filename"] = matched["filename"]
-            card["raw_text"] = matched["raw_text"]
 
     save_cards_to_excel(results)
 

@@ -2,10 +2,6 @@ fastapi
 uvicorn[standard]
 python-multipart
 
-easyocr
-torch
-torchvision
-
 opencv-python-headless
 pillow
 numpy
@@ -17,6 +13,3 @@ sqlalchemy
 
 google-genai
 python-dotenv
-
-openpyxl
-pandas
