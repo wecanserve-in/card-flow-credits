@@ -91,7 +91,7 @@ def preprocess_image(image_path: str):
 
 
 def extract_text_from_image(image_path: str):
-    processed_path = preprocess_image(image_path)
+    return "TEST OCR"
 
     reader = get_reader()
 
