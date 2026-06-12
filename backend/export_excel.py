@@ -27,7 +27,10 @@ def save_cards_to_excel(cards):
 
     if os.path.exists(EXCEL_FILE):
 
-        existing_data = pd.read_excel(EXCEL_FILE)
+        existing_data = pd.read_excel(
+            EXCEL_FILE,
+            dtype=str
+        )
 
         # Latest uploads first
         updated_data = pd.concat(
@@ -38,8 +41,10 @@ def save_cards_to_excel(cards):
     else:
         updated_data = new_data
 
-    # Clean empty values
-    updated_data.fillna("", inplace=True)
+    # Convert everything to string and clean nulls
+    updated_data = updated_data.astype(str)
+    updated_data = updated_data.replace("nan", "")
+    updated_data = updated_data.fillna("")
 
     # Remove duplicate cards
     updated_data.drop_duplicates(
@@ -50,14 +55,18 @@ def save_cards_to_excel(cards):
 
     updated_data.reset_index(drop=True, inplace=True)
 
-    # Add Serial Number
+    # Remove old SR NO if it exists
+    if "SR NO" in updated_data.columns:
+        updated_data.drop(columns=["SR NO"], inplace=True)
+
+    # Add fresh Serial Number
     updated_data.insert(
         0,
         "SR NO",
         range(1, len(updated_data) + 1)
     )
 
-    # Save
+    # Save Excel
     updated_data.to_excel(
         EXCEL_FILE,
         index=False
@@ -71,7 +80,7 @@ def save_cards_to_excel(cards):
     for cell in sheet[1]:
         cell.font = Font(bold=True)
 
-    # Column Width
+    # Column Widths
     column_widths = {
         "A": 10,   # SR NO
         "B": 25,   # Name
