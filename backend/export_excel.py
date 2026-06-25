@@ -1,15 +1,9 @@
-import os
+import io
 import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import Font
 
-EXCEL_FILE = "exports/cardsdetails.xlsx"
-
-os.makedirs("exports", exist_ok=True)
-
-
-def save_cards_to_excel(cards):
-
+def generate_excel_in_memory(cards):
     cleaned_cards = []
 
     for card in cards:
@@ -23,57 +17,38 @@ def save_cards_to_excel(cards):
             "Website": card.get("website", "")
         })
 
-    new_data = pd.DataFrame(cleaned_cards)
-
-    if os.path.exists(EXCEL_FILE):
-
-        existing_data = pd.read_excel(
-            EXCEL_FILE,
-            dtype=str
-        )
-
-        # Latest uploads first
-        updated_data = pd.concat(
-            [new_data, existing_data],
-            ignore_index=True
-        )
-
-    else:
-        updated_data = new_data
+    df = pd.DataFrame(cleaned_cards)
 
     # Convert everything to string and clean nulls
-    updated_data = updated_data.astype(str)
-    updated_data = updated_data.replace("nan", "")
-    updated_data = updated_data.fillna("")
+    df = df.astype(str)
+    df = df.replace("nan", "")
+    df = df.fillna("")
 
     # Remove duplicate cards
-    updated_data.drop_duplicates(
-        subset=["Phone", "Email"],
-        keep="first",
-        inplace=True
-    )
-
-    updated_data.reset_index(drop=True, inplace=True)
-
-    # Remove old SR NO if it exists
-    if "SR NO" in updated_data.columns:
-        updated_data.drop(columns=["SR NO"], inplace=True)
+    if not df.empty:
+        df.drop_duplicates(
+            subset=["Phone", "Email"],
+            keep="first",
+            inplace=True
+        )
+        df.reset_index(drop=True, inplace=True)
 
     # Add fresh Serial Number
-    updated_data.insert(
+    df.insert(
         0,
         "SR NO",
-        range(1, len(updated_data) + 1)
+        range(1, len(df) + 1)
     )
 
-    # Save Excel
-    updated_data.to_excel(
-        EXCEL_FILE,
-        index=False
-    )
+    # Save to BytesIO
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False)
+    
+    output.seek(0)
 
-    # Formatting
-    workbook = load_workbook(EXCEL_FILE)
+    # Formatting using openpyxl
+    workbook = load_workbook(output)
     sheet = workbook.active
 
     # Bold Header
@@ -95,6 +70,8 @@ def save_cards_to_excel(cards):
     for col, width in column_widths.items():
         sheet.column_dimensions[col].width = width
 
-    workbook.save(EXCEL_FILE)
+    final_output = io.BytesIO()
+    workbook.save(final_output)
+    final_output.seek(0)
 
-    return EXCEL_FILE
+    return final_output

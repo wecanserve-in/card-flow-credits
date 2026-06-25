@@ -75,10 +75,8 @@ address
     contents.append(types.Part.from_text(text=prompt))
 
     for card in image_cards:
-        mime_type = mimetypes.guess_type(card["file_path"])[0] or "image/jpeg"
-
-        with open(card["file_path"], "rb") as f:
-            image_bytes = f.read()
+        mime_type = card.get("mime_type") or "image/jpeg"
+        image_bytes = card["bytes"]
 
         contents.append(
             types.Part.from_bytes(
