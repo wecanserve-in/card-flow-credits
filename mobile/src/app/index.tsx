@@ -214,24 +214,16 @@ export default function App() {
     try {
       const formData = new FormData();
 
-      selectedImages.forEach((img, index) => {
-  const uri =
-    img.uri.startsWith("file://") || img.uri.startsWith("content://")
-      ? img.uri
-      : `file://${img.uri}`;
+for (let index = 0; index < selectedImages.length; index++) {
+  const img = selectedImages[index];
 
-  const fileName =
-    img.fileName || `card_${index + 1}.jpg`;
+  const fileName = img.fileName || `card_${index + 1}.jpg`;
 
-  const fileType =
-    img.mimeType || "image/jpeg";
+  const fileResponse = await fetch(img.uri);
+  const blob = await fileResponse.blob();
 
-  formData.append("files", {
-    uri,
-    name: fileName,
-    type: fileType,
-  });
-});
+  formData.append("files", blob, fileName);
+}
 
       const response = await fetch(`${API_URL}/upload`, {
   method: "POST",
