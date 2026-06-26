@@ -215,20 +215,28 @@ export default function App() {
       const formData = new FormData();
 
       selectedImages.forEach((img, index) => {
-        formData.append("files", {
-          uri: img.uri,
-          name: `card_${index + 1}.jpg`,
-          type: "image/jpeg"
-        } as any);
-      });
+  const uri =
+    img.uri.startsWith("file://") || img.uri.startsWith("content://")
+      ? img.uri
+      : `file://${img.uri}`;
+
+  const fileName =
+    img.fileName || `card_${index + 1}.jpg`;
+
+  const fileType =
+    img.mimeType || "image/jpeg";
+
+  formData.append("files", {
+    uri,
+    name: fileName,
+    type: fileType,
+  });
+});
 
       const response = await fetch(`${API_URL}/upload`, {
-        method: "POST",
-        body: formData,
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
+  method: "POST",
+  body: formData,
+});
 
       const result = await response.json();
 
