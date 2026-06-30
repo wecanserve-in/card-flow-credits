@@ -4,6 +4,7 @@ from fastapi.responses import StreamingResponse
 
 import os
 
+from image_preprocessing import preprocess_card
 from gemini_extractor import extract_multiple_with_gemini
 from export_excel import generate_excel_in_memory
 
@@ -25,19 +26,20 @@ def home():
 
 @app.post("/upload")
 async def upload_cards(files: list[UploadFile] = File(...)):
-    if len(files) > 10:
-        return {"message": "Maximum 10 cards allowed per upload."}
-
+    
     image_cards = []
 
     for index, file in enumerate(files, start=1):
         image_bytes = await file.read()
+
+        processed_bytes = preprocess_card(image_bytes)
+
         image_cards.append({
-            "card_no": index,
-            "filename": file.filename,
-            "bytes": image_bytes,
-            "mime_type": file.content_type or "image/jpeg"
-        })
+        "card_no": index,
+        "filename": file.filename,
+        "bytes": processed_bytes,
+        "mime_type": file.content_type or "image/jpeg"
+    })
 
     try:
         results = extract_multiple_with_gemini(image_cards)

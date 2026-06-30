@@ -48,21 +48,31 @@ def extract_multiple_with_gemini(image_cards):
     contents = []
 
     prompt = """
-You will receive multiple business card images.
+You are an expert business card information extractor.
 
-Extract details from EVERY image.
+You will receive one or more business card images.
+
+Extract information from EVERY business card.
 
 Return ONLY a valid JSON array.
 
 Rules:
+
 - First image = card_no 1
 - Second image = card_no 2
 - Continue sequentially.
 - Never skip an image.
-- If field missing return "Not available".
-- Do not invent values.
+- Do NOT invent, infer or guess information.
+- If a field is missing on the card, return "Not available".
+- Ignore logos, icons, QR codes and decorative elements.
+- Extract text exactly as printed.
+- Preserve country codes in phone numbers.
+- If multiple phone numbers exist, return the primary contact number.
+- Return only JSON. Do not add explanations.
 
-Extract:
+Fields to extract:
+
+card_no
 name
 company
 designation
@@ -95,7 +105,7 @@ address
                 contents=contents,
                 config=types.GenerateContentConfig(
                     temperature=0,
-                    max_output_tokens=2000,
+                  max_output_tokens=1200,
                     response_mime_type="application/json",
                     response_schema=BATCH_SCHEMA
                 )
