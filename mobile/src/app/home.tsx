@@ -44,23 +44,27 @@ const [userData, setUserData] = useState<User | null>(null);
 
       unsubscribeUser = onSnapshot(userRef, async (snapshot) => {
         if (!snapshot.exists()) {
-       await setDoc(userRef, {
+      await setDoc(userRef, {
   uid: user.uid,
 
   name: user.displayName || "User",
   email: user.email || "",
   photoURL: user.photoURL || "",
 
-  planName: "Free",
-  cardLimit: 100,
+  planName: "Free Plan",
 
+  cardLimit: 5,
   cardsUsed: 0,
+
   exportsGenerated: 0,
 
   subscriptionActive: false,
+  subscriptionExpiry: null,
+
   authProvider: "email",
 
-  createdAt: new Date(),
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
 });
           return;
         }
@@ -214,7 +218,7 @@ const [userData, setUserData] = useState<User | null>(null);
 
           <TouchableOpacity
             style={[styles.actionCard, styles.greenCard, { width: actionCardWidth }]}
-            onPress={() => router.push("/contacts")}
+          onPress={() => router.push("/saved-contacts")}
           >
             <Ionicons name="card-outline" size={30} color="#FFFFFF" />
             <Text style={styles.actionText}>My{"\n"}Cards</Text>

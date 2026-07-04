@@ -1,8 +1,6 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-
-import os
 
 from image_preprocessing import preprocess_card
 from gemini_extractor import extract_multiple_with_gemini
@@ -26,7 +24,7 @@ def home():
 
 @app.post("/upload")
 async def upload_cards(files: list[UploadFile] = File(...)):
-    
+
     image_cards = []
 
     for index, file in enumerate(files, start=1):
@@ -35,11 +33,15 @@ async def upload_cards(files: list[UploadFile] = File(...)):
         processed_bytes = preprocess_card(image_bytes)
 
         image_cards.append({
-        "card_no": index,
-        "filename": file.filename,
-        "bytes": processed_bytes,
-        "mime_type": file.content_type or "image/jpeg"
-    })
+            "card_no": index,
+            "filename": file.filename,
+            "bytes": processed_bytes,
+            "mime_type": file.content_type or "image/jpeg"
+        })
+
+        # Remove original bytes from memory
+        del image_bytes
+        await file.close()
 
     try:
         results = extract_multiple_with_gemini(image_cards)
@@ -48,8 +50,18 @@ async def upload_cards(files: list[UploadFile] = File(...)):
             card["source"] = "gemini"
 
     except Exception as e:
-        return {"error": str(e)}
+        # Clear memory before throwing error
+        for item in image_cards:
+            item["bytes"] = None
 
+        image_cards.clear()
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+    # Add filename back to results
     for card in results:
         matched = next(
             (
@@ -62,6 +74,12 @@ async def upload_cards(files: list[UploadFile] = File(...)):
         if matched:
             card["filename"] = matched["filename"]
 
+    # Clear processed image bytes
+    for item in image_cards:
+        item["bytes"] = None
+
+    image_cards.clear()
+
     return {
         "total_cards": len(results),
         "cards": results,
@@ -73,8 +91,12 @@ async def upload_cards(files: list[UploadFile] = File(...)):
 @app.post("/download-excel")
 def download_excel(cards: list[dict]):
     excel_buffer = generate_excel_in_memory(cards)
+
     return StreamingResponse(
         excel_buffer,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=cardsdetails.xlsx"}
+        headers={
+            "Content-Disposition":
+            "attachment; filename=cardsdetails.xlsx"
+        }
     )

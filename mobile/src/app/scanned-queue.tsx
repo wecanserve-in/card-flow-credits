@@ -114,11 +114,13 @@ const [loading, setLoading] = useState(false);
     onPress={() => toggleCard(index)}
     activeOpacity={0.8}
   >
+ <View style={styles.imageWrapper}>
   <Image
-  source={{ uri: item }}
-  style={styles.cardImage}
-  resizeMode="cover"
-/>
+    source={{ uri: item }}
+    style={styles.cardImage}
+    resizeMode="cover"
+  />
+</View>
 
 
    {selectedCards.includes(index) && (
@@ -236,11 +238,19 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
 
-  cardImage: {
-    width: "100%",
-    height: 100,
-    borderRadius: 14,
-  },
+imageWrapper: {
+  width: "100%",
+  height: 100,
+  borderRadius: 14,
+  overflow: "hidden",
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+cardImage: {
+  width: "130%",
+  height: "130%",
+},
 
   badge: {
     position: "absolute",

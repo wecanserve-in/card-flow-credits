@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { uploadCards } from "../services/scanService";
+
 
 export default function ScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -18,7 +18,7 @@ export default function ScannerScreen() {
   const cameraRef = useRef<any>(null);
 
 const [images, setImages] = useState<string[]>([]);
-const [loading, setLoading] = useState(false);
+
 
   if (!permission) return null;
 
@@ -42,22 +42,39 @@ const [loading, setLoading] = useState(false);
 
   // Capture Photo
   const takePicture = async () => {
-    if (!cameraRef.current) return;
+  if (!cameraRef.current) return;
 
-    try {
-      const photo = await cameraRef.current.takePictureAsync({
-  quality: 0.8,
-});
+  try {
+    const photo = await cameraRef.current.takePictureAsync({
+      quality: 1,
+      skipProcessing: false,
+    });
 
-console.log("Photo URI:", photo.uri);
-
-console.log(photo.uri);
-
-setImages((prev) => [...prev, photo.uri]);
-    } catch (error) {
+    if (!photo?.uri) {
       Alert.alert("Error", "Failed to capture image.");
+      return;
     }
-  };
+
+    console.log("Photo URI:", photo.uri);
+
+    setImages((prev) => {
+      // Prevent duplicate images
+      if (prev.includes(photo.uri)) {
+        return prev;
+      }
+
+      return [...prev, photo.uri];
+    });
+
+  } catch (error) {
+    console.log(error);
+
+    Alert.alert(
+      "Error",
+      "Failed to capture image."
+    );
+  }
+};
 
 const handleUpload = () => {
   if (images.length === 0) {
@@ -135,15 +152,10 @@ const handleUpload = () => {
 <TouchableOpacity
   style={styles.doneButton}
   onPress={handleUpload}
-  disabled={loading}
 >
-  {loading ? (
-    <ActivityIndicator color="#fff" />
-  ) : (
-    <Text style={styles.doneText}>
-      Done ({images.length})
-    </Text>
-  )}
+  <Text style={styles.doneText}>
+    Done ({images.length})
+  </Text>
 </TouchableOpacity>
       </View>
     </View>

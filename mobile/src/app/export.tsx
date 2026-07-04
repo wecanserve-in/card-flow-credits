@@ -9,7 +9,52 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
+import * as Sharing from "expo-sharing";
+import { Alert } from "react-native";
+
+import { getContacts } from "../services/database";
+import { exportContactsToExcel }
+  from "../services/excelService";
+
 export default function ExportScreen() {
+
+  const handleDownload = async () => {
+  try {
+    const contacts = await getContacts();
+
+    if (contacts.length === 0) {
+      Alert.alert(
+        "No Contacts",
+        "No saved contacts found."
+      );
+      return;
+    }
+
+    const fileUri =
+      await exportContactsToExcel(
+        contacts
+      );
+
+    Alert.alert(
+      "Excel Created",
+      `Saved ${contacts.length} contacts`
+    );
+
+    await Sharing.shareAsync(fileUri);
+  } catch (error) {
+    console.log(error);
+
+    Alert.alert(
+      "Error",
+      "Failed to generate Excel."
+    );
+  }
+};
+
+const handleShare = async () => {
+  handleDownload();
+};
+
   return (
     <SafeAreaView style={styles.container}>
       <TouchableOpacity
@@ -48,7 +93,10 @@ export default function ExportScreen() {
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.primaryButton}>
+      <TouchableOpacity
+  style={styles.primaryButton}
+  onPress={handleDownload}
+>
           <Ionicons
             name="download-outline"
             size={22}
@@ -60,7 +108,10 @@ export default function ExportScreen() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.secondaryButton}>
+<TouchableOpacity
+  style={styles.secondaryButton}
+  onPress={handleShare}
+>
           <Ionicons
             name="share-social-outline"
             size={22}

@@ -1,31 +1,43 @@
 import * as FileSystem from "expo-file-system/legacy";
 
-const API_URL = "http://192.168.1.36:8000/upload";
+const API_URL = "http://192.168.1.7:8000/upload";
 
 export async function uploadCards(images: string[]) {
   if (images.length === 0) {
     throw new Error("No images selected");
   }
 
-  // For now upload one image at a time
-  // We'll optimize for multiple uploads later
+  const allCards: any[] = [];
 
-  const response = await FileSystem.uploadAsync(
-    API_URL,
-    images[0],
-    {
-      fieldName: "files",
-      httpMethod: "POST",
-      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-      mimeType: "image/jpeg",
-      parameters: {},
+  for (const imageUri of images) {
+    console.log("Uploading:", imageUri);
+
+    const response = await FileSystem.uploadAsync(
+      API_URL,
+      imageUri,
+      {
+        fieldName: "files",
+        httpMethod: "POST",
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        mimeType: "image/jpeg",
+      }
+    );
+
+    console.log("Status:", response.status);
+    console.log("Body:", response.body);
+
+    if (response.status !== 200) {
+      throw new Error(response.body || "Upload failed");
     }
-  );
 
-  if (response.status !== 200) {
-    console.log(response.body);
-    throw new Error("Upload failed");
+    const data = JSON.parse(response.body);
+
+    if (data.cards) {
+      allCards.push(...data.cards);
+    }
   }
 
-  return JSON.parse(response.body);
+  return {
+    cards: allCards,
+  };
 }

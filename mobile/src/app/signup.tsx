@@ -67,16 +67,20 @@ export default function SignupScreen() {
   email: email.trim(),
   photoURL: "",
 
-  planName: "Free",
-  cardLimit: 100,
+planName: "Free Plan",
 
-  cardsUsed: 0,
-  exportsGenerated: 0,
+cardLimit: 5,
+cardsUsed: 0,
 
-  subscriptionActive: false,
-  authProvider: "email",
+exportsGenerated: 0,
 
-  createdAt: new Date(),
+subscriptionActive: false,
+subscriptionExpiry: null,
+
+authProvider: "email",
+
+createdAt: Date.now(),
+updatedAt: Date.now(),
 });
 
       router.replace("/home");

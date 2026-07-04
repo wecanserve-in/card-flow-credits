@@ -10,7 +10,7 @@ export default function BottomNav({ active }: { active: ActiveTab }) {
     { key: "contacts", label: "My Cards", icon: "card-outline", route: "/contacts" },
     { key: "scan", label: "Scan", icon: "camera", route: "/scanner" },
     { key: "plans", label: "Plans", icon: "pricetag-outline", route: "/plans" },
-    { key: "profile", label: "Profile", icon: "person-outline", route: "/profile" },
+    { key: "Settings", label: "Settings", icon: "settings-outline", route: "/settings" },
   ];
 
   return (

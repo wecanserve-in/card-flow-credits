@@ -6,16 +6,32 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
+  Alert, // add this
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import  BottomNav from "@/components/BottomNav";
+import { saveContacts } from "../services/database";
+import { router } from "expo-router";
 
 export default function ContactsScreen() {
   const [search, setSearch] = useState("");
 
-const contacts =
-  (globalThis as any).extractedCards || [];
+const contacts = Array.isArray(
+  (globalThis as any).extractedCards
+)
+  ? (globalThis as any).extractedCards
+  : [];
+
+const filteredContacts = (contacts || []).filter(
+  (contact: any) =>
+    (contact.name || "")
+      .toLowerCase()
+      .includes(search.toLowerCase())
+);
+  console.log("Contacts:", contacts);
+console.log("Filtered:", filteredContacts);
 
   return (
    <SafeAreaView style={styles.container}>
@@ -40,10 +56,12 @@ const contacts =
         color="#9CA3AF"
       />
 
-      <TextInput
-        placeholder="Search contacts"
-        style={styles.searchInput}
-      />
+     <TextInput
+  placeholder="Search contacts"
+  style={styles.searchInput}
+  value={search}
+  onChangeText={setSearch}
+/>
 
       <TouchableOpacity>
         <Ionicons
@@ -56,10 +74,11 @@ const contacts =
 
   {/* Contact List */}
 
-  <FlatList
-      data={contacts}
-   keyExtractor={(item, index) =>
-  item.card_no?.toString() || index.toString()
+
+<FlatList
+  data={filteredContacts || []}
+keyExtractor={(item, index) =>
+  `${item.filename || item.card_no || "card"}-${index}`
 }
       contentContainerStyle={{
         paddingBottom: 160,
@@ -69,8 +88,8 @@ const contacts =
 
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-            {item.name?.charAt(0)?.toUpperCase() || "?"}
-            </Text>
+  {(item.name?.charAt(0) || "?").toUpperCase()}
+</Text>
           </View>
 
           <View style={styles.info}>
@@ -124,9 +143,49 @@ const contacts =
   {/* Save Button */}
 
   <View style={styles.bottomAction}>
-      <TouchableOpacity
-        style={styles.saveButton}
-      >
+     <TouchableOpacity
+  style={styles.saveButton}
+onPress={async () => {
+
+try {console.log("Saving Contacts...");
+console.log(contacts);
+  await saveContacts(contacts);
+
+  (globalThis as any).extractedCards = [];
+
+  Alert.alert(
+    "Saved",
+    `${contacts.length} contacts saved successfully.`,
+    [
+      {
+        text: "OK",
+        onPress: () => router.push("/home"),
+      },
+    ]
+  );
+
+} catch (error: any) {
+  console.log(error);
+
+  Alert.alert(
+    "Save Failed",
+    error?.message || JSON.stringify(error)
+  );
+}
+
+  (globalThis as any).extractedCards = [];
+
+  Alert.alert(
+    "Saved",
+    `${contacts.length} contacts saved on your device.`,
+    [
+      {
+        text: "OK",
+        onPress: () => router.push("/home"),
+      },
+    ]
+  );
+}}>
           <Ionicons
             name="save-outline"
             size={22}
@@ -139,7 +198,7 @@ const contacts =
       </TouchableOpacity>
   </View>
 
-  <BottomNav />
+ <BottomNav active="contacts" />
 
 </SafeAreaView>
   );
