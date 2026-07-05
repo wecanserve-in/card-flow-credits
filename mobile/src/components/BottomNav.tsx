@@ -7,7 +7,7 @@ type ActiveTab = "home" | "contacts" | "scan" | "plans" | "profile";
 export default function BottomNav({ active }: { active: ActiveTab }) {
   const navItems = [
     { key: "home", label: "Home", icon: "home", route: "/home" },
-    { key: "contacts", label: "My Cards", icon: "card-outline", route: "/contacts" },
+    { key: "contacts", label: "My Cards", icon: "card-outline", route: "/saved-contacts" },
     { key: "scan", label: "Scan", icon: "camera", route: "/scanner" },
     { key: "plans", label: "Plans", icon: "pricetag-outline", route: "/plans" },
     { key: "Settings", label: "Settings", icon: "settings-outline", route: "/settings" },

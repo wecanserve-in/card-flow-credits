@@ -1,12 +1,11 @@
 import * as XLSX from "xlsx";
 import * as FileSystem from "expo-file-system/legacy";
-import * as Sharing from "expo-sharing";
 
 export async function exportContactsToExcel(
   contacts: any[]
 ) {
   try {
-    if (!contacts.length) {
+    if (!contacts || contacts.length === 0) {
       throw new Error("No contacts found.");
     }
 
@@ -21,11 +20,9 @@ export async function exportContactsToExcel(
       LinkedIn: contact.linkedin || "",
     }));
 
-    const worksheet =
-      XLSX.utils.json_to_sheet(excelData);
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
 
-    const workbook =
-      XLSX.utils.book_new();
+    const workbook = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(
       workbook,
@@ -33,34 +30,24 @@ export async function exportContactsToExcel(
       "Contacts"
     );
 
-    const excelFile =
-      XLSX.write(workbook, {
-        type: "base64",
-        bookType: "xlsx",
-      });
+    const excelFile = XLSX.write(workbook, {
+      type: "base64",
+      bookType: "xlsx",
+    });
 
     const fileName = `Scan2Sheet_Contacts_${
       new Date().toISOString().split("T")[0]
     }.xlsx`;
 
-    const uri =
-      FileSystem.documentDirectory + fileName;
+    const uri = FileSystem.documentDirectory + fileName;
 
-    await FileSystem.writeAsStringAsync(
-      uri,
-      excelFile,
-      {
-        encoding: FileSystem.EncodingType.Base64,
-      }
-    );
-
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri);
-    }
+    await FileSystem.writeAsStringAsync(uri, excelFile, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
 
     return uri;
   } catch (error) {
     console.log("Excel Export Error:", error);
-    return null;
+    throw error;
   }
 }

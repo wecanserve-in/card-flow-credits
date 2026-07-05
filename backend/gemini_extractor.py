@@ -1,5 +1,5 @@
-import os
 import json
+import os
 import time
 
 from dotenv import load_dotenv
@@ -7,6 +7,8 @@ from google import genai
 from google.genai import types
 
 load_dotenv()
+
+DEBUG = True
 
 client = genai.Client(
     api_key=os.getenv("GEMINI_API_KEY")
@@ -25,17 +27,6 @@ CARD_SCHEMA = {
         "website": {"type": "string"},
         "address": {"type": "string"},
     },
-    "required": [
-        "card_no",
-        "name",
-        "company",
-        "designation",
-        "phone",
-        "country",
-        "email",
-        "website",
-        "address",
-    ],
 }
 
 BATCH_SCHEMA = {
@@ -48,30 +39,19 @@ def extract_multiple_with_gemini(image_cards):
     contents = []
 
     prompt = """
-You are an expert business card information extractor.
-
-You will receive one or more business card images.
-
-Extract information from EVERY business card.
+Extract information from every business card.
 
 Return ONLY a valid JSON array.
 
 Rules:
-
-- First image = card_no 1
-- Second image = card_no 2
-- Continue sequentially.
+- card_no starts from 1.
 - Never skip an image.
-- Do NOT invent, infer or guess information.
-- If a field is missing on the card, return "Not available".
-- Ignore logos, icons, QR codes and decorative elements.
+- Missing value -> "Not available".
+- Ignore logos, icons and QR codes.
+- Preserve phone country codes.
 - Extract text exactly as printed.
-- Preserve country codes in phone numbers.
-- If multiple phone numbers exist, return the primary contact number.
-- Return only JSON. Do not add explanations.
 
-Fields to extract:
-
+Fields:
 card_no
 name
 company
@@ -102,18 +82,15 @@ address
                 contents=contents,
                 config=types.GenerateContentConfig(
                     temperature=0,
-                    max_output_tokens=1200,
+                    max_output_tokens=700,
                     response_mime_type="application/json",
                     response_schema=BATCH_SCHEMA,
                 ),
             )
 
-            # ====================================================
-            # TOKEN USAGE
-            # ====================================================
             usage = response.usage_metadata
 
-            if usage:
+            if DEBUG and usage:
                 prompt_tokens = usage.prompt_token_count
                 output_tokens = usage.candidates_token_count
                 total_tokens = usage.total_token_count
@@ -127,25 +104,30 @@ address
                 )
 
                 print("\n" + "=" * 55)
-                print("            GEMINI TOKEN USAGE")
+                print("          GEMINI TOKEN USAGE")
                 print("=" * 55)
-                print(f"Prompt Tokens     : {prompt_tokens}")
-                print(f"Response Tokens   : {output_tokens}")
-                print(f"Total Tokens      : {total_tokens}")
+                print(f"Prompt Tokens   : {prompt_tokens}")
+                print(f"Output Tokens   : {output_tokens}")
+                print(f"Total Tokens    : {total_tokens}")
 
-                if getattr(usage, "thoughts_token_count", None):
-                    print(
-                        f"Thinking Tokens   : {usage.thoughts_token_count}"
-                    )
+                thoughts = getattr(
+                    usage,
+                    "thoughts_token_count",
+                    None,
+                )
 
-                print(f"Estimated Cost    : ${estimated_cost:.8f}")
+                if thoughts:
+                    print(f"Thinking Tokens : {thoughts}")
+
+                print(f"Estimated Cost  : ${estimated_cost:.8f}")
                 print("=" * 55 + "\n")
 
-            # ====================================================
-            # Parse JSON
-            # ====================================================
-
-            data = json.loads(response.text)
+            try:
+                data = json.loads(response.text)
+            except json.JSONDecodeError:
+                print("Invalid JSON returned by Gemini:")
+                print(response.text)
+                raise Exception("Gemini returned invalid JSON.")
 
             for item in data:
                 for field in CARD_SCHEMA["properties"]:
@@ -165,10 +147,12 @@ address
                 ("503" in error_message or "UNAVAILABLE" in error_message)
                 and attempt < max_retries - 1
             ):
-                wait_time = 2 ** attempt
+                wait_time = min(2 ** attempt, 5)
+
                 print(
                     f"Gemini busy. Retrying in {wait_time} seconds..."
                 )
+
                 time.sleep(wait_time)
 
             else:

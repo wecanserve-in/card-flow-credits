@@ -9,11 +9,19 @@ import {
    ActivityIndicator,
 } from "react-native";
 
+import { useEffect } from "react";
+import { onSnapshot, doc, updateDoc, increment } from "firebase/firestore";
+
+import { User } from "../types/user";
+
+
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { router } from "expo-router";
 import { uploadCards } from "../services/scanService";
+import { auth, db } from "../services/firebase";
+
 
 export default function ScannedQueueScreen() {
 const scannedImages =
@@ -24,6 +32,22 @@ const [selectedCards, setSelectedCards] = useState<number[]>(
 );
 
 const [loading, setLoading] = useState(false);
+const [userData, setUserData] = useState<User | null>(null);
+
+useEffect(() => {
+  if (!auth.currentUser) return;
+
+  const unsubscribe = onSnapshot(
+    doc(db, "users", auth.currentUser.uid),
+    (snapshot) => {
+      if (snapshot.exists()) {
+        setUserData(snapshot.data() as User);
+      }
+    }
+  );
+
+  return unsubscribe;
+}, []);
 
  const handleExtract = async () => {
   if (selectedCards.length === 0) {
@@ -42,11 +66,53 @@ const [loading, setLoading] = useState(false);
         selectedCards.includes(index)
     );
 
+    const remainingScans =
+  (userData?.freeScanLimit ?? 0) -
+  (userData?.freeScansUsed ?? 0);
+
+if (selectedImages.length > remainingScans) {
+  Alert.alert(
+    "Free Scan Limit",
+    `You have only ${remainingScans} free scan${
+      remainingScans === 1 ? "" : "s"
+    } remaining.`,
+    [
+      {
+        text: "Upgrade",
+        onPress: () => router.push("/plans"),
+      },
+      {
+        text: `Extract ${remainingScans}`,
+        onPress: () => {
+          // We'll implement this in the next step.
+        },
+      },
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+    ]
+  );
+
+  return;
+}
+
     console.log("Selected Images:", selectedImages);
 
     const result = await uploadCards(selectedImages);
 
     console.log("API Result:", result);
+if (
+  result.cards.length > 0 &&
+  auth.currentUser
+) {
+  await updateDoc(
+    doc(db, "users", auth.currentUser.uid),
+    {
+      freeScansUsed: increment(result.cards.length),
+    }
+  );
+}
 
     (globalThis as any).extractedCards =
       result.cards;

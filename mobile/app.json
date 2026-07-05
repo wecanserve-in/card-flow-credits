@@ -18,20 +18,20 @@
       },
       "predictiveBackGestureEnabled": false
     },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#FFFFFF",
-          "image": "./assets/images/icon.png",
-          "imageWidth": 180
-        }
-      ],
-      "expo-sqlite",
-      "expo-sharing",
-      "expo-secure-store"
-    ],
+ "plugins": [
+  "expo-router",
+  [
+    "expo-splash-screen",
+    {
+      "backgroundColor": "#FFFFFF",
+      "image": "./assets/images/icon.png",
+      "imageWidth": 180
+    }
+  ],
+  "expo-sqlite",
+  "expo-sharing",
+  "expo-secure-store"
+],
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"

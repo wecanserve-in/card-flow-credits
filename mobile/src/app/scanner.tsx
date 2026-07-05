@@ -1,3 +1,5 @@
+
+
 import { useRef, useState } from "react";
 import {
   View,
@@ -41,38 +43,35 @@ const [images, setImages] = useState<string[]>([]);
   }
 
   // Capture Photo
-  const takePicture = async () => {
+ const takePicture = async () => {
   if (!cameraRef.current) return;
 
   try {
+    const start = Date.now();
+
     const photo = await cameraRef.current.takePictureAsync({
-      quality: 1,
-      skipProcessing: false,
+      quality: 0.7,
+      skipProcessing: true,
     });
+
+    console.log("Capture Time:", Date.now() - start, "ms");
 
     if (!photo?.uri) {
       Alert.alert("Error", "Failed to capture image.");
       return;
     }
 
-    console.log("Photo URI:", photo.uri);
+    const stateStart = Date.now();
 
     setImages((prev) => {
-      // Prevent duplicate images
-      if (prev.includes(photo.uri)) {
-        return prev;
-      }
-
+      if (prev.includes(photo.uri)) return prev;
       return [...prev, photo.uri];
     });
 
+    console.log("State Update:", Date.now() - stateStart, "ms");
+
   } catch (error) {
     console.log(error);
-
-    Alert.alert(
-      "Error",
-      "Failed to capture image."
-    );
   }
 };
 
@@ -94,10 +93,11 @@ const handleUpload = () => {
   return (
     <View style={styles.container}>
       <CameraView
-        ref={cameraRef}
-        style={styles.camera}
-        facing="back"
-      />
+  ref={cameraRef}
+  style={styles.camera}
+  facing="back"
+  pictureSize="640x480"
+/>
 
       {/* Top Bar */}
 

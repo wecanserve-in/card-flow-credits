@@ -53,8 +53,8 @@ const [userData, setUserData] = useState<User | null>(null);
 
   planName: "Free Plan",
 
-  cardLimit: 5,
-  cardsUsed: 0,
+  freeScanLimit: 5,
+freeScansUsed: 0,
 
   exportsGenerated: 0,
 
@@ -90,15 +90,22 @@ const [userData, setUserData] = useState<User | null>(null);
 
  const name = userData?.name || "User";
   const planName = userData?.planName || "Free Plan";
-  const totalCards = userData?.cardLimit || 0;
-  const usedCards = userData?.cardsUsed || 0;
+const totalFreeScans = userData?.freeScanLimit || 0;
+const usedFreeScans = userData?.freeScansUsed || 0;
   const exportsGenerated = userData?.exportsGenerated || 0;
- const recentCardsToday = 0;
-  const remainingCards = Math.max(totalCards - usedCards, 0);
-  const usedPercent =
-    totalCards > 0
-      ? Math.min(Math.round((usedCards / totalCards) * 100), 100)
-      : 0;
+ const cardsScanned =
+  userData?.freeScansUsed || 0;
+
+const recentCardsToday = cardsScanned;
+
+const currentPlan =
+  userData?.planName || "Free Plan";
+const remainingFreeScans = Math.max(totalFreeScans - usedFreeScans, 0);
+
+const usedPercent =
+  totalFreeScans > 0
+    ? Math.min(Math.round((usedFreeScans / totalFreeScans) * 100), 100)
+    : 0;
 
   return (
     <View style={styles.page}>
@@ -170,21 +177,21 @@ const [userData, setUserData] = useState<User | null>(null);
 
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>{totalCards}</Text>
+<Text style={styles.statNumber}>{totalFreeScans}</Text>
               <Text style={styles.statLabel}>Total Cards</Text>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>{usedCards}</Text>
+<Text style={styles.statNumber}>{usedFreeScans}</Text>
               <Text style={styles.statLabel}>Used</Text>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>{remainingCards}</Text>
+<Text style={styles.statNumber}>{remainingFreeScans}</Text>
               <Text style={styles.statLabel}>Remaining</Text>
             </View>
           </View>
@@ -210,7 +217,19 @@ const [userData, setUserData] = useState<User | null>(null);
         >
           <TouchableOpacity
             style={[styles.actionCard, styles.blueCard, { width: actionCardWidth }]}
-            onPress={() => router.push("/scanner")}
+           onPress={() => {
+  if (userData?.subscriptionActive) {
+    router.push("/scanner");
+    return;
+  }
+
+  if ((userData?.freeScansUsed ?? 0) < (userData?.freeScanLimit ?? 0)) {
+    router.push("/scanner");
+    return;
+  }
+
+  router.push("/plans");
+}}
           >
             <Ionicons name="camera-outline" size={30} color="#FFFFFF" />
             <Text style={styles.actionText}>Scan{"\n"}Cards</Text>
@@ -243,34 +262,77 @@ const [userData, setUserData] = useState<User | null>(null);
 
         <View style={[styles.sectionHeader, { paddingHorizontal: horizontal }]}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <Ionicons name="chevron-forward" size={20} color="#A0AEC0" />
+<TouchableOpacity
+  onPress={() => router.push("/usage")}
+>
+  <Ionicons
+    name="chevron-forward"
+    size={20}
+    color="#A0AEC0"
+  />
+</TouchableOpacity>
         </View>
 
         <Text style={[styles.todayText, { paddingHorizontal: horizontal }]}>
           Today
         </Text>
 
-        <View style={[styles.activityCard, { marginHorizontal: horizontal }]}>
-          <View style={styles.activityLeft}>
-            <View style={styles.activityIconGreen}>
-              <Ionicons name="person-add-outline" size={18} color="#10B981" />
-            </View>
-            <Text style={styles.activityText}>Cards Extracted</Text>
-          </View>
+      <View style={[styles.activityCard, { marginHorizontal: horizontal }]}>
+  <View style={styles.activityLeft}>
+    <View style={styles.activityIconPurple}>
+      <Ionicons
+        name="download-outline"
+        size={18}
+        color="#5B4BFF"
+      />
+    </View>
 
-          <Text style={styles.activityNumber}>{recentCardsToday}</Text>
-        </View>
+    <View>
+      <Text style={styles.activityText}>
+        Excel Exports
+      </Text>
 
-        <View style={[styles.activityCard, { marginHorizontal: horizontal }]}>
-          <View style={styles.activityLeft}>
-            <View style={styles.activityIconPurple}>
-              <Ionicons name="download-outline" size={18} color="#5B4BFF" />
-            </View>
-            <Text style={styles.activityText}>Exports Generated</Text>
-          </View>
+      <Text style={styles.activitySub}>
+        Files generated
+      </Text>
+    </View>
+  </View>
 
-          <Text style={styles.activityNumber}>{exportsGenerated}</Text>
-        </View>
+  <Text style={styles.activityNumber}>
+    {exportsGenerated}
+  </Text>
+</View>
+
+<View style={[styles.activityCard, { marginHorizontal: horizontal }]}>
+  <View style={styles.activityLeft}>
+    <View style={styles.activityIconPurple}>
+      <Ionicons
+        name="pricetag-outline"
+        size={18}
+        color="#5B4BFF"
+      />
+    </View>
+
+    <View>
+      <Text style={styles.activityText}>
+        Current Plan
+      </Text>
+
+      <Text style={styles.activitySub}>
+        Subscription
+      </Text>
+    </View>
+  </View>
+
+  <Text
+    style={[
+      styles.activityNumber,
+      { color: "#5B4BFF" },
+    ]}
+  >
+    {currentPlan}
+  </Text>
+</View>
       </ScrollView>
 
       <BottomNav active="home" />
@@ -401,6 +463,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "900",
   },
+  activitySub: {
+  marginTop: 2,
+  fontSize: 12,
+  color: "#9CA3AF",
+  fontWeight: "600",
+},
 
   statsRow: {
     marginTop: 28,
