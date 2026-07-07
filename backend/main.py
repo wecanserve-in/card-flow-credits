@@ -1,12 +1,16 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.responses import RedirectResponse
 
 from image_preprocessing import preprocess_card
 from gemini_extractor import extract_multiple_with_gemini
 from export_excel import generate_excel_in_memory
+from payments import router as payment_router
 
 app = FastAPI()
+
+app.include_router(payment_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -99,4 +103,24 @@ def download_excel(cards: list[dict]):
             "Content-Disposition":
             "attachment; filename=cardsdetails.xlsx"
         }
+    )
+
+@app.get("/payment-success")
+def payment_success(
+    razorpay_payment_id: str,
+    razorpay_order_id: str,
+    razorpay_signature: str,
+):
+    return RedirectResponse(
+        url=f"cardflow://payment-success?"
+            f"payment_id={razorpay_payment_id}"
+            f"&order_id={razorpay_order_id}"
+            f"&signature={razorpay_signature}"
+    )
+
+
+@app.get("/payment-failed")
+def payment_failed():
+    return RedirectResponse(
+        url="cardflow://payment-failed"
     )
