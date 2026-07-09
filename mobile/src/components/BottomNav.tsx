@@ -2,7 +2,12 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-type ActiveTab = "home" | "contacts" | "scan" | "plans" | "profile";
+type ActiveTab =
+  | "home"
+  | "contacts"
+  | "scan"
+  | "plans"
+  | "settings";
 
 export default function BottomNav({ active }: { active: ActiveTab }) {
   const navItems = [
@@ -10,7 +15,12 @@ export default function BottomNav({ active }: { active: ActiveTab }) {
     { key: "contacts", label: "My Cards", icon: "card-outline", route: "/saved-contacts" },
     { key: "scan", label: "Scan", icon: "camera", route: "/scanner" },
     { key: "plans", label: "Plans", icon: "pricetag-outline", route: "/plans" },
-    { key: "Settings", label: "Settings", icon: "settings-outline", route: "/settings" },
+   {
+  key: "settings",
+  label: "Settings",
+  icon: "settings-outline",
+  route: "/settings",
+}
   ];
 
   return (

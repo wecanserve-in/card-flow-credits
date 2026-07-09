@@ -1,3 +1,4 @@
+import React from "react";
 import {
   View,
   Text,
@@ -5,88 +6,154 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  Alert,
 } from "react-native";
-
-import { signOut } from "firebase/auth";
-import { auth } from "../services/firebase";
-import { router } from "expo-router";
-
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { signOut } from "firebase/auth";
+
+import { auth } from "../services/firebase";
+import BottomNav from "../components/BottomNav";
 
 const menuItems = [
   {
     title: "Account Settings",
     icon: "person-outline",
+    route: "/profile",
   },
   {
     title: "Subscription & Billing",
     icon: "card-outline",
-  },
-  {
-    title: "Refer & Earn",
-    icon: "gift-outline",
+    route: "/plans",
   },
   {
     title: "Help & Support",
     icon: "help-circle-outline",
+    route: "/support",
   },
   {
     title: "Privacy Policy",
     icon: "lock-closed-outline",
+    route: "/privacy",
   },
   {
     title: "Terms & Conditions",
     icon: "document-text-outline",
+    route: "/terms",
   },
 ];
 
 export default function SettingsScreen() {
+  const user = auth.currentUser;
+
+  const name = user?.displayName || "User";
+  const email = user?.email || "No Email";
+
+  const photo =
+    user?.photoURL ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      name
+    )}&background=5B4BFF&color=fff`;
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await signOut(auth);
+              router.replace("/login");
+            } catch (e) {
+              console.log(e);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>Settings</Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: 120,
+        }}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons
+              name="arrow-back"
+              size={22}
+              color="#111827"
+            />
+          </TouchableOpacity>
 
-        {/* Profile Card */}
+          <Text style={styles.heading}>
+            Settings
+          </Text>
 
-        <TouchableOpacity style={styles.profileCard}>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <TouchableOpacity
+          style={styles.profileCard}
+          activeOpacity={0.85}
+          onPress={() => router.push("/profile" as any)}
+        >
           <Image
-            source={{
-              uri: "https://i.pravatar.cc/150?img=12",
-            }}
+            source={{ uri: photo }}
             style={styles.avatar}
           />
 
           <View style={styles.profileInfo}>
             <Text style={styles.name}>
-              Anand Dangi
+              {name}
             </Text>
 
             <Text style={styles.email}>
-              anand@gmail.com
+              {email}
             </Text>
           </View>
 
           <Ionicons
             name="chevron-forward"
-            size={22}
+            size={20}
             color="#9CA3AF"
           />
         </TouchableOpacity>
 
-        {/* Menu Items */}
-
         <View style={styles.menuContainer}>
           {menuItems.map((item, index) => (
             <TouchableOpacity
-              key={index}
-              style={styles.menuItem}
+              key={item.title}
+              style={[
+                styles.menuItem,
+                index === menuItems.length - 1 && {
+                  borderBottomWidth: 0,
+                },
+              ]}
+              onPress={() =>
+                router.push(item.route as any)
+              }
             >
               <View style={styles.left}>
                 <Ionicons
                   name={item.icon as any}
                   size={22}
-                  color="#374151"
+                  color="#5B4BFF"
                 />
 
                 <Text style={styles.menuText}>
@@ -96,81 +163,100 @@ export default function SettingsScreen() {
 
               <Ionicons
                 name="chevron-forward"
-                size={20}
-                color="#D1D5DB"
+                size={18}
+                color="#B5B8C5"
               />
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Logout */}
-<TouchableOpacity
-  style={styles.logoutBtn}
-  onPress={async () => {
-    try {
-      console.log("Logout clicked");
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={handleLogout}
+        >
+          <Ionicons
+            name="log-out-outline"
+            size={22}
+            color="#EF4444"
+          />
 
-      await signOut(auth);
+          <Text style={styles.logoutText}>
+            Logout
+          </Text>
+        </TouchableOpacity>
 
-      router.replace("/login"); // change if your login page is elsewhere
-    } catch (error) {
-      console.log("Logout Error:", error);
-    }
-  }}
->
-  <Ionicons
-    name="log-out-outline"
-    size={22}
-    color="#EF4444"
-  />
-
-  <Text style={styles.logoutText}>
-    Logout
-  </Text>
-</TouchableOpacity>
-
+        <Text style={styles.version}>
+          Version 1.0.0
+        </Text>
       </ScrollView>
+
+      <BottomNav active="settings" />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
+const styles = StyleSheet.create({  container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
     paddingHorizontal: 18,
   },
 
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 10,
+    marginBottom: 22,
+  },
+
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
   heading: {
-    fontSize: 30,
+    fontSize: 24,
     fontWeight: "800",
     color: "#111827",
-    marginTop: 10,
-    marginBottom: 24,
   },
 
   profileCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 22,
     padding: 18,
     flexDirection: "row",
     alignItems: "center",
 
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+
     shadowColor: "#000",
     shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowRadius: 12,
+    elevation: 3,
   },
 
   avatar: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
+    width: 65,
+    height: 65,
+    borderRadius: 32.5,
+    backgroundColor: "#EEF2FF",
   },
 
   profileInfo: {
     flex: 1,
-    marginLeft: 14,
+    marginLeft: 15,
   },
 
   name: {
@@ -180,14 +266,18 @@ const styles = StyleSheet.create({
   },
 
   email: {
+    marginTop: 5,
     color: "#6B7280",
-    marginTop: 4,
+    fontSize: 14,
   },
 
   menuContainer: {
-    marginTop: 24,
-    backgroundColor: "#fff",
+    marginTop: 25,
+    backgroundColor: "#FFFFFF",
     borderRadius: 22,
+
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
 
     shadowColor: "#000",
     shadowOpacity: 0.05,
@@ -201,10 +291,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
 
     paddingHorizontal: 18,
-    paddingVertical: 20,
+    paddingVertical: 19,
 
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: "#EEF2F7",
   },
 
   left: {
@@ -213,26 +303,46 @@ const styles = StyleSheet.create({
   },
 
   menuText: {
+    marginLeft: 15,
     fontSize: 15,
     fontWeight: "600",
     color: "#111827",
-    marginLeft: 14,
   },
 
   logoutBtn: {
+    marginTop: 28,
+
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 30,
-    paddingHorizontal: 18,
-    paddingVertical: 20,
-    backgroundColor: "#fff",
-    borderRadius: 22,
+    justifyContent: "center",
+
+    backgroundColor: "#FFFFFF",
+
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+
+    paddingVertical: 18,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   logoutText: {
     color: "#EF4444",
-    fontWeight: "700",
     fontSize: 16,
-    marginLeft: 12,
+    fontWeight: "700",
+    marginLeft: 10,
+  },
+
+  version: {
+    marginTop: 22,
+    marginBottom: 10,
+    textAlign: "center",
+    color: "#9CA3AF",
+    fontSize: 13,
+    fontWeight: "600",
   },
 });

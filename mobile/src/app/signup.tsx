@@ -19,6 +19,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 
 import { auth, db } from "../services/firebase";
+import { signInWithGoogle } from "../services/googleAuth";
 
 export default function SignupScreen() {
   const [fullName, setFullName] = useState("");
@@ -29,7 +30,7 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [loading, setLoading] = useState(false);
+  const [loadingMethod, setLoadingMethod] = useState<"email" | "google" | null>(null);
 
   const handleSignup = async () => {
     if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
@@ -48,7 +49,7 @@ export default function SignupScreen() {
     }
 
     try {
-      setLoading(true);
+      setLoadingMethod("email");
 
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -60,42 +61,46 @@ export default function SignupScreen() {
         displayName: fullName.trim(),
       });
 
-     await setDoc(doc(db, "users", userCredential.user.uid), {
-  uid: userCredential.user.uid,
-
-  name: fullName.trim(),
-  email: email.trim(),
-  photoURL: "",
-
-planName: "Free Plan",
-
-cardLimit: 5,
-cardsUsed: 0,
-
-exportsGenerated: 0,
-
-subscriptionActive: false,
-subscriptionExpiry: null,
-
-authProvider: "email",
-
-createdAt: Date.now(),
-updatedAt: Date.now(),
-});
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        uid: userCredential.user.uid,
+        name: fullName.trim(),
+        email: email.trim(),
+        photoURL: "",
+        planName: "Free Plan",
+        cardLimit: 5,
+        cardsUsed: 0,
+        freeScanLimit: 5,
+        freeScansUsed: 0,
+        exportsGenerated: 0,
+        subscriptionActive: false,
+        subscriptionExpiry: null,
+        authProvider: "email",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
 
       router.replace("/home");
     } catch (error: any) {
       Alert.alert("Signup Failed", error.message);
     } finally {
-      setLoading(false);
+      setLoadingMethod(null);
     }
   };
 
-  const handleGoogleSignup = () => {
-    Alert.alert(
-      "Coming Soon",
-      "Google signup will be enabled after Development Build."
-    );
+  const handleGoogleSignup = async () => {
+    try {
+      setLoadingMethod("google");
+
+      const userCredential = await signInWithGoogle();
+
+      if (userCredential) {
+        router.replace("/home");
+      }
+    } catch (error: any) {
+      Alert.alert("Google Signup Failed", error.message);
+    } finally {
+      setLoadingMethod(null);
+    }
   };
 
   return (
@@ -131,7 +136,7 @@ updatedAt: Date.now(),
               autoCorrect={false}
               value={fullName}
               onChangeText={setFullName}
-              editable={!loading}
+              editable={loadingMethod === null}
             />
 
             <TextInput
@@ -143,7 +148,7 @@ updatedAt: Date.now(),
               autoCorrect={false}
               value={email}
               onChangeText={setEmail}
-              editable={!loading}
+              editable={loadingMethod === null}
             />
 
             <View style={styles.passwordContainer}>
@@ -156,7 +161,7 @@ updatedAt: Date.now(),
                 autoCapitalize="none"
                 value={password}
                 onChangeText={setPassword}
-                editable={!loading}
+                editable={loadingMethod === null}
               />
 
               <TouchableOpacity
@@ -181,7 +186,7 @@ updatedAt: Date.now(),
                 autoCapitalize="none"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                editable={!loading}
+                editable={loadingMethod === null}
               />
 
               <TouchableOpacity
@@ -197,12 +202,15 @@ updatedAt: Date.now(),
             </View>
 
             <TouchableOpacity
-              style={[styles.primaryButton, loading && styles.disabledButton]}
+              style={[
+                styles.primaryButton,
+                loadingMethod !== null && styles.disabledButton,
+              ]}
               onPress={handleSignup}
-              disabled={loading}
+              disabled={loadingMethod !== null}
               activeOpacity={0.85}
             >
-              {loading ? (
+              {loadingMethod === "email" ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <Text style={styles.primaryButtonText}>Create Account</Text>
@@ -216,18 +224,25 @@ updatedAt: Date.now(),
             </View>
 
             <TouchableOpacity
-              style={[styles.googleButton, loading && styles.disabledButton]}
+              style={[
+                styles.googleButton,
+                loadingMethod !== null && styles.disabledButton,
+              ]}
               onPress={handleGoogleSignup}
-              disabled={loading}
+              disabled={loadingMethod !== null}
               activeOpacity={0.85}
             >
-              <AntDesign name="google" size={18} color="#4285F4" />
+              {loadingMethod === "google" ? (
+                <ActivityIndicator size="small" color="#4285F4" />
+              ) : (
+                <AntDesign name="google" size={18} color="#4285F4" />
+              )}
               <Text style={styles.googleButtonText}>Continue with Google</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => router.replace("/login")}
-              disabled={loading}
+              disabled={loadingMethod !== null}
             >
               <Text style={styles.linkText}>
                 Already have an account? <Text style={styles.linkBlue}>Login</Text>

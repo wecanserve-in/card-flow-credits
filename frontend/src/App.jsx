@@ -1,481 +1,640 @@
-import { useState, useEffect } from "react";
-import CryptoJS from "crypto-js";
-
+import { useEffect, useState } from "react";
 import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut
-} from "firebase/auth";
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  ActivityIndicator,
+  useWindowDimensions,
+} from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 
-import {
-  doc,
-  setDoc,
-  updateDoc,
-  onSnapshot,
-  collection,
-  addDoc,
-  getDocs,
-  query,
-  orderBy,
-  serverTimestamp
-} from "firebase/firestore";
+import BottomNav from "../components/BottomNav";
+import { auth, db } from "../services/firebase";
+import { User } from "../types/user";
 
-import { auth, db } from "./firebase";
-import "./App.css";
+export default function HomeScreen() {
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [authMode, setAuthMode] = useState("login");
-  const [authError, setAuthError] = useState("");
+  const isSmallPhone = height < 720;
+  const horizontal = width < 380 ? 18 : 22;
+  const cardGap = 14;
+  const actionCardWidth = (width - horizontal * 2 - cardGap) / 2;
 
-  const [files, setFiles] = useState([]);
-  const [cards, setCards] = useState([]);
-  const [allCards, setAllCards] = useState([]);
-
-  const [credits, setCredits] = useState(0);
-  const [loading, setLoading] = useState(false);
-
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-  const ENCRYPTION_KEY = import.meta.env.VITE_APP_ENCRYPTION_KEY;
-
-  const encryptCard = (card) => {
-    return CryptoJS.AES.encrypt(
-      JSON.stringify(card),
-      ENCRYPTION_KEY
-    ).toString();
-  };
-
-  const decryptCard = (encryptedData) => {
-    try {
-      const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
-      const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-
-      if (!decrypted) return null;
-
-      return JSON.parse(decrypted);
-    } catch {
-      return null;
-    }
-  };
-
-  const loadUserCards = async (uid) => {
-    try {
-      const cardsRef = collection(db, "users", uid, "encryptedCards");
-      const q = query(cardsRef, orderBy("createdAt", "asc"));
-      const snapshot = await getDocs(q);
-
-      const savedCards = [];
-
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-
-        if (data.encryptedData) {
-          const decrypted = decryptCard(data.encryptedData);
-
-          if (decrypted) {
-            savedCards.push(decrypted);
-          }
-        }
-      });
-
-      setAllCards(savedCards);
-    } catch (error) {
-      console.error("Failed to load saved cards:", error);
-      setAllCards([]);
-    }
-  };
-
+  const [loading, setLoading] = useState(true);
+const [userData, setUserData] = useState<User | null>(null);
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
+    let unsubscribeUser: any = null;
 
-      if (currentUser) {
-        const userRef = doc(db, "users", currentUser.uid);
-
-        await loadUserCards(currentUser.uid);
-
-        const unsubDoc = onSnapshot(userRef, async (docSnap) => {
-          if (docSnap.exists()) {
-            setCredits(docSnap.data().credits ?? 0);
-          } else {
-            await setDoc(userRef, { credits: 10 });
-            setCredits(10);
-          }
-        });
-
-        return () => unsubDoc();
-      } else {
-        setCredits(0);
-        setCards([]);
-        setAllCards([]);
-        setFiles([]);
-        setAuthEmail("");
-        setAuthPassword("");
-        setAuthError("");
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    setAuthError("");
-
-    if (!authEmail || !authPassword) {
-      setAuthError("Please fill in all fields.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      if (authMode === "login") {
-        await signInWithEmailAndPassword(auth, authEmail, authPassword);
-      } else {
-        await createUserWithEmailAndPassword(auth, authEmail, authPassword);
-      }
-    } catch (err) {
-      setAuthError(err.message.replace("Firebase: ", ""));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = () => {
-    signOut(auth);
-  };
-
-  const saveEncryptedCards = async (newCards) => {
-    const cardsRef = collection(db, "users", user.uid, "encryptedCards");
-
-    for (const card of newCards) {
-      const encryptedData = encryptCard(card);
-
-      await addDoc(cardsRef, {
-        encryptedData,
-        createdAt: serverTimestamp()
-      });
-    }
-  };
-
-  const uploadCards = async () => {
-    if (!files.length) return;
-
-    if (!ENCRYPTION_KEY) {
-      alert("Encryption key missing. Please add VITE_APP_ENCRYPTION_KEY in .env");
-      return;
-    }
-
-    if (credits < files.length) {
-      alert(
-        `Insufficient credits. You need ${files.length} credits, but you only have ${credits} credits left.`
-      );
-      return;
-    }
-
-    setLoading(true);
-    setCards([]);
-
-    const formData = new FormData();
-
-    files.forEach((file) => {
-      formData.append("files", file);
-    });
-
-    try {
-      const response = await fetch(`${API_URL}/upload`, {
-        method: "POST",
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (result.error) {
-        alert(result.error);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setLoading(false);
+        router.replace("/login");
         return;
       }
 
-      const newCards = result.cards || [];
-
-      setCards(newCards);
-
-      await saveEncryptedCards(newCards);
-
-      setAllCards((prev) => [...prev, ...newCards]);
-
       const userRef = doc(db, "users", user.uid);
 
-      await updateDoc(userRef, {
-        credits: credits - files.length
+      unsubscribeUser = onSnapshot(userRef, async (snapshot) => {
+        if (!snapshot.exists()) {
+      await setDoc(userRef, {
+  uid: user.uid,
+
+  name: user.displayName || "User",
+  email: user.email || "",
+  photoURL: user.photoURL || "",
+
+  planName: "Free Plan",
+
+  freeScanLimit: 5,
+freeScansUsed: 0,
+
+  exportsGenerated: 0,
+
+  subscriptionActive: false,
+  subscriptionExpiry: null,
+
+  authProvider: "email",
+
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+});
+          return;
+        }
+
+        setUserData(snapshot.data());
+        setLoading(false);
       });
+    });
 
-      setFiles([]);
-    } catch (error) {
-      console.error(error);
-      alert("Something went wrong during card scanning.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      if (unsubscribeUser) unsubscribeUser();
+      unsubscribeAuth();
+    };
+  }, []);
 
-  const downloadExcel = async () => {
-    if (!allCards || !allCards.length) {
-      alert("No saved cards available to download.");
-      return;
-    }
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.loaderPage}>
+        <ActivityIndicator size="large" color="#5B4BFF" />
+      </SafeAreaView>
+    );
+  }
 
-    setLoading(true);
+ const name = userData?.name || "User";
+  const planName = userData?.planName || "Free Plan";
+const totalFreeScans = userData?.freeScanLimit || 0;
+const usedFreeScans = userData?.freeScansUsed || 0;
+  const exportsGenerated = userData?.exportsGenerated || 0;
+ const cardsScanned =
+  userData?.freeScansUsed || 0;
 
-    try {
-      const response = await fetch(`${API_URL}/download-excel`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(allCards)
-      });
+const recentCardsToday = cardsScanned;
 
-      if (!response.ok) {
-        throw new Error("Excel generation failed");
-      }
+const currentPlan =
+  userData?.planName || "Free Plan";
+const remainingFreeScans = Math.max(totalFreeScans - usedFreeScans, 0);
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "cardsdetails.xlsx");
-
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to download Excel. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+const usedPercent =
+  totalFreeScans > 0
+    ? Math.min(Math.round((usedFreeScans / totalFreeScans) * 100), 100)
+    : 0;
 
   return (
-    <div className="app">
-      {loading && (
-        <div className="loadingOverlay">
-          <div className="loadingModal">
-            <div className="loader"></div>
-            <h2>Processing Request</h2>
-            <p>Please wait while we perform this secure operation.</p>
-          </div>
-        </div>
-      )}
-
-      <div className="bgGlow glowOne"></div>
-      <div className="bgGlow glowTwo"></div>
-
-      {!user ? (
-        <main className="ocrCard authContainer">
-          <div className="badge">WeCanServe</div>
-
-          <h1>CardFlow Client Portal</h1>
-
-          <p className="subtitle">
-            Log in or sign up to securely scan business cards. 1 Rs per card.
-          </p>
-
-          <form onSubmit={handleAuth} className="authForm">
-            {authError && <div className="authError">{authError}</div>}
-
-            <div className="inputGroup">
-              <label>Email Address</label>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={authEmail}
-                onChange={(e) => setAuthEmail(e.target.value)}
-                required
+    <View style={styles.page}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingBottom: 120 + insets.bottom,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.header,
+            {
+              paddingTop: insets.top + 14,
+              paddingHorizontal: horizontal,
+              paddingBottom: isSmallPhone ? 62 : 76,
+            },
+          ]}
+        >
+          <View style={styles.userRow}>
+            <View style={styles.avatar}>
+              <Image
+                source={require("../../assets/images/logo.png")}
+                style={styles.avatarImage}
+                resizeMode="contain"
               />
-            </div>
+            </View>
 
-            <div className="inputGroup">
-              <label>Password</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={authPassword}
-                onChange={(e) => setAuthPassword(e.target.value)}
-                required
-              />
-            </div>
+            <View style={styles.greetingBox}>
+              <Text style={styles.greeting} numberOfLines={1}>
+                Hello, {name} 👋
+              </Text>
+              <Text style={styles.subGreeting}>Let&apos;s scan some cards!</Text>
+            </View>
+          </View>
 
-            <button type="submit" className="primaryBtn authBtn">
-              {authMode === "login" ? "Sign In" : "Sign Up"}
-            </button>
-          </form>
+          <TouchableOpacity style={styles.bellBtn}>
+            <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
 
-          <div className="authToggle">
-            {authMode === "login" ? (
-              <p>
-                Don&apos;t have an account?{" "}
-                <span
-                  onClick={() => {
-                    setAuthMode("signup");
-                    setAuthError("");
-                  }}
-                >
-                  Register here
-                </span>
-              </p>
-            ) : (
-              <p>
-                Already have an account?{" "}
-                <span
-                  onClick={() => {
-                    setAuthMode("login");
-                    setAuthError("");
-                  }}
-                >
-                  Sign in here
-                </span>
-              </p>
-            )}
-          </div>
+        <View
+          style={[
+            styles.planCard,
+            {
+              marginHorizontal: horizontal,
+              marginTop: isSmallPhone ? -46 : -56,
+            },
+          ]}
+        >
+          <View style={styles.planTop}>
+            <View style={styles.planInfo}>
+              <Text style={styles.planLabel}> Your Plan</Text>
+              <Text style={styles.planName} numberOfLines={1}>
+                {planName}
+              </Text>
+            </View>
 
-          <div className="privacyDisclaimer">
-            🔒 <strong>Privacy First:</strong> Your card photos are never stored.
-            Card details are saved in encrypted form for Excel append history.
-          </div>
-        </main>
-      ) : (
-        <main className="ocrCard">
-          <header className="appHeader">
-            <div className="userInfo">
-              <span className="userEmail">{user.email}</span>
+            <TouchableOpacity
+              style={styles.upgradeBtn}
+              onPress={() => router.push("/plans")}
+            >
+              <Text style={styles.upgradeText}>Upgrade</Text>
+            </TouchableOpacity>
+          </View>
 
-              <div className="creditBadge">🪙 {credits} credits left</div>
-            </div>
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+<Text style={styles.statNumber}>{totalFreeScans}</Text>
+              <Text style={styles.statLabel}>Total Cards</Text>
+            </View>
 
-            <button className="logoutBtn" onClick={handleLogout}>
-              Logout
-            </button>
-          </header>
+            <View style={styles.divider} />
 
-          <div className="badge">WeCanServe</div>
+            <View style={styles.statBox}>
+<Text style={styles.statNumber}>{usedFreeScans}</Text>
+              <Text style={styles.statLabel}>Used</Text>
+            </View>
 
-          <h1>Business Card Scanner</h1>
+            <View style={styles.divider} />
 
-          <p className="subtitle">
-            Upload visiting card images. Each card uses 1 credit. Your previous
-            scanned card details are encrypted and added to the same Excel history.
-          </p>
+            <View style={styles.statBox}>
+<Text style={styles.statNumber}>{remainingFreeScans}</Text>
+              <Text style={styles.statLabel}>Remaining</Text>
+            </View>
+          </View>
 
-          <label className="uploadBox">
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => setFiles(Array.from(e.target.files))}
-            />
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${usedPercent}%` }]} />
+          </View>
 
-            <div className="uploadIcon">📇</div>
+          <View style={styles.progressBottom}>
+            <Ionicons name="people" size={16} color="#5B4BFF" />
+            <Text style={styles.progressText}>{usedPercent}% Used</Text>
+          </View>
+        </View>
 
-            <h3>
-              {files.length
-                ? `${files.length} card(s) selected`
-                : "Upload visiting cards"}
-            </h3>
+        <View
+          style={[
+            styles.actionGrid,
+            {
+              paddingHorizontal: horizontal,
+              gap: cardGap,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={[styles.actionCard, styles.blueCard, { width: actionCardWidth }]}
+           onPress={() => {
+  if (userData?.subscriptionActive) {
+    router.push("/scanner");
+    return;
+  }
 
-            <p>PNG, JPG or JPEG supported. Upload straight images only.</p>
-          </label>
+  if ((userData?.freeScansUsed ?? 0) < (userData?.freeScanLimit ?? 0)) {
+    router.push("/scanner");
+    return;
+  }
 
-          {files.length > 0 && (
-            <div className="fileList">
-              {files.map((file, index) => (
-                <span key={index}>
-                  Card {index + 1}: {file.name}
-                </span>
-              ))}
-            </div>
-          )}
-
-          <button
-            className="primaryBtn"
-            disabled={!files.length || loading}
-            onClick={uploadCards}
+  router.push("/plans");
+}}
           >
-            {loading
-              ? "Extracting..."
-              : `Extract Details (${files.length} credits)`}
-          </button>
+            <Ionicons name="camera-outline" size={30} color="#FFFFFF" />
+            <Text style={styles.actionText}>Scan{"\n"}Cards</Text>
+          </TouchableOpacity>
 
-          <section className="previewTable">
-            <div className="tableHeader">
-              <h2>Saved Card History</h2>
-              <span>{allCards.length} Total Cards</span>
-            </div>
+          <TouchableOpacity
+            style={[styles.actionCard, styles.greenCard, { width: actionCardWidth }]}
+          onPress={() => router.push("/saved-contacts")}
+          >
+            <Ionicons name="card-outline" size={30} color="#FFFFFF" />
+            <Text style={styles.actionText}>My{"\n"}Cards</Text>
+          </TouchableOpacity>
 
-            {allCards.length === 0 ? (
-              <div className="emptyState">
-                Upload cards to create your Excel history.
-              </div>
-            ) : (
-              <>
-                <div className="multiCards">
-                  {allCards.map((card, index) => (
-                    <div className="resultCard" key={index}>
-                      <div className="resultCardHeader">
-                        <h3>Card {index + 1}</h3>
-                      </div>
+          <TouchableOpacity
+            style={[styles.actionCard, styles.orangeCard, { width: actionCardWidth }]}
+            onPress={() => router.push("/export")}
+          >
+            <Ionicons name="download-outline" size={30} color="#FFFFFF" />
+            <Text style={styles.actionText}>Export{"\n"}Excel</Text>
+          </TouchableOpacity>
 
-                      <p>
-                        <b>Name:</b> {card.name || "Not available"}
-                      </p>
+          <TouchableOpacity
+            style={[styles.actionCard, styles.pinkCard, { width: actionCardWidth }]}
+            onPress={() => router.push("/usage")}
+          >
+            <Ionicons name="time-outline" size={30} color="#FFFFFF" />
+            <Text style={styles.actionText}>Usage{"\n"}History</Text>
+          </TouchableOpacity>
+        </View>
 
-                      <p>
-                        <b>Company:</b> {card.company || "Not available"}
-                      </p>
+        <View style={[styles.sectionHeader, { paddingHorizontal: horizontal }]}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+<TouchableOpacity
+  onPress={() => router.push("/usage")}
+>
+  <Ionicons
+    name="chevron-forward"
+    size={20}
+    color="#A0AEC0"
+  />
+</TouchableOpacity>
+        </View>
 
-                      <p>
-                        <b>Designation:</b>{" "}
-                        {card.designation || "Not available"}
-                      </p>
+        <Text style={[styles.todayText, { paddingHorizontal: horizontal }]}>
+          Today
+        </Text>
 
-                      <p>
-                        <b>Phone:</b> {card.phone || "Not available"}
-                      </p>
+      <View style={[styles.activityCard, { marginHorizontal: horizontal }]}>
+  <View style={styles.activityLeft}>
+    <View style={styles.activityIconPurple}>
+      <Ionicons
+        name="download-outline"
+        size={18}
+        color="#5B4BFF"
+      />
+    </View>
 
-                      <p>
-                        <b>Country:</b> {card.country || "Not available"}
-                      </p>
+    <View>
+      <Text style={styles.activityText}>
+        Excel Exports
+      </Text>
 
-                      <p>
-                        <b>Email:</b> {card.email || "Not available"}
-                      </p>
+      <Text style={styles.activitySub}>
+        Files generated
+      </Text>
+    </View>
+  </View>
 
-                      <p>
-                        <b>Website:</b> {card.website || "Not available"}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+  <Text style={styles.activityNumber}>
+    {exportsGenerated}
+  </Text>
+</View>
 
-                <div className="downloadArea">
-                  <button className="downloadBtn" onClick={downloadExcel}>
-                    Download Full Excel
-                  </button>
-                </div>
-              </>
-            )}
-          </section>
-        </main>
-      )}
-    </div>
+<View style={[styles.activityCard, { marginHorizontal: horizontal }]}>
+  <View style={styles.activityLeft}>
+    <View style={styles.activityIconPurple}>
+      <Ionicons
+        name="pricetag-outline"
+        size={18}
+        color="#5B4BFF"
+      />
+    </View>
+
+    <View>
+      <Text style={styles.activityText}>
+        Current Plan
+      </Text>
+
+      <Text style={styles.activitySub}>
+        Subscription
+      </Text>
+    </View>
+  </View>
+
+  <Text
+    style={[
+      styles.activityNumber,
+      { color: "#5B4BFF" },
+    ]}
+  >
+    {currentPlan}
+  </Text>
+</View>
+      </ScrollView>
+
+      <BottomNav active="home" />
+    </View>
   );
 }
 
-export default App;
+const styles = StyleSheet.create({
+  loaderPage: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  page: {
+    flex: 1,
+    backgroundColor: "#F3F6FF",
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+  },
+
+  header: {
+    backgroundColor: "#5B4BFF",
+    borderBottomLeftRadius: 34,
+    borderBottomRightRadius: 34,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+
+  userRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingRight: 12,
+  },
+
+  greetingBox: {
+    flex: 1,
+  },
+
+  avatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 999,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+
+  avatarImage: {
+    width: 38,
+    height: 38,
+  },
+
+  greeting: {
+    fontSize: 21,
+    fontWeight: "900",
+    color: "#FFFFFF",
+  },
+
+  subGreeting: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#EDEBFF",
+  },
+
+  bellBtn: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  planCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
+    paddingHorizontal: 22,
+    paddingTop: 22,
+    paddingBottom: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+
+  planTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  planInfo: {
+    flex: 1,
+    paddingRight: 12,
+  },
+
+  planLabel: {
+    fontSize: 13,
+    color: "#7C8798",
+    fontWeight: "900",
+  },
+
+  planName: {
+    marginTop: 8,
+    fontSize: 28,
+    color: "#101828",
+    fontWeight: "900",
+  },
+
+  upgradeBtn: {
+    backgroundColor: "#5B4BFF",
+    paddingHorizontal: 20,
+    height: 52,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  upgradeText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  activitySub: {
+  marginTop: 2,
+  fontSize: 12,
+  color: "#9CA3AF",
+  fontWeight: "600",
+},
+
+  statsRow: {
+    marginTop: 28,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  statBox: {
+    flex: 1,
+    alignItems: "center",
+  },
+
+  statNumber: {
+    fontSize: 25,
+    fontWeight: "900",
+    color: "#101828",
+  },
+
+  statLabel: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#8B94A7",
+    fontWeight: "800",
+  },
+
+  divider: {
+    width: 1,
+    height: 44,
+    backgroundColor: "#E8ECF5",
+  },
+
+  progressTrack: {
+    height: 9,
+    backgroundColor: "#E8ECF5",
+    borderRadius: 999,
+    marginTop: 28,
+    overflow: "hidden",
+  },
+
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#5B4BFF",
+    borderRadius: 999,
+  },
+
+  progressBottom: {
+    marginTop: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  progressText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "900",
+  },
+
+  actionGrid: {
+    marginTop: 34,
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+
+  actionCard: {
+    height: 126,
+    borderRadius: 22,
+    paddingHorizontal: 22,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  blueCard: {
+    backgroundColor: "#5B4BFF",
+  },
+
+  greenCard: {
+    backgroundColor: "#16C784",
+  },
+
+  orangeCard: {
+    backgroundColor: "#FFB020",
+  },
+
+  pinkCard: {
+    backgroundColor: "#F7578C",
+  },
+
+  actionText: {
+    marginLeft: 16,
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "900",
+    lineHeight: 24,
+  },
+
+  sectionHeader: {
+    marginTop: 34,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#101828",
+  },
+
+  todayText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: "#9CA3AF",
+    fontWeight: "900",
+  },
+
+  activityCard: {
+    marginTop: 14,
+    minHeight: 72,
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#EEF1F6",
+  },
+
+  activityLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  activityIconGreen: {
+    width: 42,
+    height: 42,
+    borderRadius: 999,
+    backgroundColor: "#ECFDF5",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+
+  activityIconPurple: {
+    width: 42,
+    height: 42,
+    borderRadius: 999,
+    backgroundColor: "#EEF2FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+
+  activityText: {
+    fontSize: 16,
+    color: "#101828",
+    fontWeight: "900",
+  },
+
+  activityNumber: {
+    fontSize: 18,
+    color: "#10B981",
+    fontWeight: "900",
+    marginLeft: 10,
+  },
+});

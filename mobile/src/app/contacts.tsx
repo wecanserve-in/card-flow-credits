@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,20 +9,29 @@ import {
   Alert, // add this
 } from "react-native";
 
+
+
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import  BottomNav from "@/components/BottomNav";
 import { saveContacts } from "../services/database";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 
 export default function ContactsScreen() {
   const [search, setSearch] = useState("");
 
-const contacts = Array.isArray(
-  (globalThis as any).extractedCards
-)
-  ? (globalThis as any).extractedCards
-  : [];
+const [contacts, setContacts] = useState<any[]>([]);
+
+useFocusEffect(
+  React.useCallback(() => {
+    setContacts(
+      Array.isArray((globalThis as any).extractedCards)
+        ? [...(globalThis as any).extractedCards]
+        : []
+    );
+  }, [])
+);
 
 const filteredContacts = (contacts || []).filter(
   (contact: any) =>
@@ -83,7 +92,7 @@ keyExtractor={(item, index) =>
       contentContainerStyle={{
         paddingBottom: 160,
       }}
-      renderItem={({ item }) => (
+    renderItem={({ item, index }) => (
         <View style={styles.card}>
 
           <View style={styles.avatar}>
@@ -128,13 +137,22 @@ keyExtractor={(item, index) =>
   ) : null}
 </View>
 
-          <TouchableOpacity>
-            <Ionicons
-              name="create-outline"
-              size={24}
-              color="#2563EB"
-            />
-          </TouchableOpacity>
+       <TouchableOpacity
+  onPress={() =>
+    router.push({
+      pathname: "/edit-contact",
+      params: {
+        index: index.toString(),
+      },
+    })
+  }
+>
+  <Ionicons
+    name="create-outline"
+    size={24}
+    color="#2563EB"
+  />
+</TouchableOpacity>
 
         </View>
       )}
@@ -145,26 +163,28 @@ keyExtractor={(item, index) =>
   <View style={styles.bottomAction}>
      <TouchableOpacity
   style={styles.saveButton}
+
 onPress={async () => {
+  try {
+    console.log("Saving Contacts...");
+    console.log(contacts);
 
-try {console.log("Saving Contacts...");
-console.log(contacts);
-  await saveContacts(contacts);
+    await saveContacts(contacts);
 
-  (globalThis as any).extractedCards = [];
+    (globalThis as any).extractedCards = [];
+    setContacts([]);
 
-  Alert.alert(
-    "Saved",
-    `${contacts.length} contacts saved successfully.`,
-    [
-      {
-        text: "OK",
-        onPress: () => router.push("/home"),
-      },
-    ]
-  );
-
-} catch (error: any) {
+    Alert.alert(
+      "Saved",
+      `${contacts.length} contacts saved successfully.`,
+      [
+        {
+          text: "OK",
+          onPress: () => router.replace("/home"),
+        },
+      ]
+    );
+  } catch (error: any) {
   console.log(error);
 
   Alert.alert(
@@ -173,18 +193,18 @@ console.log(contacts);
   );
 }
 
-  (globalThis as any).extractedCards = [];
+(globalThis as any).extractedCards = [];
 
-  Alert.alert(
-    "Saved",
-    `${contacts.length} contacts saved on your device.`,
-    [
-      {
-        text: "OK",
-        onPress: () => router.push("/home"),
-      },
-    ]
-  );
+Alert.alert(
+  "Saved",
+  `${contacts.length} contacts saved on your device.`,
+  [
+    {
+      text: "OK",
+      onPress: () => router.push("/home"),
+    },
+  ]
+);
 }}>
           <Ionicons
             name="save-outline"

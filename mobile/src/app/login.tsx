@@ -17,12 +17,13 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 
 import { auth } from "../services/firebase";
+import { signInWithGoogle } from "../services/googleAuth";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loadingMethod, setLoadingMethod] = useState<"email" | "google" | null>(null);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -31,7 +32,7 @@ export default function LoginScreen() {
     }
 
     try {
-      setLoading(true);
+      setLoadingMethod("email");
 
       await signInWithEmailAndPassword(auth, email.trim(), password);
 
@@ -39,12 +40,24 @@ export default function LoginScreen() {
     } catch (error: any) {
       Alert.alert("Login Failed", error.message);
     } finally {
-      setLoading(false);
+      setLoadingMethod(null);
     }
   };
 
-  const handleGoogleLogin = () => {
-    Alert.alert("Coming Soon", "Google login will be connected after email auth.");
+  const handleGoogleLogin = async () => {
+    try {
+      setLoadingMethod("google");
+
+      const userCredential = await signInWithGoogle();
+
+      if (userCredential) {
+        router.replace("/home");
+      }
+    } catch (error: any) {
+      Alert.alert("Google Login Failed", error.message);
+    } finally {
+      setLoadingMethod(null);
+    }
   };
 
   return (
@@ -103,12 +116,15 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.primaryButton, loading && styles.disabledButton]}
+            style={[
+              styles.primaryButton,
+              loadingMethod !== null && styles.disabledButton,
+            ]}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={loadingMethod !== null}
             activeOpacity={0.85}
           >
-            {loading ? (
+            {loadingMethod === "email" ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <Text style={styles.primaryButtonText}>Login</Text>
@@ -122,11 +138,19 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity
-            style={styles.googleButton}
+            style={[
+              styles.googleButton,
+              loadingMethod !== null && styles.disabledButton,
+            ]}
             onPress={handleGoogleLogin}
+            disabled={loadingMethod !== null}
             activeOpacity={0.85}
           >
-            <AntDesign name="google" size={18} color="#4285F4" />
+            {loadingMethod === "google" ? (
+              <ActivityIndicator size="small" color="#4285F4" />
+            ) : (
+              <AntDesign name="google" size={18} color="#4285F4" />
+            )}
             <Text style={styles.googleButtonText}>Continue with Google</Text>
           </TouchableOpacity>
 
