@@ -4,13 +4,21 @@ export interface User {
   email: string;
   photoURL: string;
 
+  planId: string;
   planName: string;
-  cardLimit: number;
-  cardsUsed: number;
+  freeScanLimit: number;
+  freeScansUsed: number;
   exportsGenerated: number;
 
   subscriptionActive: boolean;
+  subscriptionExpiry: number | null;
+  subscriptionStartedAt?: number;
+
+  lastPaymentId?: string;
+  lastOrderId?: string;
+
   authProvider: string;
 
   createdAt: any;
+  updatedAt?: number;
 }

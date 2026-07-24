@@ -1,6 +1,6 @@
 import * as FileSystem from "expo-file-system/legacy";
 
-const API_URL = "http://192.168.1.7:8000/upload";
+const API_URL = "http://192.168.1.75:8000/upload";
 
 export async function uploadCards(images: string[]) {
   if (images.length === 0) {

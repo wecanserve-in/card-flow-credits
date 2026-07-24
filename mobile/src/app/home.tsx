@@ -69,7 +69,7 @@ freeScansUsed: 0,
           return;
         }
 
-        setUserData(snapshot.data());
+        setUserData(snapshot.data() as User);
         setLoading(false);
       });
     });

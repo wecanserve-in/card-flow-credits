@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can read their own document
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Users can only write non-subscription fields
+      // Subscription fields must be written by the backend (Admin SDK)
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        // Only allow writes to non-subscription fields
+        && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny([
+              'subscriptionActive',
+              'subscriptionExpiry',
+              'subscriptionStartedAt',
+              'lastPaymentId',
+              'lastOrderId',
+              'planId',
+              'planName'
+            ]);
+    }
+
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

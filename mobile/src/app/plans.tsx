@@ -14,11 +14,16 @@ import { Ionicons } from "@expo/vector-icons";
 import BottomNav from "@/components/BottomNav";
 import { PLANS } from "../constants/plans";
 import { createOrder } from "../services/paymentService";
+import { auth } from "../services/firebase";
+import { IS_RAZORPAY_TEST_MODE } from "../utils/payment";
+
+type PaymentMethod = "auto" | "card" | "upi" | "wallet" | "netbanking";
 
 export default function PlansScreen() {
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [selected, setSelected] = useState("starter");
   const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("auto");
 
   const visiblePlans = PLANS.filter(
     (plan) =>
@@ -35,10 +40,16 @@ export default function PlansScreen() {
       setLoading(true);
       const order = await createOrder(selectedPlan.id);
 
-      if (!order.success) {
-        Alert.alert("Payment unavailable", order.message || "Please try again.");
-        return;
+      if (
+        !order.key ||
+        !order.order_id ||
+        !order.amount ||
+        !order.currency
+      ) {
+        throw new Error("Incomplete order details.");
       }
+
+      const user = auth.currentUser;
 
       router.push({
         pathname: "/payment",
@@ -49,6 +60,10 @@ export default function PlansScreen() {
           currency: order.currency,
           planId: selectedPlan.id,
           planName: selectedPlan.name,
+          userName: user?.displayName || "",
+          userEmail: user?.email || "",
+          userPhone: "",
+          paymentMethod,
         },
       });
     } catch {
@@ -92,6 +107,41 @@ export default function PlansScreen() {
               Yearly (Save 20%)
             </Text>
           </TouchableOpacity>
+        </View>
+
+        {IS_RAZORPAY_TEST_MODE && (
+          <View style={styles.testBanner}>
+            <Text style={styles.testBannerText}>
+              TEST MODE - UPI: success@razorpay | Netbanking: Select any bank
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.methodRow}>
+          <Text style={styles.methodLabel}>Pay via</Text>
+          <View style={styles.methodPills}>
+            {(["auto", "card", "upi", "wallet", "netbanking"] as PaymentMethod[]).map(
+              (method) => (
+                <TouchableOpacity
+                  key={method}
+                  style={[
+                    styles.methodPill,
+                    paymentMethod === method && styles.methodPillActive,
+                  ]}
+                  onPress={() => setPaymentMethod(method)}
+                >
+                  <Text
+                    style={[
+                      styles.methodPillText,
+                      paymentMethod === method && styles.methodPillTextActive,
+                    ]}
+                  >
+                    {method === "auto" ? "All" : method.charAt(0).toUpperCase() + method.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              )
+            )}
+          </View>
         </View>
 
         {visiblePlans.map((plan) => {
@@ -193,6 +243,57 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 5,
     flexDirection: "row",
+  },
+  testBanner: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: "#E8F5E9",
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: "#4CAF50",
+  },
+  testBannerText: {
+    color: "#1B5E20",
+    fontSize: 12,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  methodRow: {
+    marginHorizontal: 20,
+    marginTop: 14,
+  },
+  methodLabel: {
+    color: "#66647A",
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  methodPills: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  methodPill: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#ECECEC",
+    backgroundColor: "#fff",
+  },
+  methodPillActive: {
+    borderColor: "#5B4BFF",
+    backgroundColor: "#ECEBFF",
+  },
+  methodPillText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#66647A",
+  },
+  methodPillTextActive: {
+    color: "#5B4BFF",
   },
   tab: {
     flex: 1,
