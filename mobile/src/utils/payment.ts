@@ -457,7 +457,7 @@ export const buildRazorpayCheckoutHtml = (
           },
 
           theme: {
-            color: "#5B4BFF",
+            color: "#09A84E",
             backdrop_color:
               "rgba(13, 16, 36, 0.62)"
           },

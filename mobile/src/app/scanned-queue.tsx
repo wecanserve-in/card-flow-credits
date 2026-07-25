@@ -1,3 +1,7 @@
+import React, {
+  useEffect,
+  useState,
+} from "react";
 import {
   View,
   Text,
@@ -6,412 +10,1269 @@ import {
   Image,
   TouchableOpacity,
   Alert,
-   ActivityIndicator,
+  ActivityIndicator,
 } from "react-native";
-
-import { useEffect } from "react";
-import { onSnapshot, doc, updateDoc, increment } from "firebase/firestore";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import {
+  doc,
+  increment,
+  onSnapshot,
+  updateDoc,
+} from "firebase/firestore";
 
 import { User } from "../types/user";
-
-
-import { useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-
-import { router } from "expo-router";
 import { uploadCards } from "../services/scanService";
-import { auth, db } from "../services/firebase";
-
+import {
+  auth,
+  db,
+} from "../services/firebase";
 
 export default function ScannedQueueScreen() {
-const scannedImages =
-  (globalThis as any).scannedImages || [];
+  const insets = useSafeAreaInsets();
 
-const [selectedCards, setSelectedCards] = useState<number[]>(
-  scannedImages.map((_: any, index: number) => index)
-);
+  const scannedImages: string[] =
+    (globalThis as any).scannedImages || [];
 
-const [loading, setLoading] = useState(false);
-const [userData, setUserData] = useState<User | null>(null);
-
-useEffect(() => {
-  if (!auth.currentUser) return;
-
-  const unsubscribe = onSnapshot(
-    doc(db, "users", auth.currentUser.uid),
-    (snapshot) => {
-      if (snapshot.exists()) {
-        setUserData(snapshot.data() as User);
-      }
-    }
-  );
-
-  return unsubscribe;
-}, []);
-
- const handleExtract = async () => {
-  if (selectedCards.length === 0) {
-    Alert.alert(
-      "No Cards Selected",
-      "Please select at least one card."
-    );
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    const selectedImages = scannedImages.filter(
+  const [
+    selectedCards,
+    setSelectedCards,
+  ] = useState<number[]>(
+    scannedImages.map(
       (_: string, index: number) =>
-        selectedCards.includes(index)
-    );
-
-    const remainingScans =
-  (userData?.freeScanLimit ?? 0) -
-  (userData?.freeScansUsed ?? 0);
-
-if (selectedImages.length > remainingScans) {
-  Alert.alert(
-    "Free Scan Limit",
-    `You have only ${remainingScans} free scan${
-      remainingScans === 1 ? "" : "s"
-    } remaining.`,
-    [
-      {
-        text: "Upgrade",
-        onPress: () => router.push("/plans"),
-      },
-      {
-        text: `Extract ${remainingScans}`,
-        onPress: () => {
-          // We'll implement this in the next step.
-        },
-      },
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-    ]
+        index
+    )
   );
 
-  return;
-}
+  const [loading, setLoading] =
+    useState(false);
 
-    console.log("Selected Images:", selectedImages);
+  const [userData, setUserData] =
+    useState<User | null>(null);
 
-    const result = await uploadCards(selectedImages);
-
-    console.log("API Result:", result);
-if (
-  result.cards.length > 0 &&
-  auth.currentUser
-) {
-  await updateDoc(
-    doc(db, "users", auth.currentUser.uid),
-    {
-      freeScansUsed: increment(result.cards.length),
+  useEffect(() => {
+    if (!auth.currentUser) {
+      return;
     }
-  );
-}
 
-    (globalThis as any).extractedCards =
-      result.cards;
-
-    router.push("/contacts");
-  } catch (error) {
-    console.log("Extraction Error:", error);
-
-    Alert.alert(
-      "Error",
-      "Failed to extract card details."
+    const unsubscribe = onSnapshot(
+      doc(
+        db,
+        "users",
+        auth.currentUser.uid
+      ),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setUserData(
+            snapshot.data() as User
+          );
+        }
+      },
+      (error) => {
+        console.log(
+          "User listener error:",
+          error
+        );
+      }
     );
-  } finally {
-    setLoading(false);
-  }
-};
 
-  const toggleCard = (index: number) => {
-  if (selectedCards.includes(index)) {
+    return unsubscribe;
+  }, []);
+
+  const toggleCard = (
+    index: number
+  ) => {
     setSelectedCards(
-      selectedCards.filter((item) => item !== index)
+      (currentCards) => {
+        if (
+          currentCards.includes(index)
+        ) {
+          return currentCards.filter(
+            (item) => item !== index
+          );
+        }
+
+        return [
+          ...currentCards,
+          index,
+        ];
+      }
     );
-  } else {
-    setSelectedCards([...selectedCards, index]);
-  }
-};
+  };
+
+  const selectAllCards = () => {
+    if (
+      selectedCards.length ===
+      scannedImages.length
+    ) {
+      setSelectedCards([]);
+      return;
+    }
+
+    setSelectedCards(
+      scannedImages.map(
+        (_: string, index: number) =>
+          index
+      )
+    );
+  };
+
+  const handleExtract = async () => {
+    if (
+      selectedCards.length === 0
+    ) {
+      Alert.alert(
+        "No Cards Selected",
+        "Please select at least one card."
+      );
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const selectedImages =
+        scannedImages.filter(
+          (
+            _: string,
+            index: number
+          ) =>
+            selectedCards.includes(
+              index
+            )
+        );
+
+      const remainingScans =
+        (userData?.freeScanLimit ??
+          0) -
+        (userData?.freeScansUsed ??
+          0);
+
+      if (
+        selectedImages.length >
+        remainingScans
+      ) {
+        setLoading(false);
+
+        Alert.alert(
+          "Free Scan Limit",
+          `You have only ${remainingScans} free scan${
+            remainingScans === 1
+              ? ""
+              : "s"
+          } remaining.`,
+          [
+            {
+              text: "Upgrade",
+              onPress: () =>
+                router.push("/plans"),
+            },
+            {
+              text: `Extract ${remainingScans}`,
+              onPress: () => {
+                // Existing placeholder logic retained.
+              },
+            },
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+          ]
+        );
+
+        return;
+      }
+
+      console.log(
+        "Selected Images:",
+        selectedImages
+      );
+
+      const result =
+        await uploadCards(
+          selectedImages
+        );
+
+      console.log(
+        "API Result:",
+        result
+      );
+
+      if (
+        result.cards.length > 0 &&
+        auth.currentUser
+      ) {
+        await updateDoc(
+          doc(
+            db,
+            "users",
+            auth.currentUser.uid
+          ),
+          {
+            freeScansUsed: increment(
+              result.cards.length
+            ),
+          }
+        );
+      }
+
+      (globalThis as any).extractedCards =
+        result.cards;
+
+      router.push("/contacts");
+    } catch (error) {
+      console.log(
+        "Extraction Error:",
+        error
+      );
+
+      Alert.alert(
+        "Extraction Failed",
+        "Failed to extract card details. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearAll = () => {
+    Alert.alert(
+      "Clear All Cards?",
+      "This will remove every scanned card from the current queue.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Clear All",
+          style: "destructive",
+          onPress: () => {
+            (
+              globalThis as any
+            ).scannedImages = [];
+
+            router.back();
+          },
+        },
+      ]
+    );
+  };
+
+  const remainingScans =
+    (userData?.freeScanLimit ?? 0) -
+    (userData?.freeScansUsed ?? 0);
+
+  const allSelected =
+    scannedImages.length > 0 &&
+    selectedCards.length ===
+      scannedImages.length;
+
+  const renderCard = ({
+    item,
+    index,
+  }: {
+    item: string;
+    index: number;
+  }) => {
+    const selected =
+      selectedCards.includes(index);
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.88}
+        style={[
+          styles.cardContainer,
+          !selected &&
+            styles.unselectedCard,
+        ]}
+        onPress={() =>
+          toggleCard(index)
+        }
+      >
+        <Image
+          source={{ uri: item }}
+          style={styles.cardImage}
+          resizeMode="cover"
+        />
+
+        <View
+          style={[
+            styles.imageOverlay,
+            selected &&
+              styles.selectedOverlay,
+          ]}
+        />
+
+        <View
+          style={[
+            styles.selectionButton,
+            selected &&
+              styles.selectionButtonActive,
+          ]}
+        >
+          {selected ? (
+            <Ionicons
+              name="checkmark"
+              size={15}
+              color="#FFFFFF"
+            />
+          ) : (
+            <View
+              style={
+                styles.unselectedCircle
+              }
+            />
+          )}
+        </View>
+
+        <View style={styles.cardNumber}>
+          <Text
+            style={styles.cardNumberText}
+          >
+            Card {index + 1}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
+    <SafeAreaView
+      style={styles.safeArea}
+    >
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            style={styles.backButton}
+            onPress={() =>
+              router.back()
+            }
+          >
+            <Ionicons
+              name="arrow-back"
+              size={22}
+              color="#20262C"
+            />
+          </TouchableOpacity>
 
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>←</Text>
-        </TouchableOpacity>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>
+              Scanned Cards
+            </Text>
 
-        <View>
-          <Text style={styles.title}>Scanned Cards</Text>
-          <Text style={styles.subtitle}>
-            Review before extracting
-          </Text>
+            <Text
+              style={styles.subtitle}
+            >
+              Review cards before extraction
+            </Text>
+          </View>
+
+          <View style={styles.countBadge}>
+            <Text
+              style={styles.countText}
+            >
+              {scannedImages.length}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>
-            {scannedImages.length}
-          </Text>
-        </View>
+        {scannedImages.length > 0 ? (
+          <>
+            <View
+              style={
+                styles.summaryCard
+              }
+            >
+              <View
+                style={
+                  styles.summaryIcon
+                }
+              >
+                <Ionicons
+                  name="images-outline"
+                  size={22}
+                  color="#09A84E"
+                />
+              </View>
+
+              <View
+                style={
+                  styles.summaryContent
+                }
+              >
+                <Text
+                  style={
+                    styles.summaryTitle
+                  }
+                >
+                  {selectedCards.length} of{" "}
+                  {
+                    scannedImages.length
+                  }{" "}
+                  selected
+                </Text>
+
+                <Text
+                  style={
+                    styles.summaryText
+                  }
+                >
+                  Select the cards you want
+                  the AI to process.
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.75}
+                style={
+                  styles.selectAllButton
+                }
+                onPress={
+                  selectAllCards
+                }
+              >
+                <Text
+                  style={
+                    styles.selectAllText
+                  }
+                >
+                  {allSelected
+                    ? "Deselect"
+                    : "Select all"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View
+              style={
+                styles.usageContainer
+              }
+            >
+              <View
+                style={styles.usageItem}
+              >
+                <Text
+                  style={styles.usageLabel}
+                >
+                  Selected
+                </Text>
+
+                <Text
+                  style={styles.usageValue}
+                >
+                  {
+                    selectedCards.length
+                  }
+                </Text>
+              </View>
+
+              <View
+                style={
+                  styles.usageDivider
+                }
+              />
+
+              <View
+                style={styles.usageItem}
+              >
+                <Text
+                  style={styles.usageLabel}
+                >
+                  Scans remaining
+                </Text>
+
+                <Text
+                  style={[
+                    styles.usageValue,
+                    remainingScans <= 0 &&
+                      styles.limitValue,
+                  ]}
+                >
+                  {Math.max(
+                    remainingScans,
+                    0
+                  )}
+                </Text>
+              </View>
+            </View>
+          </>
+        ) : null}
+
+        <FlatList
+          data={scannedImages}
+          numColumns={2}
+          keyExtractor={(
+            _,
+            index
+          ) => index.toString()}
+          renderItem={renderCard}
+          showsVerticalScrollIndicator={
+            false
+          }
+          columnWrapperStyle={
+            styles.gridRow
+          }
+          contentContainerStyle={[
+            styles.listContent,
+            {
+              paddingBottom:
+                150 + insets.bottom,
+            },
+            scannedImages.length ===
+              0 &&
+              styles.emptyListContent,
+          ]}
+          ListEmptyComponent={
+            <View
+              style={styles.emptyState}
+            >
+              <View
+                style={
+                  styles.emptyIcon
+                }
+              >
+                <Ionicons
+                  name="scan-outline"
+                  size={40}
+                  color="#09A84E"
+                />
+              </View>
+
+              <Text
+                style={
+                  styles.emptyTitle
+                }
+              >
+                No cards scanned
+              </Text>
+
+              <Text
+                style={styles.emptyText}
+              >
+                Scan a business card first,
+                then return here to review
+                and extract its details.
+              </Text>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={
+                  styles.scanButton
+                }
+                onPress={() =>
+                  router.back()
+                }
+              >
+                <Ionicons
+                  name="camera-outline"
+                  size={19}
+                  color="#FFFFFF"
+                />
+
+                <Text
+                  style={
+                    styles.scanButtonText
+                  }
+                >
+                  Open Scanner
+                </Text>
+              </TouchableOpacity>
+            </View>
+          }
+        />
+
+        {scannedImages.length > 0 && (
+          <View
+            style={[
+              styles.bottomContainer,
+              {
+                paddingBottom:
+                  Math.max(
+                    insets.bottom,
+                    14
+                  ),
+              },
+            ]}
+          >
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[
+                styles.extractButton,
+                (loading ||
+                  selectedCards.length ===
+                    0) &&
+                  styles.disabledButton,
+              ]}
+              onPress={handleExtract}
+              disabled={
+                loading ||
+                selectedCards.length === 0
+              }
+            >
+              <View
+                style={
+                  styles.extractIcon
+                }
+              >
+                <Ionicons
+                  name="sparkles"
+                  size={19}
+                  color={
+                    selectedCards.length >
+                    0
+                      ? "#09A84E"
+                      : "#98A09B"
+                  }
+                />
+              </View>
+
+              <View
+                style={
+                  styles.extractContent
+                }
+              >
+                <Text
+                  style={[
+                    styles.extractText,
+                    selectedCards.length ===
+                      0 &&
+                      styles.disabledText,
+                  ]}
+                >
+                  Extract Selected
+                </Text>
+
+                <Text
+                  style={[
+                    styles.extractSubtext,
+                    selectedCards.length ===
+                      0 &&
+                      styles.disabledSubtext,
+                  ]}
+                >
+                  {selectedCards.length}{" "}
+                  {selectedCards.length ===
+                  1
+                    ? "card"
+                    : "cards"}{" "}
+                  ready
+                </Text>
+              </View>
+
+              <Ionicons
+                name="arrow-forward"
+                size={20}
+                color={
+                  selectedCards.length >
+                  0
+                    ? "#FFFFFF"
+                    : "#98A09B"
+                }
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={styles.clearButton}
+              onPress={clearAll}
+              disabled={loading}
+            >
+              <Ionicons
+                name="trash-outline"
+                size={17}
+                color="#E05252"
+              />
+
+              <Text
+                style={styles.clearText}
+              >
+                Clear all cards
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {loading && (
+          <View
+            style={
+              styles.loadingOverlay
+            }
+          >
+            <View
+              style={styles.loadingCard}
+            >
+              <View
+                style={
+                  styles.loadingIcon
+                }
+              >
+                <ActivityIndicator
+                  size="large"
+                  color="#09A84E"
+                />
+              </View>
+
+              <Text
+                style={
+                  styles.loadingTitle
+                }
+              >
+                Processing Cards
+              </Text>
+
+              <Text
+                style={
+                  styles.loadingSubtitle
+                }
+              >
+                Our AI is extracting contact
+                details from your selected
+                cards. Please wait a few
+                seconds.
+              </Text>
+
+              <View
+                style={
+                  styles.loadingStatus
+                }
+              >
+                <View
+                  style={
+                    styles.loadingDot
+                  }
+                />
+
+                <Text
+                  style={
+                    styles.loadingStatusText
+                  }
+                >
+                  Extracting{" "}
+                  {selectedCards.length}{" "}
+                  {selectedCards.length ===
+                  1
+                    ? "card"
+                    : "cards"}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
       </View>
-
-      {/* Grid */}
-
-      <FlatList
-        data={scannedImages}
-        numColumns={3}
-        keyExtractor={(_, index) => index.toString()}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 140 }}
-    renderItem={({ item, index }) => (
-  <TouchableOpacity
-    style={[
-      styles.cardContainer,
-      !selectedCards.includes(index) && styles.unselectedCard,
-    ]}
-    onPress={() => toggleCard(index)}
-    activeOpacity={0.8}
-  >
- <View style={styles.imageWrapper}>
-  <Image
-    source={{ uri: item }}
-    style={styles.cardImage}
-    resizeMode="cover"
-  />
-</View>
-
-
-   {selectedCards.includes(index) && (
-  <View style={styles.badge}>
-    <Text style={styles.badgeText}>
-      {index + 1}
-    </Text>
-  </View>
-)}
-</TouchableOpacity>
-)}
-      />
-
-      {/* Bottom Buttons */}
-
-      <View style={styles.bottomContainer}>
-        <TouchableOpacity
-  style={[
-    styles.extractButton,
-    loading && styles.disabledButton,
-  ]}
-  onPress={handleExtract}
-  disabled={loading}
->
-       <Text style={styles.extractText}>
-  Extract Selected ({selectedCards.length} Cards)
-</Text>
-        </TouchableOpacity>
-
-       <TouchableOpacity
-  onPress={() => {
-    (globalThis as any).scannedImages = [];
-    router.back();
-  }}
->
-          <Text style={styles.clearText}>
-            Clear All
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-     {loading && (
-  <View style={styles.loadingOverlay}>
-    <View style={styles.loadingCard}>
-      <ActivityIndicator
-        size="large"
-        color="#3B5BFF"
-      />
-
-    <Text style={styles.loadingTitle}>
-  Processing Cards
-</Text>
-
-<Text style={styles.loadingSubtitle}>
-  Our AI is extracting contact details.
-  Please wait a few seconds.
-</Text>
-    </View>
-  </View>
-)}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
+  },
+
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAF9",
   },
 
   header: {
+    minHeight: 78,
+    paddingHorizontal: 20,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
-    marginTop: 10,
   },
 
-  back: {
-    fontSize: 28,
-    color: "#111827",
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5EAE7",
+    alignItems: "center",
+    justifyContent: "center",
+
+    shadowColor: "#17261D",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 2,
+  },
+
+  headerText: {
+    flex: 1,
+    marginLeft: 13,
   },
 
   title: {
+    color: "#171C21",
     fontSize: 22,
     fontWeight: "800",
-    color: "#111827",
   },
 
   subtitle: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginTop: 2,
+    marginTop: 3,
+    color: "#858D95",
+    fontSize: 12.5,
+    fontWeight: "500",
   },
 
   countBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F3F4F6",
-    justifyContent: "center",
+    minWidth: 44,
+    height: 44,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    backgroundColor: "#EAF8F0",
     alignItems: "center",
+    justifyContent: "center",
   },
 
   countText: {
-    fontWeight: "700",
+    color: "#09A84E",
     fontSize: 16,
+    fontWeight: "900",
   },
 
-  cardContainer: {
-    width: "31%",
-    margin: "1.1%",
+  summaryCard: {
+    marginTop: 8,
+    marginHorizontal: 20,
+    padding: 15,
+    borderRadius: 19,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E7ECE9",
+    flexDirection: "row",
+    alignItems: "center",
+
+    shadowColor: "#17261D",
+    shadowOpacity: 0.045,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 2,
+  },
+
+  summaryIcon: {
+    width: 44,
+    height: 44,
     borderRadius: 14,
-    overflow: "hidden",
+    backgroundColor: "#EAF8F0",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-imageWrapper: {
-  width: "100%",
-  height: 100,
-  borderRadius: 14,
-  overflow: "hidden",
-  justifyContent: "center",
-  alignItems: "center",
-},
+  summaryContent: {
+    flex: 1,
+    marginLeft: 12,
+    paddingRight: 8,
+  },
 
-cardImage: {
-  width: "130%",
-  height: "130%",
-},
+  summaryTitle: {
+    color: "#252B28",
+    fontSize: 14,
+    fontWeight: "800",
+  },
 
-  badge: {
-    position: "absolute",
-    top: 6,
-    left: 6,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: "#3B5BFF",
+  summaryText: {
+    marginTop: 4,
+    color: "#89918D",
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: "500",
+  },
+
+  selectAllButton: {
+    minHeight: 36,
+    paddingHorizontal: 11,
+    borderRadius: 12,
+    backgroundColor: "#EAF8F0",
+    alignItems: "center",
     justifyContent: "center",
+  },
+
+  selectAllText: {
+    color: "#078E42",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  usageContainer: {
+    marginTop: 12,
+    marginHorizontal: 20,
+    minHeight: 68,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    backgroundColor: "#EFF9F3",
+    borderWidth: 1,
+    borderColor: "#DBF1E4",
+    flexDirection: "row",
     alignItems: "center",
   },
 
-  badgeText: {
-    color: "#fff",
-    fontWeight: "700",
+  usageItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  usageLabel: {
+    color: "#728078",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+
+  usageValue: {
+    marginTop: 4,
+    color: "#078E42",
+    fontSize: 18,
+    fontWeight: "900",
+  },
+
+  limitValue: {
+    color: "#E05252",
+  },
+
+  usageDivider: {
+    width: 1,
+    height: 35,
+    backgroundColor: "#D2EADC",
+  },
+
+  listContent: {
+    paddingHorizontal: 14,
+    paddingTop: 18,
+  },
+
+  gridRow: {
+    justifyContent: "space-between",
+  },
+
+  cardContainer: {
+    width: "48.5%",
+    aspectRatio: 1.55,
+    marginBottom: 12,
+    borderRadius: 18,
+    overflow: "hidden",
+    backgroundColor: "#E9EEEB",
+    borderWidth: 2,
+    borderColor: "#09A84E",
+
+    shadowColor: "#17261D",
+    shadowOpacity: 0.09,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 3,
+  },
+
+  unselectedCard: {
+    borderColor: "#E1E6E3",
+    opacity: 0.58,
+  },
+
+  cardImage: {
+    width: "100%",
+    height: "100%",
+  },
+
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor:
+      "rgba(20, 25, 22, 0.12)",
+  },
+
+  selectedOverlay: {
+    backgroundColor:
+      "rgba(9, 168, 78, 0.05)",
+  },
+
+  selectionButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor:
+      "rgba(255,255,255,0.9)",
+    borderWidth: 1,
+    borderColor:
+      "rgba(255,255,255,0.8)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  selectionButtonActive: {
+    backgroundColor: "#09A84E",
+    borderColor: "#09A84E",
+  },
+
+  unselectedCircle: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: "#8A938E",
+  },
+
+  cardNumber: {
+    position: "absolute",
+    left: 8,
+    bottom: 8,
+    minHeight: 25,
+    paddingHorizontal: 9,
+    borderRadius: 9,
+    backgroundColor:
+      "rgba(18, 24, 21, 0.68)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  cardNumberText: {
+    color: "#FFFFFF",
+    fontSize: 10.5,
+    fontWeight: "800",
   },
 
   bottomContainer: {
     position: "absolute",
-    bottom: 20,
-    left: 16,
-    right: 16,
+    left: 12,
+    right: 12,
+    bottom: 8,
+    paddingTop: 13,
+    paddingHorizontal: 13,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5EAE7",
+
+    shadowColor: "#17261D",
+    shadowOpacity: 0.12,
+    shadowRadius: 15,
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    elevation: 10,
   },
 
- extractButton: {
-  height: 56,
-  borderRadius: 16,
-  backgroundColor: "#3B5BFF",
-  justifyContent: "center",
-  alignItems: "center",
-  flexDirection: "row",
-},
+  extractButton: {
+    minHeight: 58,
+    paddingHorizontal: 14,
+    borderRadius: 17,
+    backgroundColor: "#09A84E",
+    flexDirection: "row",
+    alignItems: "center",
+
+    shadowColor: "#09A84E",
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 4,
+  },
+
+  disabledButton: {
+    backgroundColor: "#E6EBE8",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+
+  extractIcon: {
+    width: 39,
+    height: 39,
+    borderRadius: 13,
+    backgroundColor:
+      "rgba(255,255,255,0.92)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  extractContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
 
   extractText: {
-    color: "#fff",
-    fontSize: 16,
+    color: "#FFFFFF",
+    fontSize: 14.5,
     fontWeight: "800",
   },
 
-  clearText: {
-    textAlign: "center",
-    color: "#FF4D67",
-    fontWeight: "700",
-    marginTop: 18,
-    fontSize: 15,
+  extractSubtext: {
+    marginTop: 2,
+    color:
+      "rgba(255,255,255,0.78)",
+    fontSize: 10.5,
+    fontWeight: "500",
   },
 
-  unselectedCard: {
-  opacity: 0.35,
-},
-disabledButton: {
-  opacity: 0.7,
-},
-loadingOverlay: {
-  position: "absolute",
-  top: 0,
-  bottom: 0,
-  left: 0,
-  right: 0,
-  backgroundColor: "rgba(0,0,0,0.45)",
-  justifyContent: "center",
-  alignItems: "center",
-  zIndex: 999,
-},
+  disabledText: {
+    color: "#87908B",
+  },
 
-loadingCard: {
-  width: "85%",
-   maxWidth: 340,
-  backgroundColor: "#fff",
-  borderRadius: 28,
-  paddingVertical: 35,
-  paddingHorizontal: 25,
-  alignItems: "center",
-  justifyContent: "center",
-  elevation: 8,
-  shadowColor: "#000",
-shadowOpacity: 0.15,
-shadowRadius: 20,
-shadowOffset: {
-  width: 0,
-  height: 8,},
-},
+  disabledSubtext: {
+    color: "#A1A8A4",
+  },
 
-loadingTitle: {
-  marginTop: 18,
-  fontSize: 20,
-  fontWeight: "800",
-  color: "#111827",
-},
+  clearButton: {
+    minHeight: 42,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-loadingSubtitle: {
-  marginTop: 8,
-  textAlign: "center",
-  color: "#6B7280",
-},
+  clearText: {
+    marginLeft: 7,
+    color: "#E05252",
+    fontSize: 12.5,
+    fontWeight: "800",
+  },
 
+  emptyListContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+
+  emptyState: {
+    paddingHorizontal: 28,
+    alignItems: "center",
+  },
+
+  emptyIcon: {
+    width: 88,
+    height: 88,
+    borderRadius: 28,
+    backgroundColor: "#EAF8F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  emptyTitle: {
+    marginTop: 18,
+    color: "#222824",
+    fontSize: 20,
+    fontWeight: "800",
+  },
+
+  emptyText: {
+    maxWidth: 310,
+    marginTop: 8,
+    color: "#7E8782",
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+
+  scanButton: {
+    minHeight: 50,
+    marginTop: 22,
+    paddingHorizontal: 22,
+    borderRadius: 16,
+    backgroundColor: "#09A84E",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  scanButtonText: {
+    marginLeft: 8,
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor:
+      "rgba(13, 19, 16, 0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 999,
+    paddingHorizontal: 24,
+  },
+
+  loadingCard: {
+    width: "100%",
+    maxWidth: 340,
+    paddingHorizontal: 24,
+    paddingVertical: 30,
+    borderRadius: 25,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+
+    shadowColor: "#000000",
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    elevation: 10,
+  },
+
+  loadingIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: "#EAF8F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  loadingTitle: {
+    marginTop: 17,
+    color: "#202622",
+    fontSize: 20,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+
+  loadingSubtitle: {
+    marginTop: 8,
+    color: "#737C77",
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+
+  loadingStatus: {
+    minHeight: 36,
+    marginTop: 18,
+    paddingHorizontal: 13,
+    borderRadius: 12,
+    backgroundColor: "#EAF8F0",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  loadingDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#09A84E",
+  },
+
+  loadingStatusText: {
+    marginLeft: 7,
+    color: "#078E42",
+    fontSize: 11.5,
+    fontWeight: "800",
+  },
 });

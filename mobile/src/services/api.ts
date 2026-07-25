@@ -5,7 +5,7 @@ import axios, {
 
 import { auth } from "./firebase";
 
-const FALLBACK_API_URL = "http://192.168.1.75:8000";
+const FALLBACK_API_URL = "http://192.168.1.146:8000";
 
 const API_URL = (
   process.env.EXPO_PUBLIC_API_URL ||

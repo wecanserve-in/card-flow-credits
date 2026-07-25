@@ -9,7 +9,10 @@ import {
   ActivityIndicator,
   useWindowDimensions,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { onAuthStateChanged } from "firebase/auth";
@@ -19,63 +22,116 @@ import BottomNav from "../components/BottomNav";
 import { auth, db } from "../services/firebase";
 import { User } from "../types/user";
 
+type ActionCardProps = {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  iconBackground: string;
+  onPress: () => void;
+};
+
+function ActionCard({
+  title,
+  icon,
+  iconColor,
+  iconBackground,
+  onPress,
+}: ActionCardProps) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.82}
+      style={styles.actionCard}
+      onPress={onPress}
+    >
+      <View
+        style={[
+          styles.actionIconContainer,
+          { backgroundColor: iconBackground },
+        ]}
+      >
+        <Ionicons name={icon} size={27} color={iconColor} />
+      </View>
+
+      <Text style={styles.actionTitle} numberOfLines={2}>
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 export default function HomeScreen() {
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
-  const isSmallPhone = height < 720;
-  const horizontal = width < 380 ? 18 : 22;
-  const cardGap = 14;
-  const actionCardWidth = (width - horizontal * 2 - cardGap) / 2;
+  const horizontalPadding = width < 380 ? 18 : 20;
+  const actionGap = 13;
+
+  const actionCardWidth =
+    (width - horizontalPadding * 2 - actionGap) / 2;
 
   const [loading, setLoading] = useState(true);
-const [userData, setUserData] = useState<User | null>(null);
+  const [userData, setUserData] = useState<User | null>(null);
+
   useEffect(() => {
-    let unsubscribeUser: any = null;
+    let unsubscribeUser: (() => void) | null = null;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setLoading(false);
-        router.replace("/login");
-        return;
-      }
-
-      const userRef = doc(db, "users", user.uid);
-
-      unsubscribeUser = onSnapshot(userRef, async (snapshot) => {
-        if (!snapshot.exists()) {
-      await setDoc(userRef, {
-  uid: user.uid,
-
-  name: user.displayName || "User",
-  email: user.email || "",
-  photoURL: user.photoURL || "",
-
-  planName: "Free Plan",
-
-  freeScanLimit: 5,
-freeScansUsed: 0,
-
-  exportsGenerated: 0,
-
-  subscriptionActive: false,
-  subscriptionExpiry: null,
-
-  authProvider: "email",
-
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
-});
+    const unsubscribeAuth = onAuthStateChanged(
+      auth,
+      async (firebaseUser) => {
+        if (!firebaseUser) {
+          setLoading(false);
+          router.replace("/login");
           return;
         }
 
-        setUserData(snapshot.data() as User);
-        setLoading(false);
-      });
-    });
+        const userRef = doc(db, "users", firebaseUser.uid);
+
+        unsubscribeUser = onSnapshot(
+          userRef,
+          async (snapshot) => {
+            if (!snapshot.exists()) {
+              try {
+                await setDoc(userRef, {
+                  uid: firebaseUser.uid,
+                  name: firebaseUser.displayName || "User",
+                  email: firebaseUser.email || "",
+                  photoURL: firebaseUser.photoURL || "",
+
+                  planName: "Free Plan",
+
+                  freeScanLimit: 5,
+                  freeScansUsed: 0,
+                  exportsGenerated: 0,
+
+                  subscriptionActive: false,
+                  subscriptionExpiry: null,
+
+                  authProvider: "email",
+
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                });
+              } catch (error) {
+                console.error("Failed to create user document:", error);
+                setLoading(false);
+              }
+
+              return;
+            }
+
+            setUserData(snapshot.data() as User);
+            setLoading(false);
+          },
+          (error) => {
+            console.error("Failed to read user document:", error);
+            setLoading(false);
+          }
+        );
+      }
+    );
 
     return () => {
-      if (unsubscribeUser) unsubscribeUser();
+      unsubscribeUser?.();
       unsubscribeAuth();
     };
   }, []);
@@ -83,29 +139,39 @@ freeScansUsed: 0,
   if (loading) {
     return (
       <SafeAreaView style={styles.loaderPage}>
-        <ActivityIndicator size="large" color="#5B4BFF" />
+        <ActivityIndicator size="large" color="#0BAA50" />
       </SafeAreaView>
     );
   }
 
- const name = userData?.name || "User";
+  const fullName = userData?.name?.trim() || "User";
+  const firstName = fullName.split(" ")[0];
+
   const planName = userData?.planName || "Free Plan";
-const totalFreeScans = userData?.freeScanLimit || 0;
-const usedFreeScans = userData?.freeScansUsed || 0;
-  const exportsGenerated = userData?.exportsGenerated || 0;
- const cardsScanned =
-  userData?.freeScansUsed || 0;
+  const totalScans = userData?.freeScanLimit ?? 0;
+  const usedScans = userData?.freeScansUsed ?? 0;
+  const exportsGenerated = userData?.exportsGenerated ?? 0;
 
-const recentCardsToday = cardsScanned;
+  const remainingScans = Math.max(totalScans - usedScans, 0);
 
-const currentPlan =
-  userData?.planName || "Free Plan";
-const remainingFreeScans = Math.max(totalFreeScans - usedFreeScans, 0);
+  const usedPercent =
+    totalScans > 0
+      ? Math.min(Math.round((usedScans / totalScans) * 100), 100)
+      : 0;
 
-const usedPercent =
-  totalFreeScans > 0
-    ? Math.min(Math.round((usedFreeScans / totalFreeScans) * 100), 100)
-    : 0;
+  const handleScanPress = () => {
+    if (userData?.subscriptionActive) {
+      router.push("/scanner");
+      return;
+    }
+
+    if (usedScans < totalScans) {
+      router.push("/scanner");
+      return;
+    }
+
+    router.push("/plans");
+  };
 
   return (
     <View style={styles.page}>
@@ -114,225 +180,281 @@ const usedPercent =
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingBottom: 120 + insets.bottom,
+            paddingTop: insets.top + 8,
+            paddingBottom: 118 + insets.bottom,
           },
         ]}
       >
+        {/* Header */}
         <View
           style={[
             styles.header,
-            {
-              paddingTop: insets.top + 14,
-              paddingHorizontal: horizontal,
-              paddingBottom: isSmallPhone ? 62 : 76,
-            },
+            { paddingHorizontal: horizontalPadding },
           ]}
         >
-          <View style={styles.userRow}>
+          <View style={styles.userDetails}>
             <View style={styles.avatar}>
-              <Image
-                source={require("../../assets/images/logo.png")}
-                style={styles.avatarImage}
-                resizeMode="contain"
-              />
+              {userData?.photoURL ? (
+                <Image
+                  source={{ uri: userData.photoURL }}
+                  style={styles.avatarPhoto}
+                />
+              ) : (
+                <Image
+                  source={require("../../assets/images/logo.png")}
+                  style={styles.avatarLogo}
+                  resizeMode="contain"
+                />
+              )}
             </View>
 
-            <View style={styles.greetingBox}>
-              <Text style={styles.greeting} numberOfLines={1}>
-                Hello, {name} 👋
+            <View style={styles.greetingContainer}>
+              <Text style={styles.greetingText} numberOfLines={1}>
+                Hello, {firstName}! 👋
               </Text>
-              <Text style={styles.subGreeting}>Let&apos;s scan some cards!</Text>
+
+              <Text style={styles.greetingSubtitle}>
+                Let&apos;s scan some cards
+              </Text>
             </View>
           </View>
 
-          <TouchableOpacity style={styles.bellBtn}>
-            <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
+          <TouchableOpacity
+            activeOpacity={0.75}
+            style={styles.notificationButton}
+            onPress={() => {}}
+          >
+            <Ionicons
+              name="notifications-outline"
+              size={26}
+              color="#242A30"
+            />
+
+            <View style={styles.notificationDot} />
           </TouchableOpacity>
         </View>
 
+        {/* Plan Card */}
         <View
           style={[
             styles.planCard,
-            {
-              marginHorizontal: horizontal,
-              marginTop: isSmallPhone ? -46 : -56,
-            },
+            { marginHorizontal: horizontalPadding },
           ]}
         >
-          <View style={styles.planTop}>
-            <View style={styles.planInfo}>
-              <Text style={styles.planLabel}> Your Plan</Text>
+          <View style={styles.planHeader}>
+            <View style={styles.planInformation}>
+              <View style={styles.planLabelRow}>
+                <Ionicons name="star" size={16} color="#F2B705" />
+
+                <Text style={styles.planLabel}>Your Plan</Text>
+              </View>
+
               <Text style={styles.planName} numberOfLines={1}>
                 {planName}
               </Text>
             </View>
 
             <TouchableOpacity
-              style={styles.upgradeBtn}
+              activeOpacity={0.82}
+              style={styles.upgradeButton}
               onPress={() => router.push("/plans")}
             >
-              <Text style={styles.upgradeText}>Upgrade</Text>
+              <Text style={styles.upgradeButtonText}>Upgrade</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-<Text style={styles.statNumber}>{totalFreeScans}</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{totalScans}</Text>
               <Text style={styles.statLabel}>Total Cards</Text>
             </View>
 
-            <View style={styles.divider} />
+            <View style={styles.statDivider} />
 
-            <View style={styles.statBox}>
-<Text style={styles.statNumber}>{usedFreeScans}</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{usedScans}</Text>
               <Text style={styles.statLabel}>Used</Text>
             </View>
 
-            <View style={styles.divider} />
+            <View style={styles.statDivider} />
 
-            <View style={styles.statBox}>
-<Text style={styles.statNumber}>{remainingFreeScans}</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{remainingScans}</Text>
               <Text style={styles.statLabel}>Remaining</Text>
             </View>
           </View>
 
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${usedPercent}%` }]} />
-          </View>
+          <View style={styles.progressSection}>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${usedPercent}%` },
+                ]}
+              />
+            </View>
 
-          <View style={styles.progressBottom}>
-            <Ionicons name="people" size={16} color="#5B4BFF" />
-            <Text style={styles.progressText}>{usedPercent}% Used</Text>
+            <Text style={styles.progressPercentage}>
+              {usedPercent}% Used
+            </Text>
           </View>
         </View>
 
+        {/* Quick Actions */}
         <View
           style={[
-            styles.actionGrid,
+            styles.actionsGrid,
             {
-              paddingHorizontal: horizontal,
-              gap: cardGap,
+              paddingHorizontal: horizontalPadding,
+              gap: actionGap,
             },
           ]}
         >
+          <View style={{ width: actionCardWidth }}>
+            <ActionCard
+              title="Scan Card"
+              icon="scan-outline"
+              iconColor="#09A84E"
+              iconBackground="#EAF8F0"
+              onPress={handleScanPress}
+            />
+          </View>
+
+          <View style={{ width: actionCardWidth }}>
+            <ActionCard
+              title="My Cards"
+              icon="albums-outline"
+              iconColor="#ED5447"
+              iconBackground="#FFF0EE"
+              onPress={() => router.push("/saved-contacts")}
+            />
+          </View>
+
+          <View style={{ width: actionCardWidth }}>
+            <ActionCard
+              title="Export"
+              icon="download-outline"
+              iconColor="#EFA300"
+              iconBackground="#FFF5DC"
+              onPress={() => router.push("/export")}
+            />
+          </View>
+
+          <View style={{ width: actionCardWidth }}>
+            <ActionCard
+              title="History"
+              icon="time-outline"
+              iconColor="#7056B8"
+              iconBackground="#F1EDFF"
+              onPress={() => router.push("/usage")}
+            />
+          </View>
+        </View>
+
+        {/* Recent Activity */}
+        <View
+          style={[
+            styles.activitySection,
+            { paddingHorizontal: horizontalPadding },
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Recent Activity</Text>
+              <Text style={styles.sectionSubtitle}>Today</Text>
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => router.push("/usage")}
+            >
+              <View style={styles.seeAllRow}>
+                <Text style={styles.seeAllText}>See all</Text>
+
+                <Ionicons
+                  name="chevron-forward"
+                  size={17}
+                  color="#09A84E"
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity
-            style={[styles.actionCard, styles.blueCard, { width: actionCardWidth }]}
-           onPress={() => {
-  if (userData?.subscriptionActive) {
-    router.push("/scanner");
-    return;
-  }
-
-  if ((userData?.freeScansUsed ?? 0) < (userData?.freeScanLimit ?? 0)) {
-    router.push("/scanner");
-    return;
-  }
-
-  router.push("/plans");
-}}
-          >
-            <Ionicons name="camera-outline" size={30} color="#FFFFFF" />
-            <Text style={styles.actionText}>Scan{"\n"}Cards</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionCard, styles.greenCard, { width: actionCardWidth }]}
-          onPress={() => router.push("/saved-contacts")}
-          >
-            <Ionicons name="card-outline" size={30} color="#FFFFFF" />
-            <Text style={styles.actionText}>My{"\n"}Cards</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionCard, styles.orangeCard, { width: actionCardWidth }]}
-            onPress={() => router.push("/export")}
-          >
-            <Ionicons name="download-outline" size={30} color="#FFFFFF" />
-            <Text style={styles.actionText}>Export{"\n"}Excel</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionCard, styles.pinkCard, { width: actionCardWidth }]}
+            activeOpacity={0.82}
+            style={styles.activityCard}
             onPress={() => router.push("/usage")}
           >
-            <Ionicons name="time-outline" size={30} color="#FFFFFF" />
-            <Text style={styles.actionText}>Usage{"\n"}History</Text>
+            <View style={styles.activityLeft}>
+              <View style={styles.activityIcon}>
+                <Ionicons
+                  name="card-outline"
+                  size={21}
+                  color="#09A84E"
+                />
+              </View>
+
+              <View style={styles.activityInformation}>
+                <Text style={styles.activityTitle}>Cards Extracted</Text>
+
+                <Text style={styles.activitySubtitle}>
+                  Business cards scanned
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.activityRight}>
+              <Text style={styles.activityValue}>{usedScans}</Text>
+
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color="#ABB2B9"
+              />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.82}
+            style={styles.activityCard}
+            onPress={() => router.push("/export")}
+          >
+            <View style={styles.activityLeft}>
+              <View
+                style={[
+                  styles.activityIcon,
+                  styles.exportActivityIcon,
+                ]}
+              >
+                <Ionicons
+                  name="download-outline"
+                  size={21}
+                  color="#EFA300"
+                />
+              </View>
+
+              <View style={styles.activityInformation}>
+                <Text style={styles.activityTitle}>Excel Exports</Text>
+
+                <Text style={styles.activitySubtitle}>
+                  Files generated
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.activityRight}>
+              <Text style={styles.activityValue}>
+                {exportsGenerated}
+              </Text>
+
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color="#ABB2B9"
+              />
+            </View>
           </TouchableOpacity>
         </View>
-
-        <View style={[styles.sectionHeader, { paddingHorizontal: horizontal }]}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-<TouchableOpacity
-  onPress={() => router.push("/usage")}
->
-  <Ionicons
-    name="chevron-forward"
-    size={20}
-    color="#A0AEC0"
-  />
-</TouchableOpacity>
-        </View>
-
-        <Text style={[styles.todayText, { paddingHorizontal: horizontal }]}>
-          Today
-        </Text>
-
-      <View style={[styles.activityCard, { marginHorizontal: horizontal }]}>
-  <View style={styles.activityLeft}>
-    <View style={styles.activityIconPurple}>
-      <Ionicons
-        name="download-outline"
-        size={18}
-        color="#5B4BFF"
-      />
-    </View>
-
-    <View>
-      <Text style={styles.activityText}>
-        Excel Exports
-      </Text>
-
-      <Text style={styles.activitySub}>
-        Files generated
-      </Text>
-    </View>
-  </View>
-
-  <Text style={styles.activityNumber}>
-    {exportsGenerated}
-  </Text>
-</View>
-
-<View style={[styles.activityCard, { marginHorizontal: horizontal }]}>
-  <View style={styles.activityLeft}>
-    <View style={styles.activityIconPurple}>
-      <Ionicons
-        name="pricetag-outline"
-        size={18}
-        color="#5B4BFF"
-      />
-    </View>
-
-    <View>
-      <Text style={styles.activityText}>
-        Current Plan
-      </Text>
-
-      <Text style={styles.activitySub}>
-        Subscription
-      </Text>
-    </View>
-  </View>
-
-  <Text
-    style={[
-      styles.activityNumber,
-      { color: "#5B4BFF" },
-    ]}
-  >
-    {currentPlan}
-  </Text>
-</View>
       </ScrollView>
 
       <BottomNav active="home" />
@@ -350,7 +472,7 @@ const styles = StyleSheet.create({
 
   page: {
     flex: 1,
-    backgroundColor: "#F3F6FF",
+    backgroundColor: "#FFFFFF",
   },
 
   scrollContent: {
@@ -358,245 +480,317 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    backgroundColor: "#5B4BFF",
-    borderBottomLeftRadius: 34,
-    borderBottomRightRadius: 34,
+    minHeight: 80,
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    alignItems: "flex-start",
   },
 
-  userRow: {
+  userDetails: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     paddingRight: 12,
-  },
-
-  greetingBox: {
-    flex: 1,
   },
 
   avatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 999,
-    backgroundColor: "#FFFFFF",
+    width: 55,
+    height: 55,
+    borderRadius: 28,
+    backgroundColor: "#F1F7F3",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#DFEBE3",
   },
 
-  avatarImage: {
-    width: 38,
-    height: 38,
+  avatarPhoto: {
+    width: "100%",
+    height: "100%",
   },
 
-  greeting: {
-    fontSize: 21,
-    fontWeight: "900",
-    color: "#FFFFFF",
+  avatarLogo: {
+    width: 41,
+    height: 41,
   },
 
-  subGreeting: {
+  greetingContainer: {
+    flex: 1,
+    marginLeft: 14,
+  },
+
+  greetingText: {
+    color: "#171C21",
+    fontSize: 19,
+    fontWeight: "800",
+  },
+
+  greetingSubtitle: {
     marginTop: 4,
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#EDEBFF",
+    color: "#858D95",
+    fontSize: 13,
+    fontWeight: "500",
   },
 
-  bellBtn: {
-    width: 40,
-    height: 40,
+  notificationButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#F7F9F8",
+  },
+
+  notificationDot: {
+    position: "absolute",
+    top: 9,
+    right: 9,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#EF4444",
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
   },
 
   planCard: {
+    marginTop: 13,
+    minHeight: 205,
     backgroundColor: "#FFFFFF",
-    borderRadius: 28,
-    paddingHorizontal: 22,
-    paddingTop: 22,
-    paddingBottom: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    borderRadius: 22,
+    paddingHorizontal: 21,
+    paddingTop: 20,
+    paddingBottom: 19,
+    borderWidth: 1,
+    borderColor: "#E9EEEB",
+
+    shadowColor: "#17261D",
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    elevation: 5,
   },
 
-  planTop: {
+  planHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
   },
 
-  planInfo: {
+  planInformation: {
     flex: 1,
     paddingRight: 12,
   },
 
-  planLabel: {
-    fontSize: 13,
-    color: "#7C8798",
-    fontWeight: "900",
-  },
-
-  planName: {
-    marginTop: 8,
-    fontSize: 28,
-    color: "#101828",
-    fontWeight: "900",
-  },
-
-  upgradeBtn: {
-    backgroundColor: "#5B4BFF",
-    paddingHorizontal: 20,
-    height: 52,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  upgradeText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "900",
-  },
-  activitySub: {
-  marginTop: 2,
-  fontSize: 12,
-  color: "#9CA3AF",
-  fontWeight: "600",
-},
-
-  statsRow: {
-    marginTop: 28,
+  planLabelRow: {
     flexDirection: "row",
     alignItems: "center",
   },
 
-  statBox: {
+  planLabel: {
+    marginLeft: 6,
+    color: "#6F777F",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  planName: {
+    marginTop: 7,
+    color: "#171C21",
+    fontSize: 21,
+    fontWeight: "800",
+  },
+
+  upgradeButton: {
+    minWidth: 88,
+    height: 42,
+    paddingHorizontal: 17,
+    borderRadius: 14,
+    backgroundColor: "#09AA4D",
+    alignItems: "center",
+    justifyContent: "center",
+
+    shadowColor: "#07903E",
+    shadowOpacity: 0.18,
+    shadowRadius: 7,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 3,
+  },
+
+  upgradeButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  statsRow: {
+    marginTop: 24,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  statItem: {
     flex: 1,
     alignItems: "center",
   },
 
-  statNumber: {
-    fontSize: 25,
-    fontWeight: "900",
-    color: "#101828",
-  },
-
-  statLabel: {
-    marginTop: 8,
-    fontSize: 12,
-    color: "#8B94A7",
+  statValue: {
+    color: "#192027",
+    fontSize: 24,
     fontWeight: "800",
   },
 
-  divider: {
+  statLabel: {
+    marginTop: 6,
+    color: "#7F8790",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  statDivider: {
     width: 1,
-    height: 44,
-    backgroundColor: "#E8ECF5",
+    height: 40,
+    backgroundColor: "#E5EAE7",
+  },
+
+  progressSection: {
+    marginTop: 24,
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   progressTrack: {
-    height: 9,
-    backgroundColor: "#E8ECF5",
-    borderRadius: 999,
-    marginTop: 28,
+    flex: 1,
+    height: 8,
+    borderRadius: 10,
+    backgroundColor: "#ECEFEE",
     overflow: "hidden",
   },
 
   progressFill: {
     height: "100%",
-    backgroundColor: "#5B4BFF",
-    borderRadius: 999,
+    minWidth: 3,
+    borderRadius: 10,
+    backgroundColor: "#09AA4D",
   },
 
-  progressBottom: {
-    marginTop: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  progressPercentage: {
+    minWidth: 65,
+    marginLeft: 11,
+    color: "#656D75",
+    fontSize: 12,
+    fontWeight: "700",
+    textAlign: "right",
   },
 
-  progressText: {
-    fontSize: 14,
-    color: "#6B7280",
-    fontWeight: "900",
-  },
-
-  actionGrid: {
-    marginTop: 34,
+  actionsGrid: {
+    marginTop: 23,
     flexDirection: "row",
     flexWrap: "wrap",
   },
 
   actionCard: {
-    height: 126,
-    borderRadius: 22,
-    paddingHorizontal: 22,
+    width: "100%",
+    minHeight: 93,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E9EDEA",
+
+    shadowColor: "#17261D",
+    shadowOpacity: 0.06,
+    shadowRadius: 9,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 3,
   },
 
-  blueCard: {
-    backgroundColor: "#5B4BFF",
+  actionIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  greenCard: {
-    backgroundColor: "#16C784",
+  actionTitle: {
+    flex: 1,
+    marginLeft: 12,
+    color: "#242A30",
+    fontSize: 15,
+    lineHeight: 19,
+    fontWeight: "800",
   },
 
-  orangeCard: {
-    backgroundColor: "#FFB020",
-  },
-
-  pinkCard: {
-    backgroundColor: "#F7578C",
-  },
-
-  actionText: {
-    marginLeft: 16,
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "900",
-    lineHeight: 24,
+  activitySection: {
+    marginTop: 27,
   },
 
   sectionHeader: {
-    marginTop: 34,
     flexDirection: "row",
+    alignItems: "flex-end",
     justifyContent: "space-between",
-    alignItems: "center",
   },
 
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: "900",
-    color: "#101828",
+    color: "#171C21",
+    fontSize: 19,
+    fontWeight: "800",
   },
 
-  todayText: {
-    marginTop: 16,
-    fontSize: 14,
-    color: "#9CA3AF",
-    fontWeight: "900",
+  sectionSubtitle: {
+    marginTop: 4,
+    color: "#899199",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  seeAllRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  seeAllText: {
+    marginRight: 2,
+    color: "#09A84E",
+    fontSize: 13,
+    fontWeight: "700",
   },
 
   activityCard: {
-    marginTop: 14,
-    minHeight: 72,
-    borderRadius: 22,
+    minHeight: 80,
+    marginTop: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 13,
+    borderRadius: 18,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: "#EEF1F6",
+    borderColor: "#E9EDEA",
+
+    shadowColor: "#17261D",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 2,
   },
 
   activityLeft: {
@@ -605,36 +799,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  activityIconGreen: {
-    width: 42,
-    height: 42,
-    borderRadius: 999,
-    backgroundColor: "#ECFDF5",
+  activityIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "#EAF8EF",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
   },
 
-  activityIconPurple: {
-    width: 42,
-    height: 42,
-    borderRadius: 999,
-    backgroundColor: "#EEF2FF",
+  exportActivityIcon: {
+    backgroundColor: "#FFF5DE",
+  },
+
+  activityInformation: {
+    flex: 1,
+    marginLeft: 13,
+  },
+
+  activityTitle: {
+    color: "#232A30",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+
+  activitySubtitle: {
+    marginTop: 3,
+    color: "#90979E",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+
+  activityRight: {
+    marginLeft: 8,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginRight: 14,
   },
 
-  activityText: {
+  activityValue: {
+    marginRight: 6,
+    color: "#09A84E",
     fontSize: 16,
-    color: "#101828",
-    fontWeight: "900",
-  },
-
-  activityNumber: {
-    fontSize: 18,
-    color: "#10B981",
-    fontWeight: "900",
-    marginLeft: 10,
+    fontWeight: "800",
   },
 });

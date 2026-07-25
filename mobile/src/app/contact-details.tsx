@@ -1,3 +1,4 @@
+import React from "react";
 import {
   View,
   Text,
@@ -5,365 +6,820 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
+  Alert,
 } from "react-native";
-
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
+type ContactData = {
+  name?: string;
+  designation?: string;
+  company?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  address?: string;
+  country?: string;
+};
+
+type DetailItemProps = {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  value?: string;
+  iconColor: string;
+  iconBackground: string;
+  onPress?: () => void;
+};
+
+const isAvailable = (value?: string) => {
+  return Boolean(
+    value &&
+      value.trim() &&
+      value.trim().toLowerCase() !== "not available"
+  );
+};
+
 export default function ContactDetailsScreen() {
-  const contact =
+  const insets = useSafeAreaInsets();
+
+  const contact: ContactData =
     (globalThis as any).selectedContact || {};
 
-  const openPhone = () => {
-    if (
-      contact.phone &&
-      contact.phone !== "Not available"
-    ) {
-      Linking.openURL(`tel:${contact.phone}`);
+  const name = isAvailable(contact.name)
+    ? contact.name!.trim()
+    : "Unknown Contact";
+
+  const designation = isAvailable(contact.designation)
+    ? contact.designation!.trim()
+    : "No designation available";
+
+  const company = isAvailable(contact.company)
+    ? contact.company!.trim()
+    : "";
+
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word.charAt(0))
+    .join("")
+    .toUpperCase();
+
+  const openLink = async (
+    url: string,
+    unavailableMessage: string
+  ) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+
+      if (!supported) {
+        Alert.alert("Unable to Open", unavailableMessage);
+        return;
+      }
+
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error("Contact action error:", error);
+
+      Alert.alert("Unable to Open", unavailableMessage);
     }
+  };
+
+  const openPhone = () => {
+    if (!isAvailable(contact.phone)) {
+      Alert.alert(
+        "Phone Unavailable",
+        "No phone number is saved for this contact."
+      );
+      return;
+    }
+
+    const phone = contact.phone!.replace(/\s+/g, "");
+
+    openLink(
+      `tel:${phone}`,
+      "The phone dialer could not be opened."
+    );
   };
 
   const openEmail = () => {
-    if (
-      contact.email &&
-      contact.email !== "Not available"
-    ) {
-      Linking.openURL(`mailto:${contact.email}`);
+    if (!isAvailable(contact.email)) {
+      Alert.alert(
+        "Email Unavailable",
+        "No email address is saved for this contact."
+      );
+      return;
     }
+
+    openLink(
+      `mailto:${contact.email}`,
+      "Your email application could not be opened."
+    );
   };
 
   const openWebsite = () => {
-    if (
-      contact.website &&
-      contact.website !== "Not available"
-    ) {
-      let url = contact.website;
-
-      if (!url.startsWith("http")) {
-        url = `https://${url}`;
-      }
-
-      Linking.openURL(url);
+    if (!isAvailable(contact.website)) {
+      Alert.alert(
+        "Website Unavailable",
+        "No website is saved for this contact."
+      );
+      return;
     }
+
+    let url = contact.website!.trim();
+
+    if (!/^https?:\/\//i.test(url)) {
+      url = `https://${url}`;
+    }
+
+    openLink(
+      url,
+      "The website could not be opened."
+    );
   };
 
-  const DetailCard = ({
+  const DetailItem = ({
     icon,
     title,
     value,
-  }: {
-    icon: keyof typeof Ionicons.glyphMap;
-    title: string;
-    value?: string;
-  }) => (
-    <View style={styles.detailCard}>
-      <View style={styles.iconContainer}>
-        <Ionicons
-          name={icon}
-          size={22}
-          color="#2563EB"
-        />
-      </View>
+    iconColor,
+    iconBackground,
+    onPress,
+  }: DetailItemProps) => {
+    const available = isAvailable(value);
 
-      <View style={{ flex: 1 }}>
-        <Text style={styles.label}>
-          {title}
-        </Text>
-
-        <Text style={styles.value}>
-          {value &&
-          value !== "Not available"
-            ? value
-            : "Not available"}
-        </Text>
-      </View>
-    </View>
-  );
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-          >
-            <Ionicons
-              name="arrow-back"
-              size={28}
-              color="#111827"
-            />
-          </TouchableOpacity>
-
-          <Text style={styles.headerTitle}>
-            Contact Details
-          </Text>
-
-          <View style={{ width: 28 }} />
+    const content = (
+      <View style={styles.detailRow}>
+        <View
+          style={[
+            styles.detailIcon,
+            {
+              backgroundColor: iconBackground,
+            },
+          ]}
+        >
+          <Ionicons
+            name={icon}
+            size={20}
+            color={iconColor}
+          />
         </View>
 
-        {/* Profile */}
+        <View style={styles.detailContent}>
+          <Text style={styles.detailLabel}>
+            {title}
+          </Text>
 
-        <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {(contact.name?.charAt(0) || "?")
-                .toUpperCase()}
+          <Text
+            selectable
+            style={[
+              styles.detailValue,
+              !available && styles.unavailableValue,
+            ]}
+          >
+            {available
+              ? value!.trim()
+              : "Not available"}
+          </Text>
+        </View>
+
+        {available && onPress && (
+          <View style={styles.rowAction}>
+            <Ionicons
+              name="open-outline"
+              size={18}
+              color="#09A84E"
+            />
+          </View>
+        )}
+      </View>
+    );
+
+    if (available && onPress) {
+      return (
+        <TouchableOpacity
+          activeOpacity={0.82}
+          onPress={onPress}
+        >
+          {content}
+        </TouchableOpacity>
+      );
+    }
+
+    return content;
+  };
+
+  const quickActions = [
+    {
+      title: "Call",
+      subtitle: "Phone",
+      icon: "call" as const,
+      available: isAvailable(contact.phone),
+      onPress: openPhone,
+    },
+    {
+      title: "Email",
+      subtitle: "Message",
+      icon: "mail" as const,
+      available: isAvailable(contact.email),
+      onPress: openEmail,
+    },
+    {
+      title: "Website",
+      subtitle: "Open link",
+      icon: "globe" as const,
+      available: isAvailable(contact.website),
+      onPress: openWebsite,
+    },
+  ];
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingBottom: 28 + insets.bottom,
+            },
+          ]}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <Ionicons
+                name="arrow-back"
+                size={22}
+                color="#20262C"
+              />
+            </TouchableOpacity>
+
+            <View style={styles.headerText}>
+              <Text style={styles.headerTitle}>
+                Contact Details
+              </Text>
+
+              <Text style={styles.headerSubtitle}>
+                View saved contact information
+              </Text>
+            </View>
+
+            <View style={styles.headerIcon}>
+              <Ionicons
+                name="person-outline"
+                size={22}
+                color="#09A84E"
+              />
+            </View>
+          </View>
+
+          <View style={styles.profileCard}>
+            <View style={styles.avatarOuter}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {initials || "?"}
+                </Text>
+              </View>
+
+              <View style={styles.savedBadge}>
+                <Ionicons
+                  name="checkmark"
+                  size={14}
+                  color="#FFFFFF"
+                />
+              </View>
+            </View>
+
+            <Text
+              numberOfLines={2}
+              style={styles.name}
+            >
+              {name}
+            </Text>
+
+            <Text
+              numberOfLines={2}
+              style={styles.designation}
+            >
+              {designation}
+            </Text>
+
+            {company ? (
+              <View style={styles.companyBadge}>
+                <Ionicons
+                  name="business-outline"
+                  size={14}
+                  color="#078E42"
+                />
+
+                <Text
+                  numberOfLines={1}
+                  style={styles.company}
+                >
+                  {company}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.actionRow}>
+            {quickActions.map((item) => (
+              <TouchableOpacity
+                key={item.title}
+                activeOpacity={0.82}
+                disabled={!item.available}
+                style={[
+                  styles.actionButton,
+                  !item.available &&
+                    styles.disabledAction,
+                ]}
+                onPress={item.onPress}
+              >
+                <View
+                  style={[
+                    styles.actionIcon,
+                    !item.available &&
+                      styles.disabledActionIcon,
+                  ]}
+                >
+                  <Ionicons
+                    name={item.icon}
+                    size={22}
+                    color={
+                      item.available
+                        ? "#09A84E"
+                        : "#A7ADB2"
+                    }
+                  />
+                </View>
+
+                <Text
+                  style={[
+                    styles.actionTitle,
+                    !item.available &&
+                      styles.disabledActionText,
+                  ]}
+                >
+                  {item.title}
+                </Text>
+
+                <Text
+                  style={[
+                    styles.actionSubtitle,
+                    !item.available &&
+                      styles.disabledActionText,
+                  ]}
+                >
+                  {item.available
+                    ? item.subtitle
+                    : "Unavailable"}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Personal Information
+            </Text>
+
+            <Text style={styles.sectionSubtitle}>
+              Basic information extracted from the business card
             </Text>
           </View>
 
-          <Text style={styles.name}>
-            {contact.name ||
-              "Unknown Contact"}
-          </Text>
-
-          <Text style={styles.designation}>
-            {contact.designation ||
-              "No Designation"}
-          </Text>
-
-          {contact.company &&
-            contact.company !==
-              "Not available" && (
-              <Text style={styles.company}>
-                {contact.company}
-              </Text>
-            )}
-        </View>
-
-        {/* Quick Actions */}
-
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={openPhone}
-          >
-            <Ionicons
-              name="call"
-              size={24}
-              color="#2563EB"
+          <View style={styles.detailsCard}>
+            <DetailItem
+              icon="person-outline"
+              title="Full Name"
+              value={contact.name}
+              iconColor="#09A84E"
+              iconBackground="#EAF8F0"
             />
 
-            <Text style={styles.actionText}>
-              Call
-            </Text>
-          </TouchableOpacity>
+            <View style={styles.divider} />
 
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={openEmail}
-          >
-            <Ionicons
-              name="mail"
-              size={24}
-              color="#2563EB"
+            <DetailItem
+              icon="ribbon-outline"
+              title="Designation"
+              value={contact.designation}
+              iconColor="#7056B8"
+              iconBackground="#F1EDFF"
             />
 
-            <Text style={styles.actionText}>
-              Email
-            </Text>
-          </TouchableOpacity>
+            <View style={styles.divider} />
 
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={openWebsite}
-          >
-            <Ionicons
-              name="globe"
-              size={24}
-              color="#2563EB"
+            <DetailItem
+              icon="briefcase-outline"
+              title="Company"
+              value={contact.company}
+              iconColor="#EFA300"
+              iconBackground="#FFF5DE"
+            />
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Contact Information
+            </Text>
+
+            <Text style={styles.sectionSubtitle}>
+              Tap available details to open them
+            </Text>
+          </View>
+
+          <View style={styles.detailsCard}>
+            <DetailItem
+              icon="call-outline"
+              title="Phone Number"
+              value={contact.phone}
+              iconColor="#09A84E"
+              iconBackground="#EAF8F0"
+              onPress={openPhone}
             />
 
-            <Text style={styles.actionText}>
-              Website
+            <View style={styles.divider} />
+
+            <DetailItem
+              icon="mail-outline"
+              title="Email Address"
+              value={contact.email}
+              iconColor="#4B7BEC"
+              iconBackground="#EEF3FF"
+              onPress={openEmail}
+            />
+
+            <View style={styles.divider} />
+
+            <DetailItem
+              icon="globe-outline"
+              title="Website"
+              value={contact.website}
+              iconColor="#7056B8"
+              iconBackground="#F1EDFF"
+              onPress={openWebsite}
+            />
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Location
             </Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Details */}
+            <Text style={styles.sectionSubtitle}>
+              Address information saved for this contact
+            </Text>
+          </View>
 
-        <DetailCard
-          icon="person-outline"
-          title="Full Name"
-          value={contact.name}
-        />
+          <View style={styles.detailsCard}>
+            <DetailItem
+              icon="location-outline"
+              title="Address"
+              value={contact.address}
+              iconColor="#ED5447"
+              iconBackground="#FFF0EE"
+            />
 
-        <DetailCard
-          icon="briefcase-outline"
-          title="Company"
-          value={contact.company}
-        />
+            <View style={styles.divider} />
 
-        <DetailCard
-          icon="ribbon-outline"
-          title="Designation"
-          value={contact.designation}
-        />
-
-        <DetailCard
-          icon="call-outline"
-          title="Phone Number"
-          value={contact.phone}
-        />
-
-        <DetailCard
-          icon="mail-outline"
-          title="Email Address"
-          value={contact.email}
-        />
-
-        <DetailCard
-          icon="globe-outline"
-          title="Website"
-          value={contact.website}
-        />
-
-        <DetailCard
-          icon="location-outline"
-          title="Address"
-          value={contact.address}
-        />
-
-        <DetailCard
-          icon="flag-outline"
-          title="Country"
-          value={contact.country}
-        />
-      </ScrollView>
+            <DetailItem
+              icon="flag-outline"
+              title="Country"
+              value={contact.country}
+              iconColor="#EFA300"
+              iconBackground="#FFF5DE"
+            />
+          </View>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
-    paddingHorizontal: 16,
+    backgroundColor: "#F8FAF9",
+  },
+
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 5,
   },
 
   header: {
+    minHeight: 80,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 10,
-    marginBottom: 20,
   },
 
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#111827",
-  },
-
-  profileCard: {
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
     backgroundColor: "#FFFFFF",
-    borderRadius: 28,
-    paddingVertical: 30,
+    borderWidth: 1,
+    borderColor: "#E5EAE7",
     alignItems: "center",
-    marginBottom: 20,
+    justifyContent: "center",
 
-    shadowColor: "#000",
+    shadowColor: "#17261D",
     shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
     elevation: 2,
   },
 
-  avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: "#EEF4FF",
-    justifyContent: "center",
+  headerText: {
+    flex: 1,
+    marginLeft: 13,
+  },
+
+  headerTitle: {
+    color: "#171C21",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+
+  headerSubtitle: {
+    marginTop: 4,
+    color: "#858D95",
+    fontSize: 12.5,
+    fontWeight: "500",
+  },
+
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: "#EAF8F0",
     alignItems: "center",
+    justifyContent: "center",
+  },
+
+  profileCard: {
+    marginTop: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 25,
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E7ECE9",
+    alignItems: "center",
+
+    shadowColor: "#17261D",
+    shadowOpacity: 0.06,
+    shadowRadius: 11,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 3,
+  },
+
+  avatarOuter: {
+    position: "relative",
+  },
+
+  avatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 28,
+    backgroundColor: "#EAF8F0",
+    borderWidth: 1,
+    borderColor: "#D8F0E2",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   avatarText: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: "#2563EB",
+    color: "#09A84E",
+    fontSize: 31,
+    fontWeight: "900",
+  },
+
+  savedBadge: {
+    position: "absolute",
+    right: -4,
+    bottom: -2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#09A84E",
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   name: {
-    marginTop: 16,
-    fontSize: 26,
+    marginTop: 15,
+    color: "#20262C",
+    fontSize: 22,
     fontWeight: "800",
-    color: "#111827",
+    textAlign: "center",
   },
 
   designation: {
     marginTop: 6,
-    fontSize: 16,
-    color: "#6B7280",
+    color: "#7E878E",
+    fontSize: 13.5,
+    lineHeight: 19,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+
+  companyBadge: {
+    maxWidth: "85%",
+    minHeight: 32,
+    marginTop: 12,
+    paddingHorizontal: 11,
+    borderRadius: 11,
+    backgroundColor: "#EAF8F0",
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   company: {
-    marginTop: 4,
-    color: "#2563EB",
-    fontWeight: "700",
-    fontSize: 15,
+    flexShrink: 1,
+    marginLeft: 6,
+    color: "#078E42",
+    fontSize: 12,
+    fontWeight: "800",
   },
 
   actionRow: {
+    marginTop: 16,
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 24,
   },
 
   actionButton: {
-    width: "31%",
+    width: "31.5%",
+    minHeight: 118,
+    paddingHorizontal: 7,
+    paddingVertical: 14,
+    borderRadius: 18,
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingVertical: 18,
+    borderWidth: 1,
+    borderColor: "#E7ECE9",
     alignItems: "center",
-
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-
-  actionText: {
-    marginTop: 8,
-    color: "#111827",
-    fontWeight: "600",
-  },
-
-  detailCard: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 14,
-
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-
-  iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#EEF4FF",
     justifyContent: "center",
+
+    shadowColor: "#17261D",
+    shadowOpacity: 0.045,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 2,
+  },
+
+  disabledAction: {
+    backgroundColor: "#F4F6F5",
+    borderColor: "#ECEFED",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+
+  actionIcon: {
+    width: 45,
+    height: 45,
+    borderRadius: 15,
+    backgroundColor: "#EAF8F0",
     alignItems: "center",
-    marginRight: 14,
+    justifyContent: "center",
   },
 
-  label: {
-    color: "#6B7280",
-    fontSize: 13,
-    marginBottom: 4,
+  disabledActionIcon: {
+    backgroundColor: "#E9ECEA",
   },
 
-  value: {
-    color: "#111827",
-    fontSize: 16,
+  actionTitle: {
+    marginTop: 9,
+    color: "#242A30",
+    fontSize: 13.5,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+
+  actionSubtitle: {
+    marginTop: 3,
+    color: "#90989E",
+    fontSize: 10.5,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+
+  disabledActionText: {
+    color: "#A0A7AC",
+  },
+
+  sectionHeader: {
+    marginTop: 25,
+    marginBottom: 12,
+  },
+
+  sectionTitle: {
+    color: "#171C21",
+    fontSize: 17,
+    fontWeight: "800",
+  },
+
+  sectionSubtitle: {
+    marginTop: 4,
+    color: "#858D95",
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: "500",
+  },
+
+  detailsCard: {
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E7ECE9",
+
+    shadowColor: "#17261D",
+    shadowOpacity: 0.045,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 2,
+  },
+
+  detailRow: {
+    minHeight: 77,
+    paddingVertical: 13,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  detailIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  detailContent: {
+    flex: 1,
+    marginLeft: 12,
+    paddingRight: 8,
+  },
+
+  detailLabel: {
+    color: "#8A9299",
+    fontSize: 11.5,
     fontWeight: "600",
+  },
+
+  detailValue: {
+    marginTop: 4,
+    color: "#252B31",
+    fontSize: 13.5,
+    lineHeight: 19,
+    fontWeight: "800",
+  },
+
+  unavailableValue: {
+    color: "#A0A7AC",
+    fontWeight: "600",
+  },
+
+  rowAction: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    backgroundColor: "#EAF8F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  divider: {
+    height: 1,
+    marginLeft: 55,
+    backgroundColor: "#EDF0EE",
   },
 });

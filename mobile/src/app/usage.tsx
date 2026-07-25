@@ -1,336 +1,600 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import BottomNav from "@/components/BottomNav";
 import { router } from "expo-router";
-
-import { useEffect, useState } from "react";
-import { auth, db } from "../services/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
+
+import BottomNav from "@/components/BottomNav";
+import { auth, db } from "../services/firebase";
 import { User } from "../types/user";
+
 export default function UsageScreen() {
-const [userData, setUserData] = useState<User | null>(null);
+  const insets = useSafeAreaInsets();
 
-useEffect(() => {
-  if (!auth.currentUser) return;
+  const [userData, setUserData] =
+    useState<User | null>(null);
 
-  const unsubscribe = onSnapshot(
-    doc(db, "users", auth.currentUser.uid),
-    (snapshot) => {
-      if (snapshot.exists()) {
-        setUserData(snapshot.data() as User);
-      }
+  const [loading, setLoading] =
+    useState(true);
+
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      setLoading(false);
+      return;
     }
+
+    const unsubscribe = onSnapshot(
+      doc(db, "users", currentUser.uid),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setUserData(snapshot.data() as User);
+        }
+
+        setLoading(false);
+      },
+      (error) => {
+        console.error(
+          "Failed to load usage data:",
+          error
+        );
+
+        setLoading(false);
+      }
+    );
+
+    return unsubscribe;
+  }, []);
+
+  const planName =
+    userData?.planName ?? "Free Plan";
+
+  const totalScans =
+    userData?.freeScanLimit ?? 5;
+
+  const usedScans =
+    userData?.freeScansUsed ?? 0;
+
+  const remainingScans = Math.max(
+    totalScans - usedScans,
+    0
   );
 
-  return unsubscribe;
-}, []);
+  const exportsGenerated =
+    userData?.exportsGenerated ?? 0;
 
+  const aiExtractions = usedScans;
 
-  // Replace these with Firestore values later
- const planName = userData?.planName ?? "Free Plan";
+  const progress = Math.min(
+    totalScans > 0
+      ? (usedScans / totalScans) * 100
+      : 0,
+    100
+  );
 
-const totalScans = userData?.freeScanLimit ?? 5;
+  const progressPercentage =
+    Math.round(progress);
 
-const usedScans = userData?.freeScansUsed ?? 0;
+  const renewDate =
+    userData?.subscriptionActive &&
+    userData.subscriptionExpiry
+      ? new Date(
+          userData.subscriptionExpiry
+        ).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "No Expiry";
 
-const remainingScans = Math.max(
-  totalScans - usedScans,
-  0
-);
+  const renewalLabel =
+    userData?.subscriptionActive
+      ? "Renewal Date"
+      : "Plan Validity";
 
-const exportsGenerated =
-  userData?.exportsGenerated ?? 0;
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.loaderPage}>
+        <ActivityIndicator
+          size="large"
+          color="#09A84E"
+        />
 
-const aiExtractions = usedScans;
-
-const renewDate =
-  userData?.subscriptionActive &&
-  userData.subscriptionExpiry
-    ? new Date(
-        userData.subscriptionExpiry
-      ).toLocaleDateString()
-    : "Lifetime Free";
-
-
-const progress = Math.min(
-  totalScans > 0
-    ? (usedScans / totalScans) * 100
-    : 0,
-  100
-);
+        <Text style={styles.loadingText}>
+          Loading usage...
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 190 }}
-      >
-        {/* Header */}
-
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.heading}>Usage</Text>
-            <Text style={styles.subHeading}>
-              Monitor your Scan2Sheet usage
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.historyBtn}
-          >
-            <Ionicons
-              name="time-outline"
-              size={22}
-              color="#5B4BFF"
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Plan Card */}
-
-        <View style={styles.planCard}>
-
-          <View style={styles.planTop}>
-
-            <View>
-
-              <Text style={styles.planLabel}>
-                Current Plan
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingBottom:
+                190 + insets.bottom,
+            },
+          ]}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerText}>
+              <Text style={styles.heading}>
+                Usage
               </Text>
 
-              <Text style={styles.planName}>
-                ⭐ {planName}
+              <Text style={styles.subHeading}>
+                Monitor your Scan2Sheet usage
               </Text>
-
             </View>
 
             <TouchableOpacity
-              style={styles.smallUpgrade}
-              onPress={() => router.push("/plans")}
+              activeOpacity={0.8}
+              style={styles.historyButton}
+              onPress={() =>
+                router.push("/saved-contacts")
+              }
             >
-              <Text style={styles.smallUpgradeText}>
-                Upgrade
-              </Text>
+              <Ionicons
+                name="time-outline"
+                size={23}
+                color="#09A84E"
+              />
             </TouchableOpacity>
-
           </View>
 
-          {/* Progress */}
+          {/* Plan Card */}
+          <View style={styles.planCard}>
+            <View style={styles.planTop}>
+              <View style={styles.planInformation}>
+                <View style={styles.planLabelRow}>
+                  <Ionicons
+                    name="star"
+                    size={16}
+                    color="#F4B800"
+                  />
 
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>
-              Scan Usage
-            </Text>
+                  <Text style={styles.planLabel}>
+                    Current Plan
+                  </Text>
+                </View>
 
-            <Text style={styles.progressValue}>
-              {usedScans}/{totalScans}
-            </Text>
+                <Text
+                  numberOfLines={1}
+                  style={styles.planName}
+                >
+                  {planName}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.84}
+                style={styles.smallUpgrade}
+                onPress={() =>
+                  router.push("/plans")
+                }
+              >
+                <Text
+                  style={styles.smallUpgradeText}
+                >
+                  {userData?.subscriptionActive
+                    ? "Manage"
+                    : "Upgrade"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.progressHeader}>
+              <View>
+                <Text style={styles.progressTitle}>
+                  Scan Usage
+                </Text>
+
+                <Text
+                  style={styles.progressDescription}
+                >
+                  {remainingScans} scans remaining
+                </Text>
+              </View>
+
+              <View style={styles.progressValueBox}>
+                <Text style={styles.progressValue}>
+                  {usedScans}/{totalScans}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.progressBackground}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${progress}%`,
+                  },
+                ]}
+              />
+            </View>
+
+            <View style={styles.progressFooter}>
+              <Text style={styles.progressFooterText}>
+                {progressPercentage}% used
+              </Text>
+
+              <Text style={styles.progressFooterText}>
+                {remainingScans} available
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.progressBackground}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${progress}%`,
-                },
-              ]}
-            />
+          {/* Statistics */}
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>
+                Usage Overview
+              </Text>
+
+              <Text style={styles.sectionSubtitle}>
+                Your activity summary
+              </Text>
+            </View>
           </View>
 
-          <Text style={styles.remaining}>
-            {remainingScans} scans remaining
-          </Text>
+          <View style={styles.grid}>
+            <View style={styles.statCard}>
+              <View
+                style={[
+                  styles.statIcon,
+                  styles.scansIcon,
+                ]}
+              >
+                <Ionicons
+                  name="scan-outline"
+                  size={25}
+                  color="#09A84E"
+                />
+              </View>
 
-        </View>
+              <Text style={styles.statNumber}>
+                {usedScans}
+              </Text>
 
-        {/* Stats */}
+              <Text style={styles.statLabel}>
+                Cards Scanned
+              </Text>
+            </View>
 
-        <View style={styles.grid}>
+            <View style={styles.statCard}>
+              <View
+                style={[
+                  styles.statIcon,
+                  styles.aiIcon,
+                ]}
+              >
+                <Ionicons
+                  name="sparkles-outline"
+                  size={25}
+                  color="#7056B8"
+                />
+              </View>
 
-          <View style={styles.statCard}>
-            <Ionicons
-              name="scan-outline"
-              size={28}
-              color="#5B4BFF"
-            />
+              <Text style={styles.statNumber}>
+                {aiExtractions}
+              </Text>
 
-            <Text style={styles.statNumber}>
-              {usedScans}
-            </Text>
+              <Text style={styles.statLabel}>
+                AI Extractions
+              </Text>
+            </View>
 
-            <Text style={styles.statLabel}>
-              Cards Scanned
-            </Text>
+            <View style={styles.statCard}>
+              <View
+                style={[
+                  styles.statIcon,
+                  styles.exportIcon,
+                ]}
+              >
+                <Ionicons
+                  name="download-outline"
+                  size={25}
+                  color="#EFA300"
+                />
+              </View>
+
+              <Text style={styles.statNumber}>
+                {exportsGenerated}
+              </Text>
+
+              <Text style={styles.statLabel}>
+                Excel Exports
+              </Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <View
+                style={[
+                  styles.statIcon,
+                  styles.calendarIcon,
+                ]}
+              >
+                <Ionicons
+                  name="calendar-outline"
+                  size={25}
+                  color="#ED5447"
+                />
+              </View>
+
+              <Text
+                numberOfLines={2}
+                style={[
+                  styles.statNumber,
+                  styles.dateNumber,
+                ]}
+              >
+                {renewDate}
+              </Text>
+
+              <Text style={styles.statLabel}>
+                {renewalLabel}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.statCard}>
-            <Ionicons
-              name="sparkles-outline"
-              size={28}
-              color="#22C55E"
-            />
+          {/* Usage Information */}
+          <View style={styles.tipCard}>
+            <View style={styles.tipIcon}>
+              <Ionicons
+                name="bulb-outline"
+                size={22}
+                color="#09A84E"
+              />
+            </View>
 
-            <Text style={styles.statNumber}>
-              {aiExtractions}
-            </Text>
+            <View style={styles.tipInformation}>
+              <Text style={styles.tipTitle}>
+                Did you know?
+              </Text>
 
-            <Text style={styles.statLabel}>
-              AI Extractions
-            </Text>
+              <Text style={styles.tipText}>
+                A scan is deducted only when AI
+                successfully extracts information
+                from a business card.
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.statCard}>
-            <Ionicons
-              name="download-outline"
-              size={28}
-              color="#F59E0B"
-            />
+          {/* Plan Information */}
+          <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
+              <View style={styles.infoLeft}>
+                <View
+                  style={[
+                    styles.infoIcon,
+                    styles.planInfoIcon,
+                  ]}
+                >
+                  <Ionicons
+                    name="diamond-outline"
+                    size={20}
+                    color="#09A84E"
+                  />
+                </View>
 
-            <Text style={styles.statNumber}>
-              {exportsGenerated}
-            </Text>
+                <View>
+                  <Text style={styles.infoTitle}>
+                    Plan
+                  </Text>
 
-            <Text style={styles.statLabel}>
-              Excel Exports
-            </Text>
+                  <Text style={styles.infoValue}>
+                    {planName}
+                  </Text>
+                </View>
+              </View>
+
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color="#A8AFB5"
+              />
+            </View>
+
+            <View style={styles.infoDivider} />
+
+            <View style={styles.infoRow}>
+              <View style={styles.infoLeft}>
+                <View
+                  style={[
+                    styles.infoIcon,
+                    styles.statusInfoIcon,
+                  ]}
+                >
+                  <Ionicons
+                    name={
+                      userData?.subscriptionActive
+                        ? "checkmark-circle-outline"
+                        : "information-circle-outline"
+                    }
+                    size={21}
+                    color={
+                      userData?.subscriptionActive
+                        ? "#09A84E"
+                        : "#EFA300"
+                    }
+                  />
+                </View>
+
+                <View>
+                  <Text style={styles.infoTitle}>
+                    Subscription Status
+                  </Text>
+
+                  <Text style={styles.infoValue}>
+                    {userData?.subscriptionActive
+                      ? "Active"
+                      : "Free Plan"}
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                style={[
+                  styles.statusBadge,
+                  userData?.subscriptionActive
+                    ? styles.activeStatusBadge
+                    : styles.freeStatusBadge,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusBadgeText,
+                    userData?.subscriptionActive
+                      ? styles.activeStatusText
+                      : styles.freeStatusText,
+                  ]}
+                >
+                  {userData?.subscriptionActive
+                    ? "Active"
+                    : "Free"}
+                </Text>
+              </View>
+            </View>
           </View>
+        </ScrollView>
 
-          <View style={styles.statCard}>
-            <Ionicons
-              name="calendar-outline"
-              size={28}
-              color="#EF4444"
-            />
-
-            <Text style={styles.statNumber}>
-              {renewDate}
-            </Text>
-
-            <Text style={styles.statLabel}>
-              Renewal
-            </Text>
-          </View>
-
-        </View>
-
-        {/* Tip */}
-
-        <View style={styles.tipCard}>
-          <Ionicons
-            name="bulb-outline"
-            size={22}
-            color="#5B4BFF"
-          />
-
-          <View
-            style={{
-              marginLeft: 12,
-              flex: 1,
-            }}
-          >
-            <Text style={styles.tipTitle}>
-              Did you know?
-            </Text>
-
-            <Text style={styles.tipText}>
-              A scan is only deducted when AI successfully
-              extracts a business card.
-            </Text>
-          </View>
-
-        </View>
-
-      </ScrollView>
-
-      {/* Fixed Button */}
-
-      <View style={styles.bottomCTA}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push("/plans")}
+        {/* Bottom CTA */}
+        <View
+          style={[
+            styles.bottomCTA,
+            {
+              bottom: 76 + insets.bottom,
+            },
+          ]}
         >
-          <Ionicons
-            name="diamond-outline"
-            color="#FFFFFF"
-            size={22}
-          />
+          <TouchableOpacity
+            activeOpacity={0.86}
+            style={styles.button}
+            onPress={() =>
+              router.push("/plans")
+            }
+          >
+            <Ionicons
+              name="diamond-outline"
+              color="#FFFFFF"
+              size={22}
+            />
 
-         <Text style={styles.buttonText}>
-  {userData?.subscriptionActive
-    ? "Manage Subscription"
-    : "Upgrade Plan"}
-</Text>
-        </TouchableOpacity>
+            <Text style={styles.buttonText}>
+              {userData?.subscriptionActive
+                ? "Manage Subscription"
+                : "Upgrade Plan"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <BottomNav active="plans" />
       </View>
-
-<BottomNav active="plans" />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  loaderPage: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  loadingText: {
+    marginTop: 12,
+    color: "#858D95",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+
   container: {
     flex: 1,
-    backgroundColor: "#F6F7FB",
+    backgroundColor: "#F8FAF9",
+  },
+
+  scrollContent: {
+    paddingTop: 4,
   },
 
   header: {
+    minHeight: 88,
     paddingHorizontal: 20,
-    paddingTop: 12,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
 
+  headerText: {
+    flex: 1,
+    paddingRight: 12,
+  },
+
   heading: {
-    fontSize: 30,
-    fontWeight: "900",
-    color: "#111827",
+    color: "#171C21",
+    fontSize: 23,
+    fontWeight: "800",
   },
 
   subHeading: {
     marginTop: 5,
-    fontSize: 15,
-    color: "#6B7280",
+    color: "#858D95",
+    fontSize: 13,
+    fontWeight: "500",
   },
 
-  historyBtn: {
+  historyButton: {
     width: 46,
     height: 46,
-    borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    borderRadius: 15,
+    backgroundColor: "#EAF8F0",
     justifyContent: "center",
     alignItems: "center",
-
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-
-    elevation: 4,
   },
 
   planCard: {
     marginHorizontal: 20,
-    marginTop: 24,
+    marginTop: 8,
+    minHeight: 232,
+    paddingHorizontal: 21,
+    paddingVertical: 20,
+    borderRadius: 23,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E7ECE9",
 
-    backgroundColor: "#5B4BFF",
-
-    borderRadius: 24,
-
-    padding: 22,
+    shadowColor: "#17261D",
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    elevation: 5,
   },
 
   planTop: {
@@ -339,216 +603,393 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  planInformation: {
+    flex: 1,
+    paddingRight: 12,
+  },
+
+  planLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
   planLabel: {
-    color: "#E7E5FF",
+    marginLeft: 6,
+    color: "#717980",
     fontSize: 13,
+    fontWeight: "700",
   },
 
   planName: {
-    color: "#FFFFFF",
-    fontSize: 22,
+    marginTop: 7,
+    color: "#1B2127",
+    fontSize: 21,
     fontWeight: "800",
-    marginTop: 4,
   },
 
   smallUpgrade: {
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
-    paddingVertical: 9,
+    minWidth: 88,
+    height: 42,
+    paddingHorizontal: 15,
     borderRadius: 14,
+    backgroundColor: "#09AA4D",
+    alignItems: "center",
+    justifyContent: "center",
+
+    shadowColor: "#078A3E",
+    shadowOpacity: 0.18,
+    shadowRadius: 7,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 3,
   },
 
   smallUpgradeText: {
-    color: "#5B4BFF",
+    color: "#FFFFFF",
+    fontSize: 14,
     fontWeight: "800",
   },
 
   progressHeader: {
-    marginTop: 30,
-
+    marginTop: 27,
     flexDirection: "row",
-
     justifyContent: "space-between",
-
     alignItems: "center",
   },
 
   progressTitle: {
-    color: "#FFFFFF",
-    fontWeight: "700",
+    color: "#232A30",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+
+  progressDescription: {
+    marginTop: 4,
+    color: "#868E96",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+
+  progressValueBox: {
+    minWidth: 67,
+    height: 36,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: "#EAF8F0",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   progressValue: {
-    color: "#FFFFFF",
+    color: "#09A84E",
+    fontSize: 14,
     fontWeight: "800",
-    fontSize: 15,
   },
 
   progressBackground: {
-    marginTop: 14,
-
-    height: 12,
-
-    backgroundColor: "rgba(255,255,255,0.25)",
-
-    borderRadius: 999,
+    marginTop: 17,
+    height: 9,
+    backgroundColor: "#E9EEEB",
+    borderRadius: 10,
     overflow: "hidden",
   },
 
   progressFill: {
     height: "100%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 999,
+    minWidth: 3,
+    backgroundColor: "#09AA4D",
+    borderRadius: 10,
   },
 
-  remaining: {
-    color: "#F3F4F6",
+  progressFooter: {
     marginTop: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  progressFooterText: {
+    color: "#7C848B",
+    fontSize: 11.5,
     fontWeight: "600",
   },
 
-  grid: {
-    marginTop: 24,
-
+  sectionHeader: {
+    marginTop: 27,
     paddingHorizontal: 20,
+  },
 
+  sectionTitle: {
+    color: "#171C21",
+    fontSize: 19,
+    fontWeight: "800",
+  },
+
+  sectionSubtitle: {
+    marginTop: 4,
+    color: "#899199",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+
+  grid: {
+    marginTop: 15,
+    paddingHorizontal: 20,
     flexDirection: "row",
     flexWrap: "wrap",
-
     justifyContent: "space-between",
   },
 
   statCard: {
     width: "48%",
-
+    minHeight: 151,
     backgroundColor: "#FFFFFF",
-
-    borderRadius: 20,
-
-    paddingVertical: 24,
-
+    borderRadius: 19,
+    paddingHorizontal: 12,
+    paddingVertical: 17,
     alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 13,
+    borderWidth: 1,
+    borderColor: "#E8EDE9",
 
-    marginBottom: 16,
-
-    shadowColor: "#000",
+    shadowColor: "#17261D",
     shadowOpacity: 0.05,
-    shadowRadius: 12,
+    shadowRadius: 9,
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 3,
     },
+    elevation: 2,
+  },
 
-    elevation: 3,
+  statIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  scansIcon: {
+    backgroundColor: "#EAF8F0",
+  },
+
+  aiIcon: {
+    backgroundColor: "#F1EDFF",
+  },
+
+  exportIcon: {
+    backgroundColor: "#FFF5DE",
+  },
+
+  calendarIcon: {
+    backgroundColor: "#FFF0EE",
   },
 
   statNumber: {
-    marginTop: 12,
-
-    fontSize: 24,
-
-    fontWeight: "900",
-
-    color: "#111827",
-
+    marginTop: 11,
+    color: "#20262C",
+    fontSize: 22,
+    fontWeight: "800",
     textAlign: "center",
   },
 
+  dateNumber: {
+    maxWidth: 125,
+    fontSize: 16,
+    lineHeight: 20,
+  },
+
   statLabel: {
-    marginTop: 6,
-
-    color: "#6B7280",
-
+    marginTop: 5,
+    color: "#7B838B",
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: "600",
-
     textAlign: "center",
-
-    paddingHorizontal: 8,
   },
 
   tipCard: {
     marginHorizontal: 20,
-
-    marginTop: 10,
-
+    marginTop: 5,
     backgroundColor: "#FFFFFF",
-
-    borderRadius: 20,
-
-    padding: 18,
-
+    borderRadius: 19,
+    paddingHorizontal: 16,
+    paddingVertical: 17,
     flexDirection: "row",
-
     alignItems: "flex-start",
+    borderWidth: 1,
+    borderColor: "#E8EDE9",
 
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    shadowColor: "#17261D",
+    shadowOpacity: 0.045,
+    shadowRadius: 8,
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 3,
     },
+    elevation: 2,
+  },
 
-    elevation: 3,
+  tipIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "#EAF8F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  tipInformation: {
+    flex: 1,
+    marginLeft: 13,
   },
 
   tipTitle: {
-    fontSize: 16,
-
+    color: "#20262C",
+    fontSize: 15,
     fontWeight: "800",
-
-    color: "#111827",
   },
 
   tipText: {
-    marginTop: 4,
+    marginTop: 5,
+    color: "#737C84",
+    fontSize: 12.5,
+    lineHeight: 19,
+    fontWeight: "500",
+  },
 
-    color: "#6B7280",
+  infoCard: {
+    marginHorizontal: 20,
+    marginTop: 14,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 19,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "#E8EDE9",
 
-    lineHeight: 21,
+    shadowColor: "#17261D",
+    shadowOpacity: 0.045,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 2,
+  },
+
+  infoRow: {
+    minHeight: 75,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  infoLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingRight: 10,
+  },
+
+  infoIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  planInfoIcon: {
+    backgroundColor: "#EAF8F0",
+  },
+
+  statusInfoIcon: {
+    backgroundColor: "#FFF5DE",
+  },
+
+  infoTitle: {
+    marginLeft: 12,
+    color: "#7D858C",
+    fontSize: 11.5,
+    fontWeight: "600",
+  },
+
+  infoValue: {
+    marginLeft: 12,
+    marginTop: 3,
+    color: "#242A30",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  infoDivider: {
+    height: 1,
+    backgroundColor: "#EDF0EE",
+  },
+
+  statusBadge: {
+    minWidth: 60,
+    height: 30,
+    paddingHorizontal: 11,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  activeStatusBadge: {
+    backgroundColor: "#EAF8F0",
+  },
+
+  freeStatusBadge: {
+    backgroundColor: "#FFF5DE",
+  },
+
+  statusBadgeText: {
+    fontSize: 11.5,
+    fontWeight: "800",
+  },
+
+  activeStatusText: {
+    color: "#09A84E",
+  },
+
+  freeStatusText: {
+    color: "#D48A00",
   },
 
   bottomCTA: {
     position: "absolute",
-
     left: 20,
-
     right: 20,
-
-    bottom: 90,
+    paddingTop: 10,
   },
 
   button: {
-    height: 60,
-
-    backgroundColor: "#5B4BFF",
-
-    borderRadius: 18,
-
+    height: 58,
+    backgroundColor: "#09AA4D",
+    borderRadius: 17,
     flexDirection: "row",
-
     justifyContent: "center",
-
     alignItems: "center",
 
-    shadowColor: "#5B4BFF",
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
+    shadowColor: "#078A3E",
+    shadowOpacity: 0.22,
+    shadowRadius: 9,
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: 4,
     },
-
-    elevation: 10,
+    elevation: 5,
   },
 
   buttonText: {
+    marginLeft: 9,
     color: "#FFFFFF",
-
-    marginLeft: 10,
-
+    fontSize: 16,
     fontWeight: "800",
-
-    fontSize: 17,
   },
 });

@@ -1,504 +1,1411 @@
+import React, {
+  useEffect,
+  useState,
+} from "react";
+
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
-import { Alert } from "react-native";
-
-import { useEffect, useState } from "react";
 
 import { getContacts } from "../services/database";
 import { exportContactsToExcel } from "../services/excelService";
 
 export default function ExportScreen() {
+  const insets = useSafeAreaInsets();
 
-  const [contacts, setContacts] = useState<any[]>([]);
+  const [contacts, setContacts] =
+    useState<any[]>([]);
+
+  const [loadingContacts, setLoadingContacts] =
+    useState(true);
+
+  const [exporting, setExporting] =
+    useState(false);
 
   useEffect(() => {
     loadContacts();
   }, []);
 
   async function loadContacts() {
-    const data = await getContacts();
-    setContacts(data);
+    try {
+      setLoadingContacts(true);
+
+      const data = await getContacts();
+
+      setContacts(data || []);
+    } catch (error) {
+      console.log(
+        "Load contacts error:",
+        error
+      );
+
+      Alert.alert(
+        "Unable to Load Contacts",
+        "Your saved contacts could not be loaded."
+      );
+    } finally {
+      setLoadingContacts(false);
+    }
   }
 
-  // KEEP YOUR handleDownload()
-const handleExport = async () => {
-  try {
-    if (contacts.length === 0) {
-      Alert.alert(
-        "No Contacts",
-        "No saved contacts found."
-      );
+  const handleExport = async () => {
+    if (exporting) {
       return;
     }
 
-    const fileUri = await exportContactsToExcel(contacts);
+    try {
+      if (contacts.length === 0) {
+        Alert.alert(
+          "No Contacts",
+          "No saved contacts found."
+        );
+        return;
+      }
 
-    if (!fileUri) {
-      Alert.alert(
-        "Error",
-        "Failed to generate Excel."
+      setExporting(true);
+
+      const fileUri =
+        await exportContactsToExcel(
+          contacts
+        );
+
+      if (!fileUri) {
+        Alert.alert(
+          "Export Failed",
+          "Failed to generate the Excel workbook."
+        );
+
+        return;
+      }
+
+      const sharingAvailable =
+        await Sharing.isAvailableAsync();
+
+      if (!sharingAvailable) {
+        Alert.alert(
+          "Sharing Not Available",
+          "Sharing is not supported on this device."
+        );
+
+        return;
+      }
+
+      await Sharing.shareAsync(fileUri, {
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        dialogTitle:
+          "Export Business Card Contacts",
+        UTI:
+          "org.openxmlformats.spreadsheetml.sheet",
+      });
+    } catch (error) {
+      console.log(
+        "Excel export error:",
+        error
       );
-      return;
-    }
 
-    if (!(await Sharing.isAvailableAsync())) {
       Alert.alert(
-        "Sharing not available",
-        "Sharing is not supported on this device."
+        "Export Failed",
+        "Failed to export the Excel workbook."
       );
-      return;
+    } finally {
+      setExporting(false);
     }
+  };
 
-    await Sharing.shareAsync(fileUri, {
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      dialogTitle: "Export Excel",
-      UTI:
-        "org.openxmlformats.spreadsheetml.sheet",
-    });
-  } catch (error) {
-    console.log(error);
+  const totalEmails = contacts.filter(
+    (contact) => contact.email
+  ).length;
 
-    Alert.alert(
-      "Error",
-      "Failed to export Excel."
-    );
-  }
-};
-  // KEEP YOUR handleShare()
-
-  const totalEmails = contacts.filter(c => c.email).length;
-  const totalPhones = contacts.filter(c => c.phone).length;
+  const totalPhones = contacts.filter(
+    (contact) => contact.phone
+  ).length;
 
   const companies = new Set(
     contacts
-      .map(c => c.company)
+      .map(
+        (contact) =>
+          contact.company
+      )
       .filter(Boolean)
   );
 
+  const previewContacts =
+    contacts.slice(0, 5);
+
   return (
-    <SafeAreaView style={styles.container}>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom:120
-        }}
-      >
-
-        {/* Header */}
-
-        <TouchableOpacity
-          onPress={() => router.back()}
+    <SafeAreaView
+      style={styles.safeArea}
+    >
+      <View style={styles.container}>
+        <ScrollView
+          showsVerticalScrollIndicator={
+            false
+          }
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingBottom:
+                190 + insets.bottom,
+            },
+          ]}
         >
-          <Ionicons
-            name="arrow-back"
-            size={28}
-            color="#111827"
-          />
-        </TouchableOpacity>
+          {/* Header */}
 
-     <Text style={styles.title}>
-  Export Excel
-</Text>
-        <Text style={styles.subtitle}>
-          Review your workbook before downloading.
-        </Text>
+          <View style={styles.header}>
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={styles.backButton}
+              onPress={() =>
+                router.back()
+              }
+            >
+              <Ionicons
+                name="arrow-back"
+                size={22}
+                color="#202622"
+              />
+            </TouchableOpacity>
 
-        {/* Workbook */}
+            <View
+              style={styles.headerContent}
+            >
+              <Text style={styles.title}>
+                Export Contacts
+              </Text>
 
-        <View style={styles.workbookCard}>
+              <Text style={styles.subtitle}>
+                Create an Excel workbook
+                from your saved contacts.
+              </Text>
+            </View>
 
-          <Ionicons
-            name="document-text"
-            color="#22C55E"
-            size={50}
-          />
-
-          <View
-            style={{
-              flex:1,
-              marginLeft:15,
-            }}
-          >
-            <Text style={styles.fileName}>
-              business_cards.xlsx
-            </Text>
-
-            <Text style={styles.fileType}>
-              Microsoft Excel Workbook (.xlsx)
-            </Text>
+            <View style={styles.headerIcon}>
+              <Ionicons
+                name="download-outline"
+                size={21}
+                color="#09A84E"
+              />
+            </View>
           </View>
 
-        </View>
+          {loadingContacts ? (
+            <View
+              style={styles.loadingContainer}
+            >
+              <View
+                style={
+                  styles.loadingIconContainer
+                }
+              >
+                <ActivityIndicator
+                  size="large"
+                  color="#09A84E"
+                />
+              </View>
 
-        {/* Stats */}
+              <Text
+                style={styles.loadingTitle}
+              >
+                Loading Contacts
+              </Text>
 
-        <View style={styles.grid}>
+              <Text
+                style={styles.loadingText}
+              >
+                Preparing your contact
+                information for export.
+              </Text>
+            </View>
+          ) : (
+            <>
+              {/* Workbook Card */}
 
-          <View style={styles.statCard}>
-            <Text style={styles.number}>
-              {contacts.length}
-            </Text>
+              <View
+                style={styles.workbookCard}
+              >
+                <View
+                  style={
+                    styles.workbookIcon
+                  }
+                >
+                  <Ionicons
+                    name="document-text"
+                    color="#09A84E"
+                    size={29}
+                  />
+                </View>
 
-            <Text style={styles.label}>
-              Contacts
-            </Text>
-          </View>
+                <View
+                  style={
+                    styles.workbookContent
+                  }
+                >
+                  <Text
+                    style={styles.fileLabel}
+                  >
+                    Excel workbook
+                  </Text>
 
-          <View style={styles.statCard}>
-            <Text style={styles.number}>
-              {companies.size}
-            </Text>
+                  <Text
+                    style={styles.fileName}
+                    numberOfLines={1}
+                  >
+                    business_cards.xlsx
+                  </Text>
 
-            <Text style={styles.label}>
-              Companies
-            </Text>
-          </View>
+                  <Text
+                    style={styles.fileType}
+                  >
+                    Microsoft Excel · XLSX
+                  </Text>
+                </View>
 
-          <View style={styles.statCard}>
-            <Text style={styles.number}>
-              {totalEmails}
-            </Text>
+                <View
+                  style={
+                    styles.fileStatus
+                  }
+                >
+                  <Ionicons
+                    name={
+                      contacts.length > 0
+                        ? "checkmark-circle"
+                        : "alert-circle-outline"
+                    }
+                    size={18}
+                    color={
+                      contacts.length > 0
+                        ? "#09A84E"
+                        : "#A1A9A4"
+                    }
+                  />
 
-            <Text style={styles.label}>
-              Emails
-            </Text>
-          </View>
+                  <Text
+                    style={[
+                      styles.fileStatusText,
+                      contacts.length ===
+                        0 &&
+                        styles.emptyStatusText,
+                    ]}
+                  >
+                    {contacts.length > 0
+                      ? "Ready"
+                      : "Empty"}
+                  </Text>
+                </View>
+              </View>
 
-          <View style={styles.statCard}>
-            <Text style={styles.number}>
-              {totalPhones}
-            </Text>
+              {/* Export Summary */}
 
-            <Text style={styles.label}>
-              Phones
-            </Text>
-          </View>
+              <View
+                style={styles.sectionHeader}
+              >
+                <View>
+                  <Text
+                    style={
+                      styles.sectionTitle
+                    }
+                  >
+                    Export summary
+                  </Text>
 
-        </View>
+                  <Text
+                    style={
+                      styles.sectionSubtitle
+                    }
+                  >
+                    Information included in
+                    your workbook
+                  </Text>
+                </View>
+              </View>
 
-        {/* Preview */}
+              <View style={styles.statsGrid}>
+                <StatCard
+                  icon="people-outline"
+                  value={contacts.length}
+                  label="Contacts"
+                />
 
-        <View style={styles.previewCard}>
+                <StatCard
+                  icon="business-outline"
+                  value={companies.size}
+                  label="Companies"
+                />
 
-          <Text style={styles.previewTitle}>
-            Excel Preview
-          </Text>
-<View style={styles.tableHeader}>
+                <StatCard
+                  icon="mail-outline"
+                  value={totalEmails}
+                  label="Emails"
+                />
 
-  <Text style={[styles.headerCell, { flex: 1.3 }]}>
-    Name
-  </Text>
+                <StatCard
+                  icon="call-outline"
+                  value={totalPhones}
+                  label="Phone numbers"
+                />
+              </View>
 
-  <Text style={styles.headerCell}>
-    Company
-  </Text>
+              {/* Workbook Information */}
 
-  <Text style={styles.headerCell}>
-    Phone
-  </Text>
+              <View
+                style={styles.infoCard}
+              >
+                <View style={styles.infoRow}>
+                  <View
+                    style={styles.infoIcon}
+                  >
+                    <Ionicons
+                      name="grid-outline"
+                      size={18}
+                      color="#09A84E"
+                    />
+                  </View>
 
-</View>
+                  <View
+                    style={
+                      styles.infoContent
+                    }
+                  >
+                    <Text
+                      style={styles.infoTitle}
+                    >
+                      Organized columns
+                    </Text>
 
-{contacts.slice(0, 5).map((item, index) => (
-  <View
-    key={index}
-    style={styles.tableRow}
-  >
+                    <Text
+                      style={styles.infoText}
+                    >
+                      Names, companies,
+                      phone numbers, emails
+                      and other available
+                      details.
+                    </Text>
+                  </View>
+                </View>
 
-    <Text
-      style={[styles.cell, { flex: 1.3 }]}
-      numberOfLines={1}
-    >
-      {item.name || "-"}
-    </Text>
+                <View
+                  style={styles.infoDivider}
+                />
 
-    <Text
-      style={styles.cell}
-      numberOfLines={1}
-    >
-      {item.company || "-"}
-    </Text>
+                <View style={styles.infoRow}>
+                  <View
+                    style={styles.infoIcon}
+                  >
+                    <Ionicons
+                      name="share-social-outline"
+                      size={18}
+                      color="#09A84E"
+                    />
+                  </View>
 
-    <Text
-      style={styles.cell}
-      numberOfLines={1}
-    >
-      {item.phone || "-"}
-    </Text>
+                  <View
+                    style={
+                      styles.infoContent
+                    }
+                  >
+                    <Text
+                      style={styles.infoTitle}
+                    >
+                      Easy to share
+                    </Text>
 
-  </View>
-))}
+                    <Text
+                      style={styles.infoText}
+                    >
+                      Save, email or share
+                      the workbook through
+                      supported apps.
+                    </Text>
+                  </View>
+                </View>
+              </View>
 
-          {contacts.length>5 && (
+              {/* Excel Preview */}
 
-            <Text style={styles.more}>
-              +{contacts.length-5} more contacts...
-            </Text>
+              <View
+                style={styles.previewCard}
+              >
+                <View
+                  style={
+                    styles.previewHeader
+                  }
+                >
+                  <View>
+                    <Text
+                      style={
+                        styles.previewTitle
+                      }
+                    >
+                      Workbook preview
+                    </Text>
 
+                    <Text
+                      style={
+                        styles.previewSubtitle
+                      }
+                    >
+                      First five saved
+                      contacts
+                    </Text>
+                  </View>
+
+                  <View
+                    style={
+                      styles.previewBadge
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.previewBadgeText
+                      }
+                    >
+                      {contacts.length} rows
+                    </Text>
+                  </View>
+                </View>
+
+                {contacts.length > 0 ? (
+                  <View
+                    style={
+                      styles.tableContainer
+                    }
+                  >
+                    <View
+                      style={
+                        styles.tableHeader
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.headerCell,
+                          styles.nameColumn,
+                        ]}
+                      >
+                        Name
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.headerCell
+                        }
+                      >
+                        Company
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.headerCell
+                        }
+                      >
+                        Phone
+                      </Text>
+                    </View>
+
+                    {previewContacts.map(
+                      (item, index) => (
+                        <View
+                          key={
+                            item.id ||
+                            `${item.name}-${index}`
+                          }
+                          style={[
+                            styles.tableRow,
+                            index ===
+                              previewContacts.length -
+                                1 &&
+                              styles.lastTableRow,
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.cell,
+                              styles.nameColumn,
+                              styles.nameCell,
+                            ]}
+                          >
+                            <View
+                              style={
+                                styles.avatar
+                              }
+                            >
+                              <Text
+                                style={
+                                  styles.avatarText
+                                }
+                              >
+                                {(
+                                  item.name ||
+                                  "?"
+                                )
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </Text>
+                            </View>
+
+                            <Text
+                              style={
+                                styles.nameText
+                              }
+                              numberOfLines={
+                                1
+                              }
+                            >
+                              {item.name ||
+                                "-"}
+                            </Text>
+                          </View>
+
+                          <Text
+                            style={[
+                              styles.cell,
+                              styles.cellText,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {item.company ||
+                              "-"}
+                          </Text>
+
+                          <Text
+                            style={[
+                              styles.cell,
+                              styles.cellText,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {item.phone ||
+                              "-"}
+                          </Text>
+                        </View>
+                      )
+                    )}
+
+                    {contacts.length > 5 && (
+                      <View
+                        style={
+                          styles.moreContainer
+                        }
+                      >
+                        <Ionicons
+                          name="ellipsis-horizontal"
+                          size={18}
+                          color="#09A84E"
+                        />
+
+                        <Text
+                          style={styles.more}
+                        >
+                          {contacts.length -
+                            5}{" "}
+                          more{" "}
+                          {contacts.length -
+                            5 ===
+                          1
+                            ? "contact"
+                            : "contacts"}{" "}
+                          will be included
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <View
+                    style={styles.emptyState}
+                  >
+                    <View
+                      style={
+                        styles.emptyIcon
+                      }
+                    >
+                      <Ionicons
+                        name="people-outline"
+                        size={32}
+                        color="#09A84E"
+                      />
+                    </View>
+
+                    <Text
+                      style={
+                        styles.emptyTitle
+                      }
+                    >
+                      No contacts to export
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.emptyText
+                      }
+                    >
+                      Scan and save at least
+                      one business card to
+                      create an Excel
+                      workbook.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </>
           )}
+        </ScrollView>
 
-        </View>
+        {/* Fixed Bottom Actions */}
 
-      </ScrollView>
+        {!loadingContacts && (
+          <View
+            style={[
+              styles.bottomActions,
+              {
+                paddingBottom: Math.max(
+                  insets.bottom,
+                  14
+                ),
+              },
+            ]}
+          >
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[
+                styles.exportButton,
+                (contacts.length === 0 ||
+                  exporting) &&
+                  styles.disabledExportButton,
+              ]}
+              onPress={handleExport}
+              disabled={
+                contacts.length === 0 ||
+                exporting
+              }
+            >
+              <View
+                style={
+                  styles.exportIconContainer
+                }
+              >
+                {exporting ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#09A84E"
+                  />
+                ) : (
+                  <Ionicons
+                    name="share-outline"
+                    size={20}
+                    color={
+                      contacts.length > 0
+                        ? "#09A84E"
+                        : "#909994"
+                    }
+                  />
+                )}
+              </View>
 
-      {/* Fixed Buttons */}
+              <View
+                style={
+                  styles.exportButtonContent
+                }
+              >
+                <Text
+                  style={[
+                    styles.exportButtonText,
+                    contacts.length ===
+                      0 &&
+                      styles.disabledExportText,
+                  ]}
+                >
+                  {exporting
+                    ? "Preparing Excel"
+                    : "Export Excel"}
+                </Text>
 
-      <View style={styles.bottomActions}>
+                <Text
+                  style={[
+                    styles.exportButtonSubtitle,
+                    contacts.length ===
+                      0 &&
+                      styles.disabledExportSubtitle,
+                  ]}
+                >
+                  {contacts.length > 0
+                    ? `${contacts.length} ${
+                        contacts.length ===
+                        1
+                          ? "contact"
+                          : "contacts"
+                      } included`
+                    : "No contacts available"}
+                </Text>
+              </View>
 
-  <TouchableOpacity
-    style={styles.downloadBtn}
-onPress={handleExport}
-  >
-    <Ionicons
-      name="share-outline"
-      size={22}
-      color="#fff"
-    />
+              <Ionicons
+                name="arrow-forward"
+                size={20}
+                color={
+                  contacts.length > 0
+                    ? "#FFFFFF"
+                    : "#909994"
+                }
+              />
+            </TouchableOpacity>
 
-    <Text style={styles.downloadText}>
-      Export Excel
-    </Text>
-  </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={styles.cancelButton}
+              onPress={() =>
+                router.back()
+              }
+              disabled={exporting}
+            >
+              <Ionicons
+                name="close-outline"
+                size={18}
+                color="#707A74"
+              />
 
-  <TouchableOpacity
-    style={styles.shareBtn}
-    onPress={() => router.back()}
-  >
-    <Ionicons
-      name="arrow-back-outline"
-      size={22}
-      color="#111827"
-    />
-
-    <Text style={styles.shareText}>
-      Back
-    </Text>
-  </TouchableOpacity>
-
-</View>
-
+              <Text
+                style={
+                  styles.cancelButtonText
+                }
+              >
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </SafeAreaView>
   );
+}
 
+function StatCard({
+  icon,
+  value,
+  label,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  value: number;
+  label: string;
+}) {
+  return (
+    <View style={styles.statCard}>
+      <View style={styles.statIcon}>
+        <Ionicons
+          name={icon}
+          size={20}
+          color="#09A84E"
+        />
+      </View>
+
+      <View style={styles.statContent}>
+        <Text style={styles.statNumber}>
+          {value}
+        </Text>
+
+        <Text style={styles.statLabel}>
+          {label}
+        </Text>
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+
   container: {
     flex: 1,
-    backgroundColor: "#F6F8FC",
+    backgroundColor: "#F7F9F8",
+  },
+
+  scrollContent: {
     paddingHorizontal: 20,
+    paddingTop: 10,
   },
 
-  title: {
-    fontSize: 30,
-    fontWeight: "900",
-    color: "#111827",
-    marginTop: 18,
-  },
-
-  subtitle: {
-    marginTop: 8,
-    color: "#6B7280",
-    fontSize: 15,
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 24,
   },
 
-  workbookCard: {
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 20,
+    borderWidth: 1,
+    borderColor: "#E5EAE7",
+    justifyContent: "center",
+    alignItems: "center",
+
+    shadowColor: "#17261D",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 2,
+  },
+
+  headerContent: {
+    flex: 1,
+    marginLeft: 14,
+  },
+
+  title: {
+    color: "#171D19",
+    fontSize: 22,
+    fontWeight: "900",
+  },
+
+  subtitle: {
+    marginTop: 3,
+    color: "#818A85",
+    fontSize: 12.5,
+    lineHeight: 17,
+    fontWeight: "500",
+  },
+
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: "#EAF8F0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingContainer: {
+    flex: 1,
+    minHeight: 500,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 30,
+  },
+
+  loadingIconContainer: {
+    width: 78,
+    height: 78,
+    borderRadius: 25,
+    backgroundColor: "#EAF8F0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingTitle: {
+    marginTop: 18,
+    color: "#202622",
+    fontSize: 19,
+    fontWeight: "800",
+  },
+
+  loadingText: {
+    maxWidth: 280,
+    marginTop: 7,
+    color: "#7D8681",
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: "center",
+  },
+
+  workbookCard: {
+    minHeight: 112,
+    padding: 16,
+    borderRadius: 21,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5EAE7",
     flexDirection: "row",
     alignItems: "center",
 
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
+    shadowColor: "#17261D",
+    shadowOpacity: 0.055,
+    shadowRadius: 10,
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: 4,
     },
-    elevation: 4,
+    elevation: 3,
+  },
+
+  workbookIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 19,
+    backgroundColor: "#EAF8F0",
+    borderWidth: 1,
+    borderColor: "#D8F0E2",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  workbookContent: {
+    flex: 1,
+    marginLeft: 14,
+  },
+
+  fileLabel: {
+    color: "#909893",
+    fontSize: 10.5,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 
   fileName: {
-    fontSize: 17,
+    marginTop: 5,
+    color: "#202622",
+    fontSize: 15.5,
     fontWeight: "800",
-    color: "#111827",
   },
 
   fileType: {
     marginTop: 4,
-    color: "#6B7280",
-    fontSize: 13,
+    color: "#818A85",
+    fontSize: 11.5,
+    fontWeight: "500",
   },
 
-  grid: {
+  fileStatus: {
+    minHeight: 34,
+    paddingHorizontal: 9,
+    borderRadius: 11,
+    backgroundColor: "#EFF9F3",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  fileStatusText: {
+    marginLeft: 5,
+    color: "#078E42",
+    fontSize: 10.5,
+    fontWeight: "800",
+  },
+
+  emptyStatusText: {
+    color: "#8B948F",
+  },
+
+  sectionHeader: {
+    marginTop: 25,
+    marginBottom: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  sectionTitle: {
+    color: "#222824",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+
+  sectionSubtitle: {
+    marginTop: 3,
+    color: "#89928D",
+    fontSize: 11.5,
+    fontWeight: "500",
+  },
+
+  statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginTop: 22,
   },
 
   statCard: {
-    width: "48%",
+    width: "48.5%",
+    minHeight: 94,
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 19,
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingVertical: 22,
+    borderWidth: 1,
+    borderColor: "#E7ECE9",
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
 
-    shadowColor: "#000",
+    shadowColor: "#17261D",
     shadowOpacity: 0.04,
-    shadowRadius: 10,
+    shadowRadius: 8,
     shadowOffset: {
       width: 0,
-      height: 5,
+      height: 3,
     },
-    elevation: 3,
+    elevation: 2,
   },
 
-  number: {
-    fontSize: 30,
+  statIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "#EAF8F0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  statContent: {
+    flex: 1,
+    marginLeft: 11,
+  },
+
+  statNumber: {
+    color: "#078E42",
+    fontSize: 22,
     fontWeight: "900",
-    color: "#5B4BFF",
   },
 
-  label: {
-    marginTop: 8,
-    color: "#6B7280",
+  statLabel: {
+    marginTop: 3,
+    color: "#7D8681",
+    fontSize: 10.5,
+    lineHeight: 14,
     fontWeight: "600",
   },
 
-  previewCard: {
-    marginTop: 10,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 22,
-    padding: 18,
+  infoCard: {
+    marginTop: 9,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    backgroundColor: "#EFF9F3",
+    borderWidth: 1,
+    borderColor: "#DCEFE4",
+  },
 
-    shadowColor: "#000",
+  infoRow: {
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  infoIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  infoContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  infoTitle: {
+    color: "#263129",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  infoText: {
+    marginTop: 3,
+    color: "#738078",
+    fontSize: 10.8,
+    lineHeight: 16,
+    fontWeight: "500",
+  },
+
+  infoDivider: {
+    height: 1,
+    marginLeft: 52,
+    backgroundColor: "#D9EBE0",
+  },
+
+  previewCard: {
+    marginTop: 22,
+    padding: 16,
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5EAE7",
+
+    shadowColor: "#17261D",
     shadowOpacity: 0.05,
-    shadowRadius: 12,
+    shadowRadius: 10,
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: 4,
     },
     elevation: 3,
   },
 
+  previewHeader: {
+    marginBottom: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
   previewTitle: {
-    fontSize: 18,
+    color: "#222824",
+    fontSize: 16,
     fontWeight: "800",
-    color: "#111827",
-    marginBottom: 16,
+  },
+
+  previewSubtitle: {
+    marginTop: 3,
+    color: "#8A938E",
+    fontSize: 11.5,
+    fontWeight: "500",
+  },
+
+  previewBadge: {
+    minHeight: 30,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: "#EAF8F0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  previewBadgeText: {
+    color: "#078E42",
+    fontSize: 10.5,
+    fontWeight: "800",
+  },
+
+  tableContainer: {
+    overflow: "hidden",
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "#E7ECE9",
   },
 
   tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#EEF2FF",
-    borderRadius: 12,
-    paddingVertical: 12,
+    minHeight: 43,
     paddingHorizontal: 10,
-    marginBottom: 8,
+    backgroundColor: "#EFF9F3",
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   headerCell: {
-  flex: 1,
-  fontWeight: "800",
-  color: "#4338CA",
-  fontSize: 13,
-},
+    flex: 1,
+    color: "#31734D",
+    fontSize: 10.5,
+    fontWeight: "800",
+  },
+
+  nameColumn: {
+    flex: 1.3,
+  },
 
   tableRow: {
-    flexDirection: "row",
-    paddingVertical: 13,
+    minHeight: 54,
     paddingHorizontal: 10,
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: "#EFF2F0",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  lastTableRow: {
+    borderBottomWidth: 0,
   },
 
   cell: {
-  flex: 1,
-  color: "#374151",
-  fontSize: 13,
-},
+    flex: 1,
+  },
+
+  cellText: {
+    paddingRight: 5,
+    color: "#5E6862",
+    fontSize: 10.5,
+    fontWeight: "500",
+  },
+
+  nameCell: {
+    paddingRight: 6,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  avatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: "#EAF8F0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  avatarText: {
+    color: "#09A84E",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  nameText: {
+    flex: 1,
+    marginLeft: 7,
+    color: "#2E3531",
+    fontSize: 10.5,
+    fontWeight: "700",
+  },
+
+  moreContainer: {
+    minHeight: 45,
+    paddingHorizontal: 12,
+    backgroundColor: "#FAFCFB",
+    borderTopWidth: 1,
+    borderTopColor: "#EFF2F0",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   more: {
-    marginTop: 14,
-    textAlign: "center",
-    color: "#5B4BFF",
+    marginLeft: 7,
+    color: "#078E42",
+    fontSize: 10.5,
     fontWeight: "700",
+  },
+
+  emptyState: {
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    alignItems: "center",
+  },
+
+  emptyIcon: {
+    width: 68,
+    height: 68,
+    borderRadius: 22,
+    backgroundColor: "#EAF8F0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  emptyTitle: {
+    marginTop: 15,
+    color: "#252B28",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+
+  emptyText: {
+    maxWidth: 280,
+    marginTop: 7,
+    color: "#7F8883",
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: "center",
   },
 
   bottomActions: {
     position: "absolute",
-    left: 20,
-    right: 20,
-    bottom: 28,
-  },
+    left: 12,
+    right: 12,
+    bottom: 8,
+    paddingTop: 13,
+    paddingHorizontal: 13,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5EAE7",
 
-  downloadBtn: {
-    height: 58,
-    backgroundColor: "#22C55E",
-    borderRadius: 18,
-
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-
-    shadowColor: "#22C55E",
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
+    shadowColor: "#17261D",
+    shadowOpacity: 0.12,
+    shadowRadius: 15,
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: -4,
     },
-    elevation: 8,
+    elevation: 10,
   },
 
-  downloadText: {
-    color: "#FFFFFF",
-    marginLeft: 10,
-    fontWeight: "800",
-    fontSize: 16,
-  },
-
-  shareBtn: {
-    height: 56,
-    backgroundColor: "#FFFFFF",
+  exportButton: {
+    minHeight: 60,
+    paddingHorizontal: 14,
     borderRadius: 18,
-
-    marginTop: 14,
-
+    backgroundColor: "#09A84E",
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
 
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
+    shadowColor: "#09A84E",
+    shadowOpacity: 0.22,
     shadowRadius: 10,
     shadowOffset: {
       width: 0,
-      height: 5,
+      height: 4,
     },
-    elevation: 3,
+    elevation: 4,
   },
 
-  shareText: {
-    marginLeft: 10,
+  disabledExportButton: {
+    backgroundColor: "#E6EBE8",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+
+  exportIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  exportButtonContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  exportButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14.5,
+    fontWeight: "800",
+  },
+
+  disabledExportText: {
+    color: "#87908B",
+  },
+
+  exportButtonSubtitle: {
+    marginTop: 2,
+    color: "rgba(255,255,255,0.78)",
+    fontSize: 10.5,
+    fontWeight: "500",
+  },
+
+  disabledExportSubtitle: {
+    color: "#A1A8A4",
+  },
+
+  cancelButton: {
+    minHeight: 42,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  cancelButtonText: {
+    marginLeft: 6,
+    color: "#707A74",
+    fontSize: 12.5,
     fontWeight: "700",
-    color: "#111827",
-    fontSize: 15,
   },
 });
