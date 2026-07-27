@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  useWindowDimensions,
 } from "react-native";
 import {
   SafeAreaView,
@@ -20,9 +21,23 @@ import {
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
+import * as ImageManipulator from "expo-image-manipulator";
+
+type CardOrientation =
+  | "landscape"
+  | "portrait";
+
+type MeasuredRectangle = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
 export default function ScannerScreen() {
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } =
+    useWindowDimensions();
 
   const [
     permission,
@@ -30,6 +45,8 @@ export default function ScannerScreen() {
   ] = useCameraPermissions();
 
   const cameraRef = useRef<any>(null);
+  const containerRef = useRef<View>(null);
+  const scanFrameRef = useRef<View>(null);
 
   const [images, setImages] =
     useState<string[]>([]);
@@ -39,6 +56,404 @@ export default function ScannerScreen() {
 
   const [flashEnabled, setFlashEnabled] =
     useState(false);
+
+  const [
+    cardOrientation,
+    setCardOrientation,
+  ] = useState<CardOrientation>(
+    "landscape"
+  );
+
+  /*
+   * Horizontal card:
+   * 86% of screen width with a 1.62 ratio.
+   *
+   * Vertical card:
+   * Smaller width and taller frame.
+   */
+  const landscapeFrameWidth = Math.min(
+    screenWidth * 0.86,
+    430
+  );
+
+  const portraitFrameWidth = Math.min(
+    screenWidth * 0.54,
+    260
+  );
+
+  const frameWidth =
+    cardOrientation === "landscape"
+      ? landscapeFrameWidth
+      : portraitFrameWidth;
+
+  const frameHeight =
+    cardOrientation === "landscape"
+      ? frameWidth / 1.62
+      : frameWidth * 1.62;
+
+  /**
+   * Measures the green scanner frame relative
+   * to the full camera container.
+   */
+  const measureScanFrame =
+    (): Promise<MeasuredRectangle> => {
+      return new Promise(
+        (resolve, reject) => {
+          if (
+            !containerRef.current ||
+            !scanFrameRef.current
+          ) {
+            reject(
+              new Error(
+                "Scanner frame is not ready."
+              )
+            );
+            return;
+          }
+
+          containerRef.current.measureInWindow(
+            (
+              containerX,
+              containerY,
+              containerWidth,
+              containerHeight
+            ) => {
+              scanFrameRef.current?.measureInWindow(
+                (
+                  frameX,
+                  frameY,
+                  measuredWidth,
+                  measuredHeight
+                ) => {
+                  if (
+                    measuredWidth <= 0 ||
+                    measuredHeight <= 0 ||
+                    containerWidth <= 0 ||
+                    containerHeight <= 0
+                  ) {
+                    reject(
+                      new Error(
+                        "Invalid scanner frame measurements."
+                      )
+                    );
+                    return;
+                  }
+
+                  resolve({
+                    x:
+                      frameX -
+                      containerX,
+                    y:
+                      frameY -
+                      containerY,
+                    width:
+                      measuredWidth,
+                    height:
+                      measuredHeight,
+                  });
+                }
+              );
+            }
+          );
+        }
+      );
+    };
+
+  /**
+   * Converts the visible scanner frame coordinates
+   * into coordinates inside the captured photograph.
+   *
+   * CameraView uses a cover-like preview. Therefore,
+   * part of the captured image can extend beyond the
+   * visible phone screen. This calculation accounts
+   * for that difference.
+   */
+  const calculateCropArea = (
+    photoWidth: number,
+    photoHeight: number,
+    cameraWidth: number,
+    cameraHeight: number,
+    frame: MeasuredRectangle
+  ) => {
+    const previewScale = Math.max(
+      cameraWidth / photoWidth,
+      cameraHeight / photoHeight
+    );
+
+    const displayedImageWidth =
+      photoWidth * previewScale;
+
+    const displayedImageHeight =
+      photoHeight * previewScale;
+
+    const hiddenHorizontalAmount =
+      (displayedImageWidth -
+        cameraWidth) /
+      2;
+
+    const hiddenVerticalAmount =
+      (displayedImageHeight -
+        cameraHeight) /
+      2;
+
+    let originX =
+      (frame.x +
+        hiddenHorizontalAmount) /
+      previewScale;
+
+    let originY =
+      (frame.y +
+        hiddenVerticalAmount) /
+      previewScale;
+
+    let cropWidth =
+      frame.width / previewScale;
+
+    let cropHeight =
+      frame.height / previewScale;
+
+    originX = Math.max(
+      0,
+      Math.round(originX)
+    );
+
+    originY = Math.max(
+      0,
+      Math.round(originY)
+    );
+
+    cropWidth = Math.round(
+      Math.min(
+        cropWidth,
+        photoWidth - originX
+      )
+    );
+
+    cropHeight = Math.round(
+      Math.min(
+        cropHeight,
+        photoHeight - originY
+      )
+    );
+
+    if (
+      cropWidth <= 0 ||
+      cropHeight <= 0
+    ) {
+      throw new Error(
+        "The calculated crop area is invalid."
+      );
+    }
+
+    return {
+      originX,
+      originY,
+      width: cropWidth,
+      height: cropHeight,
+    };
+  };
+
+  const takePicture = async () => {
+    if (
+      !cameraRef.current ||
+      isCapturing
+    ) {
+      return;
+    }
+
+    try {
+      setIsCapturing(true);
+
+      /*
+       * Measure the frame before taking the photo.
+       */
+      const [
+        frameMeasurements,
+        containerMeasurements,
+      ] = await Promise.all([
+        measureScanFrame(),
+
+        new Promise<{
+          width: number;
+          height: number;
+        }>((resolve, reject) => {
+          if (!containerRef.current) {
+            reject(
+              new Error(
+                "Camera container is not ready."
+              )
+            );
+            return;
+          }
+
+          containerRef.current.measure(
+            (
+              _x,
+              _y,
+              width,
+              height
+            ) => {
+              if (
+                width <= 0 ||
+                height <= 0
+              ) {
+                reject(
+                  new Error(
+                    "Invalid camera dimensions."
+                  )
+                );
+                return;
+              }
+
+              resolve({
+                width,
+                height,
+              });
+            }
+          );
+        }),
+      ]);
+
+      const start = Date.now();
+
+      const photo =
+        await cameraRef.current.takePictureAsync(
+          {
+            quality: 0.9,
+
+            /*
+             * Keep this false so Expo processes the
+             * photo into the device's correct orientation.
+             */
+            skipProcessing: false,
+          }
+        );
+
+      console.log(
+        "Capture time:",
+        Date.now() - start,
+        "ms"
+      );
+
+      if (
+        !photo?.uri ||
+        !photo?.width ||
+        !photo?.height
+      ) {
+        Alert.alert(
+          "Capture Failed",
+          "The card image could not be captured. Please try again."
+        );
+        return;
+      }
+
+      console.log("Original photo:", {
+        uri: photo.uri,
+        width: photo.width,
+        height: photo.height,
+      });
+
+      const cropArea =
+        calculateCropArea(
+          photo.width,
+          photo.height,
+          containerMeasurements.width,
+          containerMeasurements.height,
+          frameMeasurements
+        );
+
+      console.log(
+        "Selected card orientation:",
+        cardOrientation
+      );
+
+      console.log(
+        "Calculated crop area:",
+        cropArea
+      );
+
+      const croppedImage =
+        await ImageManipulator.manipulateAsync(
+          photo.uri,
+          [
+            {
+              crop: cropArea,
+            },
+          ],
+          {
+            compress: 0.9,
+            format:
+              ImageManipulator.SaveFormat
+                .JPEG,
+          }
+        );
+
+      if (!croppedImage?.uri) {
+        throw new Error(
+          "The cropped image was not created."
+        );
+      }
+
+      console.log(
+        "Cropped card image:",
+        {
+          uri: croppedImage.uri,
+          width: croppedImage.width,
+          height: croppedImage.height,
+        }
+      );
+
+      /*
+       * Add only the cropped image.
+       * The original full image is not added.
+       */
+      setImages((previousImages) => {
+        if (
+          previousImages.includes(
+            croppedImage.uri
+          )
+        ) {
+          return previousImages;
+        }
+
+        return [
+          ...previousImages,
+          croppedImage.uri,
+        ];
+      });
+    } catch (error) {
+      console.error(
+        "Camera capture/crop error:",
+        error
+      );
+
+      Alert.alert(
+        "Card Capture Failed",
+        "The card could not be cropped. Make sure it is positioned inside the frame and try again."
+      );
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const handleUpload = () => {
+    if (images.length === 0) {
+      Alert.alert(
+        "No Cards Scanned",
+        "Please scan at least one business card before continuing."
+      );
+      return;
+    }
+
+    /*
+     * These are now cropped card images,
+     * not the complete camera photos.
+     */
+    (globalThis as any).scannedImages =
+      images;
+
+    router.push("/scanned-queue");
+  };
 
   if (!permission) {
     return (
@@ -60,8 +475,12 @@ export default function ScannerScreen() {
       <SafeAreaView
         style={styles.permissionScreen}
       >
-        <View style={styles.permissionContent}>
-          <View style={styles.permissionIcon}>
+        <View
+          style={styles.permissionContent}
+        >
+          <View
+            style={styles.permissionIcon}
+          >
             <Ionicons
               name="camera-outline"
               size={42}
@@ -69,11 +488,15 @@ export default function ScannerScreen() {
             />
           </View>
 
-          <Text style={styles.permissionTitle}>
+          <Text
+            style={styles.permissionTitle}
+          >
             Camera Access Required
           </Text>
 
-          <Text style={styles.permissionText}>
+          <Text
+            style={styles.permissionText}
+          >
             Snip It needs access to your
             camera to scan business cards
             and extract contact details.
@@ -101,7 +524,9 @@ export default function ScannerScreen() {
 
           <TouchableOpacity
             activeOpacity={0.75}
-            style={styles.permissionBackButton}
+            style={
+              styles.permissionBackButton
+            }
             onPress={() => router.back()}
           >
             <Text
@@ -117,92 +542,15 @@ export default function ScannerScreen() {
     );
   }
 
-  const takePicture = async () => {
-    if (
-      !cameraRef.current ||
-      isCapturing
-    ) {
-      return;
-    }
-
-    try {
-      setIsCapturing(true);
-
-      const start = Date.now();
-
-      const photo =
-        await cameraRef.current.takePictureAsync(
-          {
-            quality: 0.7,
-            skipProcessing: true,
-          }
-        );
-
-      console.log(
-        "Capture Time:",
-        Date.now() - start,
-        "ms"
-      );
-
-      if (!photo?.uri) {
-        Alert.alert(
-          "Capture Failed",
-          "The card image could not be captured. Please try again."
-        );
-        return;
-      }
-
-      setImages((previousImages) => {
-        if (
-          previousImages.includes(
-            photo.uri
-          )
-        ) {
-          return previousImages;
-        }
-
-        return [
-          ...previousImages,
-          photo.uri,
-        ];
-      });
-    } catch (error) {
-      console.error(
-        "Camera capture error:",
-        error
-      );
-
-      Alert.alert(
-        "Camera Error",
-        "Something went wrong while capturing the card."
-      );
-    } finally {
-      setIsCapturing(false);
-    }
-  };
-
-  const handleUpload = () => {
-    if (images.length === 0) {
-      Alert.alert(
-        "No Cards Scanned",
-        "Please scan at least one business card before continuing."
-      );
-      return;
-    }
-
-    (globalThis as any).scannedImages =
-      images;
-
-    router.push("/scanned-queue");
-  };
-
   return (
-    <View style={styles.container}>
+    <View
+      ref={containerRef}
+      style={styles.container}
+    >
       <CameraView
         ref={cameraRef}
         style={StyleSheet.absoluteFill}
         facing="back"
-        pictureSize="640x480"
         enableTorch={flashEnabled}
       />
 
@@ -233,8 +581,12 @@ export default function ScannerScreen() {
           />
         </TouchableOpacity>
 
-        <View style={styles.titleContainer}>
-          <Text style={styles.screenTitle}>
+        <View
+          style={styles.titleContainer}
+        >
+          <Text
+            style={styles.screenTitle}
+          >
             Scan Business Card
           </Text>
 
@@ -276,24 +628,119 @@ export default function ScannerScreen() {
       </View>
 
       {/* Scanner area */}
-      <View style={styles.scannerArea}>
-        <View style={styles.instructionBadge}>
-          <View
-            style={
-              styles.instructionDot
+      <View
+        style={[
+          styles.scannerArea,
+          cardOrientation ===
+            "portrait" &&
+            styles.portraitScannerArea,
+        ]}
+      >
+        <View
+          style={styles.orientationSelector}
+        >
+          <TouchableOpacity
+            activeOpacity={0.85}
+            disabled={isCapturing}
+            style={[
+              styles.orientationButton,
+              cardOrientation ===
+                "landscape" &&
+                styles.orientationButtonActive,
+            ]}
+            onPress={() =>
+              setCardOrientation(
+                "landscape"
+              )
             }
+          >
+            <Ionicons
+              name="card-outline"
+              size={17}
+              color={
+                cardOrientation ===
+                "landscape"
+                  ? "#122218"
+                  : "#FFFFFF"
+              }
+            />
+
+            <Text
+              style={[
+                styles.orientationButtonText,
+                cardOrientation ===
+                  "landscape" &&
+                  styles.orientationButtonTextActive,
+              ]}
+            >
+              Horizontal
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            disabled={isCapturing}
+            style={[
+              styles.orientationButton,
+              cardOrientation ===
+                "portrait" &&
+                styles.orientationButtonActive,
+            ]}
+            onPress={() =>
+              setCardOrientation(
+                "portrait"
+              )
+            }
+          >
+            <Ionicons
+              name="phone-portrait-outline"
+              size={17}
+              color={
+                cardOrientation ===
+                "portrait"
+                  ? "#122218"
+                  : "#FFFFFF"
+              }
+            />
+
+            <Text
+              style={[
+                styles.orientationButtonText,
+                cardOrientation ===
+                  "portrait" &&
+                  styles.orientationButtonTextActive,
+              ]}
+            >
+              Vertical
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View
+          style={styles.instructionBadge}
+        >
+          <View
+            style={styles.instructionDot}
           />
 
           <Text
-            style={
-              styles.instructionText
-            }
+            style={styles.instructionText}
           >
             Hold your phone steady
           </Text>
         </View>
 
-        <View style={styles.scanFrame}>
+        <View
+          ref={scanFrameRef}
+          collapsable={false}
+          style={[
+            styles.scanFrame,
+            {
+              width: frameWidth,
+              height: frameHeight,
+            },
+          ]}
+        >
           <View
             style={[
               styles.corner,
@@ -336,17 +783,20 @@ export default function ScannerScreen() {
         style={[
           styles.bottomPanel,
           {
-            paddingBottom:
-              Math.max(
-                insets.bottom,
-                18
-              ),
+            paddingBottom: Math.max(
+              insets.bottom,
+              18
+            ),
           },
         ]}
       >
         <View style={styles.counterRow}>
-          <View style={styles.counterBadge}>
-            <View style={styles.counterIcon}>
+          <View
+            style={styles.counterBadge}
+          >
+            <View
+              style={styles.counterIcon}
+            >
               <Ionicons
                 name="images-outline"
                 size={17}
@@ -356,7 +806,9 @@ export default function ScannerScreen() {
 
             <View>
               <Text
-                style={styles.counterTitle}
+                style={
+                  styles.counterTitle
+                }
               >
                 {images.length}{" "}
                 {images.length === 1
@@ -395,7 +847,12 @@ export default function ScannerScreen() {
             style={styles.sidePlaceholder}
           >
             <Ionicons
-              name="card-outline"
+              name={
+                cardOrientation ===
+                "landscape"
+                  ? "card-outline"
+                  : "phone-portrait-outline"
+              }
               size={22}
               color="#8A9490"
             />
@@ -405,7 +862,10 @@ export default function ScannerScreen() {
                 styles.sidePlaceholderText
               }
             >
-              Card
+              {cardOrientation ===
+              "landscape"
+                ? "Horizontal"
+                : "Vertical"}
             </Text>
           </View>
 
@@ -419,7 +879,9 @@ export default function ScannerScreen() {
             ]}
             onPress={takePicture}
           >
-            <View style={styles.captureMiddle}>
+            <View
+              style={styles.captureMiddle}
+            >
               {isCapturing ? (
                 <ActivityIndicator
                   size="small"
@@ -549,7 +1011,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-
     shadowColor: "#09A84E",
     shadowOpacity: 0.22,
     shadowRadius: 10,
@@ -638,15 +1099,57 @@ const styles = StyleSheet.create({
 
   scannerArea: {
     position: "absolute",
-    top: "24%",
+    top: "18%",
     left: 0,
     right: 0,
     alignItems: "center",
   },
 
+  portraitScannerArea: {
+    top: "15%",
+  },
+
+  orientationSelector: {
+    minHeight: 43,
+    marginBottom: 12,
+    padding: 4,
+    borderRadius: 16,
+    backgroundColor:
+      "rgba(14, 20, 17, 0.64)",
+    borderWidth: 1,
+    borderColor:
+      "rgba(255, 255, 255, 0.16)",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  orientationButton: {
+    minHeight: 35,
+    paddingHorizontal: 13,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  orientationButtonActive: {
+    backgroundColor: "#DDF7E8",
+  },
+
+  orientationButtonText: {
+    marginLeft: 6,
+    color: "#FFFFFF",
+    fontSize: 11.5,
+    fontWeight: "700",
+  },
+
+  orientationButtonTextActive: {
+    color: "#122218",
+  },
+
   instructionBadge: {
     minHeight: 34,
-    marginBottom: 18,
+    marginBottom: 14,
     paddingHorizontal: 13,
     borderRadius: 13,
     backgroundColor:
@@ -673,9 +1176,6 @@ const styles = StyleSheet.create({
   },
 
   scanFrame: {
-    width: "86%",
-    maxWidth: 430,
-    aspectRatio: 1.62,
     position: "relative",
     borderRadius: 23,
     backgroundColor:
@@ -738,7 +1238,7 @@ const styles = StyleSheet.create({
 
   helperText: {
     width: "82%",
-    marginTop: 17,
+    marginTop: 13,
     color:
       "rgba(255, 255, 255, 0.86)",
     fontSize: 12.5,
@@ -757,7 +1257,6 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     backgroundColor:
       "rgba(250, 252, 251, 0.96)",
-
     shadowColor: "#000000",
     shadowOpacity: 0.2,
     shadowRadius: 18,
@@ -823,7 +1322,7 @@ const styles = StyleSheet.create({
   },
 
   sidePlaceholder: {
-    width: 72,
+    width: 76,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -831,8 +1330,9 @@ const styles = StyleSheet.create({
   sidePlaceholderText: {
     marginTop: 5,
     color: "#8A9490",
-    fontSize: 10.5,
+    fontSize: 9.5,
     fontWeight: "700",
+    textAlign: "center",
   },
 
   captureOuter: {
@@ -844,7 +1344,6 @@ const styles = StyleSheet.create({
     borderColor: "#09A84E",
     alignItems: "center",
     justifyContent: "center",
-
     shadowColor: "#09A84E",
     shadowOpacity: 0.24,
     shadowRadius: 12,

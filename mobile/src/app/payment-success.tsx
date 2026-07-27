@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -19,6 +19,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import { getStringParam } from "../utils/payment";
+import { createNotification } from "../services/notificationService";
 
 export default function PaymentSuccessScreen() {
   const params = useLocalSearchParams();
@@ -33,6 +34,16 @@ export default function PaymentSuccessScreen() {
 
   const orderId =
     getStringParam(params.orderId);
+
+  useEffect(() => {
+    createNotification({
+      type: "payment_success",
+      title: "Payment successful",
+      message: `${planName} was activated successfully.`,
+      actionRoute: "/home",
+      eventKey: `payment-success-${paymentId || orderId || planName}`,
+    });
+  }, [orderId, paymentId, planName]);
 
   return (
     <SafeAreaView style={styles.safeArea}>

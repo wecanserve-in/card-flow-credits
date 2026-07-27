@@ -1,17 +1,36 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { getStringParam } from "../utils/payment";
+import { createNotification } from "../services/notificationService";
 
 export default function PaymentFailedScreen() {
   const params = useLocalSearchParams();
   const reason = getStringParam(params.reason);
+  const paymentId = getStringParam(params.paymentId);
+  const orderId = getStringParam(params.orderId);
   const message =
     getStringParam(params.message) ||
-    (reason === "cancelled" ? "Payment was cancelled." : "Payment could not be completed.");
+    (reason === "cancelled"
+      ? "Payment was cancelled."
+      : "Payment could not be completed.");
+
+  useEffect(() => {
+    const cancelled = reason === "cancelled";
+
+    createNotification({
+      type: cancelled ? "payment_cancelled" : "payment_failed",
+      title: cancelled ? "Payment cancelled" : "Payment failed",
+      message,
+      actionRoute: "/plans",
+      eventKey: `payment-${cancelled ? "cancelled" : "failed"}-${
+        paymentId || orderId || message
+      }`,
+    });
+  }, [message, orderId, paymentId, reason]);
 
   return (
     <SafeAreaView style={styles.container}>

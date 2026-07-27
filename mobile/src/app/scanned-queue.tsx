@@ -31,6 +31,10 @@ import {
   auth,
   db,
 } from "../services/firebase";
+import {
+  createCreditNotification,
+  createNotification,
+} from "../services/notificationService";
 
 export default function ScannedQueueScreen() {
   const insets = useSafeAreaInsets();
@@ -132,6 +136,14 @@ export default function ScannedQueueScreen() {
       return;
     }
 
+    if (!auth.currentUser) {
+      Alert.alert(
+        "Login Required",
+        "Please log in again before extracting cards."
+      );
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -146,11 +158,45 @@ export default function ScannedQueueScreen() {
             )
         );
 
+      const totalLimit =
+        userData?.freeScanLimit ?? 0;
+
+      const currentUsed =
+        userData?.freeScansUsed ?? 0;
+
       const remainingScans =
-        (userData?.freeScanLimit ??
-          0) -
-        (userData?.freeScansUsed ??
-          0);
+        Math.max(
+          totalLimit - currentUsed,
+          0
+        );
+
+      if (remainingScans <= 0) {
+        await createCreditNotification({
+          remaining: 0,
+          used: currentUsed,
+          total: totalLimit,
+        });
+
+        setLoading(false);
+
+        Alert.alert(
+          "No Scans Remaining",
+          "You have used all available scans. Upgrade your plan to continue.",
+          [
+            {
+              text: "Upgrade",
+              onPress: () =>
+                router.push("/plans"),
+            },
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+          ]
+        );
+
+        return;
+      }
 
       if (
         selectedImages.length >
@@ -159,12 +205,12 @@ export default function ScannedQueueScreen() {
         setLoading(false);
 
         Alert.alert(
-          "Free Scan Limit",
-          `You have only ${remainingScans} free scan${
+          "Scan Limit Reached",
+          `You selected ${selectedImages.length} cards, but only ${remainingScans} scan${
             remainingScans === 1
               ? ""
               : "s"
-          } remaining.`,
+          } remain.`,
           [
             {
               text: "Upgrade",
@@ -172,13 +218,7 @@ export default function ScannedQueueScreen() {
                 router.push("/plans"),
             },
             {
-              text: `Extract ${remainingScans}`,
-              onPress: () => {
-                // Existing placeholder logic retained.
-              },
-            },
-            {
-              text: "Cancel",
+              text: "Choose Again",
               style: "cancel",
             },
           ]
@@ -202,26 +242,78 @@ export default function ScannedQueueScreen() {
         result
       );
 
+      const extractedCards =
+        Array.isArray(result?.cards)
+          ? result.cards
+          : [];
+
       if (
-        result.cards.length > 0 &&
-        auth.currentUser
+        extractedCards.length === 0
       ) {
-        await updateDoc(
-          doc(
-            db,
-            "users",
-            auth.currentUser.uid
-          ),
-          {
-            freeScansUsed: increment(
-              result.cards.length
-            ),
-          }
+        await createNotification({
+          type: "extraction_failed",
+          title: "No card details found",
+          message:
+            "No readable business card details could be extracted. Please scan the cards again.",
+          actionRoute: "/scanner",
+          eventKey:
+            `extraction-empty-${Date.now()}`,
+        });
+
+        Alert.alert(
+          "No Details Found",
+          "No readable card details were found. Please scan the cards again."
         );
+
+        return;
       }
 
-      (globalThis as any).extractedCards =
-        result.cards;
+      const newUsed =
+        currentUsed +
+        extractedCards.length;
+
+      const newRemaining =
+        Math.max(
+          totalLimit - newUsed,
+          0
+        );
+
+      await updateDoc(
+        doc(
+          db,
+          "users",
+          auth.currentUser.uid
+        ),
+        {
+          freeScansUsed: increment(
+            extractedCards.length
+          ),
+        }
+      );
+
+      await createNotification({
+        type: "extraction_success",
+        title: "Cards extracted",
+        message: `${extractedCards.length} ${
+          extractedCards.length === 1
+            ? "business card was"
+            : "business cards were"
+        } extracted successfully.`,
+        actionRoute: "/saved-contacts",
+        eventKey:
+          `extraction-success-${Date.now()}-${extractedCards.length}`,
+      });
+
+      await createCreditNotification({
+        remaining: newRemaining,
+        used: newUsed,
+        total: totalLimit,
+      });
+
+      (
+        globalThis as any
+      ).extractedCards =
+        extractedCards;
 
       router.push("/contacts");
     } catch (error) {
@@ -229,6 +321,16 @@ export default function ScannedQueueScreen() {
         "Extraction Error:",
         error
       );
+
+      await createNotification({
+        type: "extraction_failed",
+        title: "Extraction failed",
+        message:
+          "We could not extract the selected business cards. Please try again.",
+        actionRoute: "/scanner",
+        eventKey:
+          `extraction-failed-${Date.now()}`,
+      });
 
       Alert.alert(
         "Extraction Failed",
@@ -264,8 +366,13 @@ export default function ScannedQueueScreen() {
   };
 
   const remainingScans =
-    (userData?.freeScanLimit ?? 0) -
-    (userData?.freeScansUsed ?? 0);
+    Math.max(
+      (userData?.freeScanLimit ??
+        0) -
+        (userData?.freeScansUsed ??
+          0),
+      0
+    );
 
   const allSelected =
     scannedImages.length > 0 &&
@@ -494,10 +601,7 @@ export default function ScannedQueueScreen() {
                       styles.limitValue,
                   ]}
                 >
-                  {Math.max(
-                    remainingScans,
-                    0
-                  )}
+                  {remainingScans}
                 </Text>
               </View>
             </View>
