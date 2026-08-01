@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Scan2Sheet",
-    "slug": "scan2sheet",
+    "name": "ScanMyCard",
+    "slug": "ScanMyCard",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -11,7 +11,7 @@
       "icon": "./assets/images/icon.png"
     },
     "android": {
-      "package": "com.wecanserve.scan2sheet",
+      "package": "com.wecanserve.ScanMyCard",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#FFFFFF"

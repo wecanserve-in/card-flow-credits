@@ -59,33 +59,38 @@ export default function UsageScreen() {
   }, []);
 
   const planName =
-    userData?.planName ?? "Free Plan";
+  userData?.packName ??
+  userData?.planName ??
+  "Free Plan";
 
-  const totalScans =
-    userData?.freeScanLimit ?? 5;
+const totalScans =
+  userData?.totalScans ??
+  userData?.freeScanLimit ??
+  5;
 
-  const usedScans =
-    userData?.freeScansUsed ?? 0;
+const usedScans =
+  userData?.usedScans ??
+  userData?.freeScansUsed ??
+  0;
 
-  const remainingScans = Math.max(
-    totalScans - usedScans,
-    0
-  );
+const remainingScans =
+  userData?.remainingScans ??
+  Math.max(totalScans - usedScans, 0);
 
-  const exportsGenerated =
-    userData?.exportsGenerated ?? 0;
+const exportsGenerated =
+  userData?.exportsGenerated ?? 0;
 
-  const aiExtractions = usedScans;
+const aiExtractions = usedScans;
 
-  const progress = Math.min(
-    totalScans > 0
-      ? (usedScans / totalScans) * 100
-      : 0,
-    100
-  );
+const progress = Math.min(
+  totalScans > 0
+    ? (usedScans / totalScans) * 100
+    : 0,
+  100
+);
 
-  const progressPercentage =
-    Math.round(progress);
+const progressPercentage =
+  Math.round(progress);
 
   const renewDate =
     userData?.subscriptionActive &&
@@ -140,7 +145,7 @@ export default function UsageScreen() {
               </Text>
 
               <Text style={styles.subHeading}>
-                Monitor your Scan2Sheet usage
+                Monitor your ScanMyCard usage
               </Text>
             </View>
 
@@ -444,9 +449,9 @@ export default function UsageScreen() {
                   </Text>
 
                   <Text style={styles.infoValue}>
-                    {userData?.subscriptionActive
-                      ? "Active"
-                      : "Free Plan"}
+                    {userData?.packId === "free"
+                      ? "Free Plan"
+                      : "Purchased"}
                   </Text>
                 </View>
               </View>
@@ -467,9 +472,9 @@ export default function UsageScreen() {
                       : styles.freeStatusText,
                   ]}
                 >
-                  {userData?.subscriptionActive
-                    ? "Active"
-                    : "Free"}
+                  {userData?.packId === "free"
+                    ? "Free"
+                    : "purchased"}
                 </Text>
               </View>
             </View>

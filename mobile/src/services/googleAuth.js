@@ -33,11 +33,17 @@ function buildGoogleUserDocument(user) {
     name: displayName,
     email: user.email || "",
     photoURL: user.photoURL || "",
-    planName: "Free Plan",
-    cardLimit: 5,
-    cardsUsed: 0,
-    freeScanLimit: 5,
-    freeScansUsed: 0,
+    packId: "free",
+packName: "Free Plan",
+
+totalScans: 5,
+usedScans: 0,
+remainingScans: 5,
+
+exportsGenerated: 0,
+
+subscriptionActive: false,
+subscriptionExpiry: null,
     exportsGenerated: 0,
     subscriptionActive: false,
     subscriptionExpiry: null,

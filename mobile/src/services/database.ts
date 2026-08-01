@@ -23,10 +23,10 @@ const getStorageKey = () => {
   const uid = auth.currentUser?.uid;
 
   if (!uid) {
-    return "SCAN2SHEET_GUEST";
+    return "ScanMyCard_GUEST";
   }
 
-  return `SCAN2SHEET_CONTACTS_${uid}`;
+  return `ScanMyCard_CONTACTS_${uid}`;
 };
 
 export async function saveContacts(newContacts: any[]) {

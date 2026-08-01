@@ -263,60 +263,51 @@ export default function HomeScreen() {
   const firstName =
     fullName.split(" ")[0];
 
-  const planName =
-    userData?.planName ||
-    "Free Plan";
+const planName =
+  userData?.packName ||
+  userData?.planName ||
+  "Free Plan";
 
-  const totalScans =
-    userData?.freeScanLimit ?? 0;
+const totalScans =
+  userData?.totalScans ??
+  userData?.freeScanLimit ??
+  5;
 
-  const usedScans =
-    userData?.freeScansUsed ?? 0;
+const usedScans =
+  userData?.usedScans ??
+  userData?.freeScansUsed ??
+  0;
 
-  const exportsGenerated =
-    userData?.exportsGenerated ?? 0;
+const remainingScans =
+  userData?.remainingScans ??
+  Math.max(totalScans - usedScans, 0);
 
-  const remainingScans =
-    Math.max(
-      totalScans - usedScans,
-      0
-    );
+const exportsGenerated =
+  userData?.exportsGenerated ?? 0;
 
-  const unreadNotificationCount =
-    notifications.filter(
-      (notification) =>
-        !notification.read
-    ).length;
+const unreadNotificationCount =
+  notifications.filter(
+    (notification) => !notification.read
+  ).length;
 
-  const usedPercent =
-    totalScans > 0
-      ? Math.min(
-          Math.round(
-            (usedScans /
-              totalScans) *
-              100
-          ),
-          100
-        )
-      : 0;
+const usedPercent =
+  totalScans > 0
+    ? Math.min(
+        Math.round(
+          (usedScans / totalScans) * 100
+        ),
+        100
+      )
+    : 0;
 
   const handleScanPress = () => {
-    if (
-      userData?.subscriptionActive
-    ) {
-      router.push("/scanner");
-      return;
-    }
+  if (remainingScans > 0) {
+    router.push("/scanner");
+    return;
+  }
 
-    if (
-      usedScans < totalScans
-    ) {
-      router.push("/scanner");
-      return;
-    }
-
-    router.push("/plans");
-  };
+  router.push("/plans");
+};
 
   return (
     <View style={styles.page}>

@@ -351,7 +351,7 @@ export async function exportContactsToExcel(
     });
 
     const fileName =
-      `Scan2Sheet_Business_Contacts_` +
+      `ScanMyCard_Business_Contacts_` +
       `${getFileDate()}.xlsx`;
 
     if (!FileSystem.documentDirectory) {

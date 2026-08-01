@@ -159,10 +159,14 @@ export default function ScannedQueueScreen() {
         );
 
       const totalLimit =
-        userData?.freeScanLimit ?? 0;
+  userData?.totalScans ??
+  userData?.freeScanLimit ??
+  0;
 
-      const currentUsed =
-        userData?.freeScansUsed ?? 0;
+const currentUsed =
+  userData?.usedScans ??
+  userData?.freeScansUsed ??
+  0;
 
       const remainingScans =
         Math.max(
@@ -279,18 +283,13 @@ export default function ScannedQueueScreen() {
         );
 
       await updateDoc(
-        doc(
-          db,
-          "users",
-          auth.currentUser.uid
-        ),
-        {
-          freeScansUsed: increment(
-            extractedCards.length
-          ),
-        }
-      );
-
+  doc(db, "users", auth.currentUser.uid),
+  {
+    usedScans: increment(extractedCards.length),
+    remainingScans: increment(-extractedCards.length),
+    updatedAt: Date.now(),
+  }
+);
       await createNotification({
         type: "extraction_success",
         title: "Cards extracted",
@@ -366,13 +365,12 @@ export default function ScannedQueueScreen() {
   };
 
   const remainingScans =
-    Math.max(
-      (userData?.freeScanLimit ??
-        0) -
-        (userData?.freeScansUsed ??
-          0),
-      0
-    );
+  userData?.remainingScans ??
+  Math.max(
+    (userData?.totalScans ?? 0) -
+      (userData?.usedScans ?? 0),
+    0
+  );
 
   const allSelected =
     scannedImages.length > 0 &&

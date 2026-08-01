@@ -26,7 +26,7 @@ import {
   RazorpayCheckoutOrder,
 } from "../utils/payment";
 import {
-  refreshSubscription,
+  refreshScanPack,
   verifyPayment,
 } from "../services/paymentService";
 
@@ -238,7 +238,7 @@ export default function PaymentScreen() {
           }
 
           try {
-            await refreshSubscription();
+            await refreshScanPack();
           } catch (refreshError) {
             /*
              * Payment has already been securely verified.

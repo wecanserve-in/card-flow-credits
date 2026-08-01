@@ -497,7 +497,7 @@ export default function ScannerScreen() {
           <Text
             style={styles.permissionText}
           >
-            Snip It needs access to your
+            ScanMyCard needs access to your
             camera to scan business cards
             and extract contact details.
           </Text>

@@ -29,7 +29,7 @@ const terms: TermsSection[] = [
   {
     title: "Acceptance of Terms",
     body:
-      "By downloading, accessing, or using Snip It, you agree to comply with these Terms & Conditions. If you do not agree with these terms, please discontinue using the application.",
+      "By downloading, accessing, or using ScanMyCard, you agree to comply with these Terms & Conditions. If you do not agree with these terms, please discontinue using the application.",
     icon: "checkmark-circle-outline",
     iconColor: "#09A84E",
     iconBackground: "#EAF8F0",
@@ -37,7 +37,7 @@ const terms: TermsSection[] = [
   {
     title: "Use of the Application",
     body:
-      "Snip It is designed to scan business cards, extract contact information using OCR technology, and help users organize professional contacts. You agree to use the application only for lawful purposes.",
+      "ScanMyCard is designed to scan business cards, extract contact information using OCR technology, and help users organize professional contacts. You agree to use the application only for lawful purposes.",
     icon: "phone-portrait-outline",
     iconColor: "#4B7BEC",
     iconBackground: "#EEF3FF",
@@ -53,7 +53,7 @@ const terms: TermsSection[] = [
   {
     title: "OCR Accuracy",
     body:
-      "Although Snip It uses advanced OCR technology, extracted information may occasionally contain errors. Users are encouraged to verify important details before using or sharing scanned data.",
+      "Although ScanMyCard uses advanced OCR technology, extracted information may occasionally contain errors. Users are encouraged to verify important details before using or sharing scanned data.",
     icon: "scan-outline",
     iconColor: "#EFA300",
     iconBackground: "#FFF5DE",
@@ -69,7 +69,7 @@ const terms: TermsSection[] = [
   {
     title: "Intellectual Property",
     body:
-      "All trademarks, logos, graphics, source code, designs, and other content within Snip It remain the property of their respective owners and may not be copied, modified, or redistributed without written permission.",
+      "All trademarks, logos, graphics, source code, designs, and other content within ScanMyCard remain the property of their respective owners and may not be copied, modified, or redistributed without written permission.",
     icon: "ribbon-outline",
     iconColor: "#ED5447",
     iconBackground: "#FFF0EE",
@@ -77,7 +77,7 @@ const terms: TermsSection[] = [
   {
     title: "Limitation of Liability",
     body:
-      "Snip It shall not be held responsible for any direct, indirect, or consequential damages arising from the use of the application, including inaccurate OCR results, data loss, or interruptions in service.",
+      "ScanMyCard shall not be held responsible for any direct, indirect, or consequential damages arising from the use of the application, including inaccurate OCR results, data loss, or interruptions in service.",
     icon: "warning-outline",
     iconColor: "#D98A00",
     iconBackground: "#FFF5DE",
@@ -160,7 +160,7 @@ export default function TermsScreen() {
               </Text>
 
               <Text style={styles.headerSubtitle}>
-                Review the rules for using Snip It
+                Review the rules for using ScanMyCard
               </Text>
             </View>
 
@@ -202,7 +202,7 @@ export default function TermsScreen() {
 
             <Text style={styles.heroText}>
               Please read these Terms & Conditions
-              carefully before using Snip It. They
+              carefully before using ScanMyCard. They
               explain your rights, responsibilities,
               and the conditions governing your use
               of the application.
@@ -294,7 +294,7 @@ export default function TermsScreen() {
               style={styles.contactRow}
               onPress={() =>
                 openLink(
-                  "mailto:support@snipit.app?subject=Terms and Conditions Question",
+                  "mailto:support@ScanMyCard.app?subject=Terms and Conditions Question",
                   "Your email application could not be opened."
                 )
               }
@@ -318,7 +318,7 @@ export default function TermsScreen() {
                 </Text>
 
                 <Text style={styles.contactValue}>
-                  support@snipit.app
+                  support@ScanMyCard.app
                 </Text>
               </View>
 
@@ -336,8 +336,8 @@ export default function TermsScreen() {
               style={styles.contactRow}
               onPress={() =>
                 openLink(
-                  "https://www.snipit.app",
-                  "The Snip It website could not be opened."
+                  "https://www.ScanMyCard.app",
+                  "The ScanMyCard website could not be opened."
                 )
               }
             >
@@ -360,7 +360,7 @@ export default function TermsScreen() {
                 </Text>
 
                 <Text style={styles.contactValue}>
-                  www.snipit.app
+                  www.ScanMyCard.app
                 </Text>
               </View>
 
@@ -431,7 +431,7 @@ export default function TermsScreen() {
 
             <View>
               <Text style={styles.appName}>
-                Snip It
+                ScanMyCard
               </Text>
 
               <Text style={styles.version}>

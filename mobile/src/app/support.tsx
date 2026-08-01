@@ -133,7 +133,7 @@ export default function SupportScreen() {
       iconBackground: "#FFF5DE",
       onPress: () =>
         openExternalURL(
-          "mailto:support@snipit.app?subject=Scan2Sheet Support",
+          "mailto:support@ScanMyCard.app?subject=ScanMyCard Support",
           "Your email application could not be opened."
         ),
     },
@@ -465,7 +465,7 @@ export default function SupportScreen() {
               style={styles.infoRow}
               onPress={() =>
                 openExternalURL(
-                  "mailto:support@snipit.app",
+                  "mailto:support@ScanMyCard.app",
                   "Your email application could not be opened."
                 )
               }
@@ -489,7 +489,7 @@ export default function SupportScreen() {
                 </Text>
 
                 <Text style={styles.infoValue}>
-                  support@snipit.app
+                  support@ScanMyCard.app
                 </Text>
               </View>
 
@@ -567,7 +567,7 @@ export default function SupportScreen() {
 
             <View>
               <Text style={styles.appName}>
-                Snip It
+                ScanMyCard
               </Text>
 
               <Text style={styles.version}>

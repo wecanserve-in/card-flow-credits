@@ -158,8 +158,9 @@ export default function SettingsScreen() {
     "No email available";
 
   const planName =
-    userData?.planName ||
-    "Free Plan";
+  userData?.packName ??
+  userData?.planName ??
+  "Free Plan";
 
   const photo =
     userData?.photoURL ||
@@ -435,7 +436,7 @@ export default function SettingsScreen() {
                   styles.logoutDescription
                 }
               >
-                Sign out from your Scan2Sheet account
+                Sign out from your ScanMyCard account
               </Text>
             </View>
 
@@ -460,7 +461,7 @@ export default function SettingsScreen() {
 
             <View>
               <Text style={styles.appName}>
-                Scan2Sheet
+                ScanMyCard
               </Text>
 
               <Text style={styles.version}>

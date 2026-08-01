@@ -29,7 +29,7 @@ const sections: PrivacySection[] = [
   {
     title: "Information We Collect",
     body:
-      "When you use Snip It, we may collect information such as your name, email address, scanned business cards, contact details extracted using OCR, and basic device information required for improving app performance.",
+      "When you use ScanMyCard, we may collect information such as your name, email address, scanned business cards, contact details extracted using OCR, and basic device information required for improving app performance.",
     icon: "document-text-outline",
     iconColor: "#09A84E",
     iconBackground: "#EAF8F0",
@@ -61,7 +61,7 @@ const sections: PrivacySection[] = [
   {
     title: "Third-Party Services",
     body:
-      "Snip It uses trusted third-party services including Firebase Authentication, Firebase Cloud Services, and Google AI APIs for OCR processing where applicable.",
+      "ScanMyCard uses trusted third-party services including Firebase Authentication, Firebase Cloud Services, and Google AI APIs for OCR processing where applicable.",
     icon: "cloud-outline",
     iconColor: "#4B7BEC",
     iconBackground: "#EEF3FF",
@@ -185,7 +185,7 @@ export default function PrivacyPolicyScreen() {
             </Text>
 
             <Text style={styles.introText}>
-              At Snip It, protecting your privacy is
+              At ScanMyCard, protecting your privacy is
               our priority. This policy explains what
               information we collect, why we collect
               it, and how we protect it while you use
@@ -295,7 +295,7 @@ export default function PrivacyPolicyScreen() {
               style={styles.contactRow}
               onPress={() =>
                 openLink(
-                  "mailto:support@snipit.app?subject=Privacy Policy Question",
+                  "mailto:support@ScanMyCard.app?subject=Privacy Policy Question",
                   "Your email application could not be opened."
                 )
               }
@@ -319,7 +319,7 @@ export default function PrivacyPolicyScreen() {
                 </Text>
 
                 <Text style={styles.contactValue}>
-                  support@snipit.app
+                  support@ScanMyCard.app
                 </Text>
               </View>
 
@@ -337,8 +337,8 @@ export default function PrivacyPolicyScreen() {
               style={styles.contactRow}
               onPress={() =>
                 openLink(
-                  "https://www.snipit.app",
-                  "The Snip It website could not be opened."
+                  "https://www.ScanMyCard.app",
+                  "The ScanMyCard website could not be opened."
                 )
               }
             >
@@ -361,7 +361,7 @@ export default function PrivacyPolicyScreen() {
                 </Text>
 
                 <Text style={styles.contactValue}>
-                  www.snipit.app
+                  www.ScanMyCard.app
                 </Text>
               </View>
 
@@ -436,7 +436,7 @@ export default function PrivacyPolicyScreen() {
 
             <View>
               <Text style={styles.appName}>
-                Snip It
+                ScanMyCard
               </Text>
 
               <Text style={styles.version}>
