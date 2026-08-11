@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "ScanMyCard",
-    "slug": "ScanMyCard",
+    "slug": "scan2sheet",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -11,7 +11,7 @@
       "icon": "./assets/images/icon.png"
     },
     "android": {
-      "package": "com.wecanserve.ScanMyCard",
+      "package": "com.wecanserve.scanmycard",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#FFFFFF"
@@ -46,6 +46,7 @@
       "eas": {
         "projectId": "8f373124-1f1e-40cb-bff5-88ccca9ffbc1"
       }
-    }
+    },
+    "owner": "ananddangii20"
   }
 }

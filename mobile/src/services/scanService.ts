@@ -1,9 +1,13 @@
-import * as FileSystem from "expo-file-system/legacy";
+import { File } from "expo-file-system";
 import { auth } from "./firebase";
 
-const API_URL = (
-  process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.132:8000"
-).replace(/\/+$/, "") + "/upload";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
+if (!BASE_URL) {
+  throw new Error("EXPO_PUBLIC_API_URL is not configured");
+}
+
+const API_URL = `${BASE_URL.replace(/\/+$/, "")}/upload`;
 
 export async function uploadCards(images: string[]) {
   if (images.length === 0) {
@@ -11,6 +15,7 @@ export async function uploadCards(images: string[]) {
   }
 
   const user = auth.currentUser;
+
   if (!user) {
     throw new Error("Please sign in before uploading.");
   }
@@ -21,15 +26,16 @@ export async function uploadCards(images: string[]) {
 
   for (let i = 0; i < images.length; i++) {
     const uri = images[i];
-    const filename = uri.split("/").pop() || `card_${i + 1}.jpg`;
-    const type = "image/jpeg";
 
-    formData.append("files", {
-      uri,
-      name: filename,
-      type,
-    } as any);
+    const filename =
+      uri.split("/").pop() || `card_${i + 1}.jpg`;
+
+    const file = new File(uri);
+
+    formData.append("files", file);
   }
+
+  console.log("[API] Upload URL:", API_URL);
 
   const response = await fetch(API_URL, {
     method: "POST",
@@ -41,10 +47,18 @@ export async function uploadCards(images: string[]) {
 
   if (!response.ok) {
     const errorText = await response.text();
+
+    console.error("[API] Upload failed:", {
+      status: response.status,
+      error: errorText,
+    });
+
     throw new Error(errorText || "Upload failed");
   }
 
   const data = await response.json();
+
+  console.log("[API] Upload successful:", data);
 
   return {
     cards: data.cards || [],
