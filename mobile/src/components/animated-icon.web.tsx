@@ -54,6 +54,7 @@ const glowKeyframe = new Keyframe({
   },
 });
 
+
 export function AnimatedIcon() {
   return (
     <View style={styles.iconContainer}>

@@ -27,6 +27,7 @@ import {
 } from "../utils/payment";
 import {
   refreshScanPack,
+  recoverPayment,
   verifyPayment,
 } from "../services/paymentService";
 
@@ -262,9 +263,44 @@ export default function PaymentScreen() {
           });
         } catch (error) {
           console.error(
-            "[PaymentScreen] Verification failed:",
+            "[PaymentScreen] Verification failed, attempting recovery:",
             error
           );
+
+          try {
+            const recoveryResult =
+              await recoverPayment({
+                razorpay_order_id:
+                  responseOrderId,
+                razorpay_payment_id: paymentId,
+                razorpay_signature: signature,
+              });
+
+            if (
+              recoveryResult &&
+              recoveryResult.success === true
+            ) {
+              try {
+                await refreshScanPack();
+              } catch (_) {}
+
+              router.replace({
+                pathname: "/payment-success",
+                params: {
+                  planId: order.planId,
+                  planName: order.planName,
+                  paymentId,
+                  orderId: responseOrderId,
+                },
+              });
+              return;
+            }
+          } catch (recoveryError) {
+            console.error(
+              "[PaymentScreen] Recovery also failed:",
+              recoveryError
+            );
+          }
 
           verifyingRef.current = false;
           messageHandledRef.current = false;
@@ -277,16 +313,11 @@ export default function PaymentScreen() {
 
           Alert.alert(
             "Verification Failed",
-            `${errorMessage}\n\nYour subscription has not been activated.`,
+            `${errorMessage}\n\nYour payment was successful. If credits are not added, restart the app and try again.`,
             [
               {
-                text: "Verify Again",
+                text: "Try Again",
                 onPress: async () => {
-                  /*
-                   * Re-process the same Razorpay response.
-                   * Useful when verification failed because of
-                   * a temporary network or Firebase-token issue.
-                   */
                   await handlePaymentMessage(message);
                 },
               },

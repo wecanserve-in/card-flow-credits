@@ -199,24 +199,12 @@ async (
 
   try {
 
-
-    const idToken =
-      await getAuthenticatedUserToken();
-
-
-
     const response =
       await api.post<CreateOrderResponse>(
         "/payments/create-order",
         {
           plan: packId
         },
-        {
-          headers:{
-            Authorization:
-              `Bearer ${idToken}`,
-          },
-        }
       );
 
 
@@ -294,25 +282,12 @@ payload:RazorpayPaymentSuccess
 
   try {
 
-
-    const idToken =
-      await getAuthenticatedUserToken();
-
-
-
     const response =
       await api.post<VerifyPaymentResponse>(
 
         "/payments/verify",
 
         payload,
-
-        {
-          headers:{
-            Authorization:
-              `Bearer ${idToken}`,
-          },
-        }
 
       );
 
@@ -484,7 +459,12 @@ async ():Promise<ScanPackData | null> => {
         :
         undefined,
 
-    };
+};
+
+
+
+
+
 
 
   }
@@ -501,4 +481,92 @@ async ():Promise<ScanPackData | null> => {
 
   }
 
+};
+
+export interface PurchaseRecord {
+  paymentId: string;
+  packName: string;
+  packId: string;
+  creditsAdded: number;
+  amount: number;
+  currency: string;
+  processedAt: number;
+  totalAfterPurchase: number;
+  orderId: string;
+}
+
+export interface PaymentHistoryResponse {
+  success: boolean;
+  payments: PurchaseRecord[];
+}
+
+export const getPaymentHistory =
+async (): Promise<PurchaseRecord[]> => {
+  try {
+    const response =
+      await api.get<PaymentHistoryResponse>(
+        "/payments/history"
+      );
+
+    const data = response.data;
+
+    if (!data.success) {
+      throw new Error(
+        data.payments
+          ? "Failed to load history."
+          : "No history found."
+      );
+    }
+
+    return data.payments || [];
+
+  } catch (error) {
+    console.error(
+      "[PaymentService] getPaymentHistory failed:",
+      error
+    );
+
+    throw new Error(
+      getApiErrorMessage(
+        error,
+        "Unable to load payment history."
+      )
+    );
+  }
+};
+
+export const recoverPayment =
+async (
+  payload: RazorpayPaymentSuccess
+): Promise<VerifyPaymentResponse> => {
+  try {
+    const response =
+      await api.post<VerifyPaymentResponse>(
+        "/payments/recover",
+        payload,
+      );
+
+    const data = response.data;
+
+    if (!data.success) {
+      throw new Error(
+        data.message || "Payment recovery failed."
+      );
+    }
+
+    return data;
+
+  } catch (error) {
+    console.error(
+      "[PaymentService] recoverPayment failed",
+      error
+    );
+
+    throw new Error(
+      getApiErrorMessage(
+        error,
+        "Unable to recover payment."
+      )
+    );
+  }
 };

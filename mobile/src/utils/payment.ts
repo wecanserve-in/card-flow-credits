@@ -11,7 +11,8 @@
  * - Razorpay decides whether to show UPI apps or QR based on device/platform.
  */
 
-export const IS_RAZORPAY_TEST_MODE = true;
+export const IS_RAZORPAY_TEST_MODE =
+  process.env.EXPO_PUBLIC_RAZORPAY_TEST_MODE !== "false";
 
 export type RazorpayPaymentMethod =
   | "auto"

@@ -5,7 +5,7 @@ import axios, {
 
 import { auth } from "./firebase";
 
-const FALLBACK_API_URL = "https://card-flow-credits.onrender.com";
+const FALLBACK_API_URL = "http://192.168.1.132:8000";
 
 const API_URL = (
   process.env.EXPO_PUBLIC_API_URL ||

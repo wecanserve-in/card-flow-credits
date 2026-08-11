@@ -279,7 +279,6 @@ const usedScans =
   0;
 
 const remainingScans =
-  userData?.remainingScans ??
   Math.max(totalScans - usedScans, 0);
 
 const exportsGenerated =

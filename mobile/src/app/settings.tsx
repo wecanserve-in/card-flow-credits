@@ -61,6 +61,14 @@ const menuItems: MenuItem[] = [
     iconBackground: "#FFF5DE",
   },
   {
+    title: "Payment History",
+    subtitle: "View your past purchases",
+    icon: "receipt-outline",
+    route: "/purchase-history",
+    iconColor: "#7056B8",
+    iconBackground: "#F1EDFF",
+  },
+  {
     title: "Help & Support",
     subtitle: "Get assistance with the app",
     icon: "help-circle-outline",

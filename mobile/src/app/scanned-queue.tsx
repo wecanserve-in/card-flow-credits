@@ -286,7 +286,6 @@ const currentUsed =
   doc(db, "users", auth.currentUser.uid),
   {
     usedScans: increment(extractedCards.length),
-    remainingScans: increment(-extractedCards.length),
     updatedAt: Date.now(),
   }
 );
@@ -365,10 +364,9 @@ const currentUsed =
   };
 
   const remainingScans =
-  userData?.remainingScans ??
   Math.max(
-    (userData?.totalScans ?? 0) -
-      (userData?.usedScans ?? 0),
+    (userData?.totalScans ?? userData?.freeScanLimit ?? 0) -
+      (userData?.usedScans ?? userData?.freeScansUsed ?? 0),
     0
   );
 

@@ -1,12 +1,13 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.responses import RedirectResponse
+from typing import Optional
 
 from image_preprocessing import preprocess_card
 from gemini_extractor import extract_multiple_with_gemini
 from export_excel import generate_excel_in_memory
-from payments import router as payment_router
+from payments import router as payment_router, _verify_firebase_token
 
 app = FastAPI()
 
@@ -27,7 +28,11 @@ def home():
 
 
 @app.post("/upload")
-async def upload_cards(files: list[UploadFile] = File(...)):
+async def upload_cards(
+    files: list[UploadFile] = File(...),
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+):
+    uid = _verify_firebase_token(authorization)
 
     image_cards = []
 
@@ -112,7 +117,7 @@ def payment_success(
     razorpay_signature: str,
 ):
     return RedirectResponse(
-        url=f"cardflow://payment-success?"
+        url=f"scanmycard://payment-success?"
             f"payment_id={razorpay_payment_id}"
             f"&order_id={razorpay_order_id}"
             f"&signature={razorpay_signature}"
@@ -122,5 +127,5 @@ def payment_success(
 @app.get("/payment-failed")
 def payment_failed():
     return RedirectResponse(
-        url="cardflow://payment-failed"
+        url="scanmycard://payment-failed"
     )

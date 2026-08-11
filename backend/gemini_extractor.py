@@ -9,15 +9,9 @@ from google.genai import types
 
 load_dotenv()
 
-DEBUG = True
+DEBUG = False
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-print("=" * 60)
-print("GEMINI KEY FOUND:", GEMINI_API_KEY is not None)
-print("KEY LENGTH:", len(GEMINI_API_KEY) if GEMINI_API_KEY else 0)
-print("KEY PREFIX:", GEMINI_API_KEY[:10] if GEMINI_API_KEY else "NONE")
-print("=" * 60)
 
 if not GEMINI_API_KEY:
     raise RuntimeError(
