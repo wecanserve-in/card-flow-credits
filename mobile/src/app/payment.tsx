@@ -48,6 +48,15 @@ export default function PaymentScreen() {
           params.planName,
           "Subscription Plan"
         ) || "Subscription Plan",
+      baseAmount: getNumberParam(
+        params.baseAmount
+      ),
+      gstAmount: getNumberParam(
+        params.gstAmount
+      ),
+      totalAmount: getNumberParam(
+        params.totalAmount
+      ),
       userName: getStringParam(params.userName),
       userEmail: getStringParam(params.userEmail),
       userPhone: getStringParam(params.userPhone),
@@ -63,6 +72,9 @@ export default function PaymentScreen() {
     params.currency,
     params.planId,
     params.planName,
+    params.baseAmount,
+    params.gstAmount,
+    params.totalAmount,
     params.userName,
     params.userEmail,
     params.userPhone,

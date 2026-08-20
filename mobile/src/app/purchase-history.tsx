@@ -33,21 +33,29 @@ const PLAN_COLORS: Record<
     light: string;
   }
 > = {
-  quick_start: {
+  personal_starter: {
     primary: "#0AA84F",
     light: "#EFFBF4",
   },
-  event_pack: {
+  personal_popular: {
     primary: "#F27522",
     light: "#FFF8F1",
   },
-  professional: {
+  personal_pro: {
     primary: "#7353B6",
     light: "#F9F6FF",
   },
-  exhibition_plus: {
-    primary: "#08985A",
-    light: "#F1FCF7",
+  business_starter: {
+    primary: "#2F80ED",
+    light: "#F0F7FF",
+  },
+  business_pro: {
+    primary: "#08998A",
+    light: "#F0FBF9",
+  },
+  business_enterprise: {
+    primary: "#E8590C",
+    light: "#FFF6F0",
   },
 };
 
@@ -365,7 +373,7 @@ export default function PurchaseHistoryScreen() {
                 {payments.map((payment, index) => {
                   const colors =
                     PLAN_COLORS[payment.packId] ||
-                    PLAN_COLORS.quick_start;
+                    PLAN_COLORS.personal_starter;
 
                   return (
                     <View

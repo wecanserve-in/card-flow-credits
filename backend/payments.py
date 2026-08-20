@@ -74,25 +74,38 @@ def _get_firestore():
 
 
 PLAN_PRICES = {
-    "quick_start": 99,
-    "event_pack": 499,
-    "professional": 1499,
-    "exhibition_plus": 4990,
+    "personal_starter": 99,
+    "personal_popular": 499,
+    "personal_pro": 999,
+    "business_starter": 2499,
+    "business_pro": 3999,
+    "business_enterprise": 5999,
 }
 
 PLAN_SCAN_LIMITS = {
-    "quick_start": 50,
-    "event_pack": 250,
-    "professional": 1000,
-    "exhibition_plus": 5000,
+    "personal_starter": 50,
+    "personal_popular": 750,
+    "personal_pro": 1000,
+    "business_starter": 2775,
+    "business_pro": 5710,
+    "business_enterprise": 10000,
 }
 
 PLAN_NAMES = {
-    "quick_start": "Quick Start",
-    "event_pack": "Event Pack",
-    "professional": "Professional",
-    "exhibition_plus": "Exhibition Plus",
+    "personal_starter": "Starter",
+    "personal_popular": "Popular",
+    "personal_pro": "Pro",
+    "business_starter": "Business Starter",
+    "business_pro": "Business Pro",
+    "business_enterprise": "Business Enterprise",
 }
+
+GST_RATE = 0.18
+
+
+def _plan_total_rupees(pack_id: str) -> int:
+    """Base price plus 18% GST, rounded to the nearest rupee."""
+    return int(round(PLAN_PRICES[pack_id] * (1 + GST_RATE)))
 
 
 class CreateOrderRequest(BaseModel):
@@ -199,7 +212,7 @@ def _add_credits(uid: str, pack_id: str, payment_id: str, order_id: str):
                 "packName": pack_name,
                 "creditsAdded": purchased_scans,
                 "totalAfterPurchase": new_total,
-                "amount": PLAN_PRICES[pack_id] * 100,
+                "amount": _plan_total_rupees(pack_id) * 100,
                 "currency": "INR",
                 "processedAt": now,
             }
@@ -211,7 +224,7 @@ def _add_credits(uid: str, pack_id: str, payment_id: str, order_id: str):
             send_push_to_user(
                 uid,
                 "Payment successful",
-                f"{purchased_scans} scan credits have been added to your account.",
+                f"{purchased_scans} card credits have been added to your account.",
                 "/plans",
             )
         except Exception as push_error:
@@ -247,7 +260,7 @@ def create_order(
     if pack_id not in PLAN_PRICES:
         raise HTTPException(status_code=400, detail="Invalid scan pack.")
 
-    amount = PLAN_PRICES[pack_id] * 100
+    amount = _plan_total_rupees(pack_id) * 100
 
     try:
         order = client.order.create(
@@ -310,7 +323,7 @@ def verify_payment(
     if pack_id not in PLAN_PRICES:
         raise HTTPException(status_code=400, detail="Invalid scan pack.")
 
-    expected_amount = PLAN_PRICES[pack_id] * 100
+    expected_amount = _plan_total_rupees(pack_id) * 100
 
     if order.get("amount") != expected_amount or payment.get("amount") != expected_amount:
         raise HTTPException(status_code=400, detail="Payment amount mismatch.")

@@ -29,6 +29,10 @@ export interface RazorpayCheckoutOrder {
   planId: string;
   planName: string;
 
+  baseAmount?: number;
+  gstAmount?: number;
+  totalAmount?: number;
+
   userName?: string;
   userEmail?: string;
   userPhone?: string;
@@ -430,7 +434,7 @@ export const buildRazorpayCheckoutHtml = (
           currency: \`${currency}\`,
 
           name: "Card Flow Credits",
-          description: \`${planName}\`,
+          description: \`${planName} - incl. 18% GST\`,
 
           /*
            * REQUIRED for UPI apps inside Android/iOS WebView.
