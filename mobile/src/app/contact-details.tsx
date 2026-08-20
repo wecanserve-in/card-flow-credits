@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Linking,
   Alert,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import {
   SafeAreaView,
@@ -15,7 +17,15 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
+import {
+  getFolders,
+  setContactFolders,
+  FolderItem,
+} from "../services/database";
+
 type ContactData = {
+  id?: string;
+  folderIds?: string[];
   name?: string;
   designation?: string;
   company?: string;
@@ -48,6 +58,121 @@ export default function ContactDetailsScreen() {
 
   const contact: ContactData =
     (globalThis as any).selectedContact || {};
+
+  const [folders, setFolders] = useState<
+    FolderItem[]
+  >([]);
+  const [showMoveModal, setShowMoveModal] =
+    useState(false);
+  const [selectedFolderIds, setSelectedFolderIds] =
+    useState<string[]>([]);
+  const [savingFolders, setSavingFolders] =
+    useState(false);
+  const [loadingFolders, setLoadingFolders] =
+    useState(false);
+
+  const canMove = Boolean(contact.id);
+
+  const currentFolders = folders.filter(
+    (folder) =>
+      (contact.folderIds || []).includes(
+        folder.id
+      )
+  );
+
+  const handleOpenMoveModal = async () => {
+    if (!canMove) {
+      Alert.alert(
+        "Unable to Move",
+        "This contact cannot be moved. Please open it from your saved contacts."
+      );
+      return;
+    }
+
+    setSelectedFolderIds([
+      ...(contact.folderIds || []),
+    ]);
+
+    setShowMoveModal(true);
+    setLoadingFolders(true);
+
+    try {
+      const data = await getFolders();
+      setFolders(data);
+    } catch (error) {
+      console.error(
+        "Failed to load folders:",
+        error
+      );
+      setFolders([]);
+    } finally {
+      setLoadingFolders(false);
+    }
+  };
+
+  const toggleFolder = (folderId: string) => {
+    setSelectedFolderIds((prev) =>
+      prev.includes(folderId)
+        ? prev.filter((id) => id !== folderId)
+        : [...prev, folderId]
+    );
+  };
+
+  const handleSaveFolders = async () => {
+    if (!contact.id || savingFolders) {
+      return;
+    }
+
+    setSavingFolders(true);
+
+    try {
+      await setContactFolders(
+        contact.id,
+        selectedFolderIds
+      );
+
+      const updatedContact = {
+        ...contact,
+        folderIds: selectedFolderIds,
+      };
+
+      (globalThis as any).selectedContact =
+        updatedContact;
+
+      setShowMoveModal(false);
+
+      const addedCount =
+        selectedFolderIds.length;
+
+      Alert.alert(
+        addedCount > 0
+          ? "Contact Added to Folders"
+          : "Contact Moved to My Cards",
+        addedCount > 0
+          ? `"${contact.name ||
+              "Contact"}" is now in ${addedCount} ${
+              addedCount === 1
+                ? "folder"
+                : "folders"
+            }.`
+          : `"${contact.name ||
+              "Contact"}" is back in My Cards.`
+      );
+    } catch (error: any) {
+      console.error(
+        "Save folder error:",
+        error
+      );
+
+      Alert.alert(
+        "Update Failed",
+        error?.message ||
+          "Unable to update the contact. Please try again."
+      );
+    } finally {
+      setSavingFolders(false);
+    }
+  };
 
   const name = isAvailable(contact.name)
     ? contact.name!.trim()
@@ -272,13 +397,27 @@ export default function ContactDetailsScreen() {
               </Text>
             </View>
 
-            <View style={styles.headerIcon}>
-              <Ionicons
-                name="person-outline"
-                size={22}
-                color="#09A84E"
-              />
-            </View>
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={styles.headerMoveButton}
+              onPress={handleOpenMoveModal}
+            >
+              <View style={styles.folderMoveIcon}>
+                <Ionicons
+                  name="folder-outline"
+                  size={23}
+                  color="#09A84E"
+                />
+
+                <View style={styles.folderMoveArrow}>
+                  <Ionicons
+                    name="arrow-up"
+                    size={11}
+                    color="#FFFFFF"
+                  />
+                </View>
+              </View>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.profileCard}>
@@ -499,6 +638,228 @@ export default function ContactDetailsScreen() {
             />
           </View>
         </ScrollView>
+
+        {/* Move to Folder Modal */}
+        <Modal
+          visible={showMoveModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() =>
+            setShowMoveModal(false)
+          }
+        >
+          <View style={styles.moveOverlay}>
+            <View style={styles.moveModal}>
+              <View style={styles.moveModalHeader}>
+                <View style={styles.moveModalHeaderText}>
+                  <Text style={styles.moveModalTitle}>
+                    Add to Folders
+                  </Text>
+
+                  <Text
+                    numberOfLines={2}
+                    style={styles.moveModalSubtitle}
+                  >
+                    {currentFolders.length > 0
+                      ? `Currently in: ${currentFolders
+                          .map((f) => f.name)
+                          .join(", ")}`
+                      : "Currently in My Cards"}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={styles.moveModalCloseButton}
+                  onPress={() =>
+                    setShowMoveModal(false)
+                  }
+                >
+                  <Ionicons
+                    name="close"
+                    size={21}
+                    color="#737B82"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {loadingFolders ? (
+                <View style={styles.moveModalLoader}>
+                  <ActivityIndicator
+                    size="large"
+                    color="#09A84E"
+                  />
+                </View>
+              ) : folders.length === 0 ? (
+                <View style={styles.moveNoFolders}>
+                  <View style={styles.moveNoFoldersIcon}>
+                    <Ionicons
+                      name="folder-open-outline"
+                      size={35}
+                      color="#09A84E"
+                    />
+                  </View>
+
+                  <Text style={styles.moveNoFoldersTitle}>
+                    No folders yet
+                  </Text>
+
+                  <Text style={styles.moveNoFoldersText}>
+                    Create a folder in the
+                    "My Cards" screen first.
+                  </Text>
+                </View>
+              ) : (
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  style={styles.moveFolderList}
+                  contentContainerStyle={{
+                    paddingBottom: 5,
+                  }}
+                >
+                  <TouchableOpacity
+                    activeOpacity={0.82}
+                    style={[
+                      styles.moveFolderItem,
+                      selectedFolderIds.length === 0 &&
+                        styles.moveFolderItemActive,
+                    ]}
+                    disabled={savingFolders}
+                    onPress={() =>
+                      setSelectedFolderIds([])
+                    }
+                  >
+                    <View
+                      style={[
+                        styles.moveFolderItemIcon,
+                        selectedFolderIds.length === 0 &&
+                          styles.moveFolderItemIconActive,
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          selectedFolderIds.length === 0
+                            ? "checkbox"
+                            : "square-outline"
+                        }
+                        size={22}
+                        color={
+                          selectedFolderIds.length === 0
+                            ? "#FFFFFF"
+                            : "#09A84E"
+                        }
+                      />
+                    </View>
+
+                    <View style={styles.moveFolderItemInfo}>
+                      <Text
+                        numberOfLines={1}
+                        style={styles.moveFolderItemName}
+                      >
+                        General
+                      </Text>
+
+                      <Text style={styles.moveFolderItemDate}>
+                        {selectedFolderIds.length === 0
+                          ? "Saved in My Cards, outside folders"
+                          : "Tap to save outside folders"}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {folders.map((folder) => {
+                    const isChecked =
+                      selectedFolderIds.includes(
+                        folder.id
+                      );
+
+                    return (
+                      <TouchableOpacity
+                        key={folder.id}
+                        activeOpacity={0.82}
+                        style={[
+                          styles.moveFolderItem,
+                          isChecked && styles.moveFolderItemActive,
+                        ]}
+                        disabled={savingFolders}
+                        onPress={() =>
+                          toggleFolder(folder.id)
+                        }
+                      >
+                        <View
+                          style={[
+                            styles.moveFolderItemIcon,
+                            isChecked && styles.moveFolderItemIconActive,
+                          ]}
+                        >
+                          <Ionicons
+                            name={
+                              isChecked
+                                ? "checkbox"
+                                : "square-outline"
+                            }
+                            size={22}
+                            color={
+                              isChecked
+                                ? "#FFFFFF"
+                                : "#09A84E"
+                            }
+                          />
+                        </View>
+
+                        <View style={styles.moveFolderItemInfo}>
+                          <Text
+                            numberOfLines={1}
+                            style={styles.moveFolderItemName}
+                          >
+                            {folder.name}
+                          </Text>
+
+                          <Text style={styles.moveFolderItemDate}>
+                            {isChecked
+                              ? "Added to this folder"
+                              : "Tap to add to this folder"}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
+
+              <View style={styles.moveModalFooter}>
+                <TouchableOpacity
+                  activeOpacity={0.86}
+                  style={[
+                    styles.moveModalSaveButton,
+                    savingFolders && styles.moveModalSaveDisabled,
+                  ]}
+                  disabled={savingFolders}
+                  onPress={handleSaveFolders}
+                >
+                  {savingFolders ? (
+                    <ActivityIndicator
+                      size="small"
+                      color="#FFFFFF"
+                    />
+                  ) : (
+                    <>
+                      <Ionicons
+                        name="checkmark-circle-outline"
+                        size={20}
+                        color="#FFFFFF"
+                      />
+
+                      <Text style={styles.moveModalSaveText}>
+                        Save Changes
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -562,6 +923,54 @@ const styles = StyleSheet.create({
     color: "#858D95",
     fontSize: 12.5,
     fontWeight: "500",
+  },
+
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  headerMoveButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5EAE7",
+    alignItems: "center",
+    justifyContent: "center",
+
+    shadowColor: "#17261D",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 2,
+  },
+
+  folderMoveIcon: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+
+  folderMoveArrow: {
+    position: "absolute",
+    top: -2,
+    right: -4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#09A84E",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
   },
 
   headerIcon: {
@@ -821,5 +1230,180 @@ const styles = StyleSheet.create({
     height: 1,
     marginLeft: 55,
     backgroundColor: "#EDF0EE",
+  },
+
+  moveOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.38)",
+    justifyContent: "flex-end",
+  },
+
+  moveModal: {
+    width: "100%",
+    maxHeight: "72%",
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 30,
+  },
+
+  moveModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  moveModalHeaderText: {
+    flex: 1,
+    marginRight: 12,
+  },
+
+  moveModalTitle: {
+    color: "#171C21",
+    fontSize: 20,
+    fontWeight: "800",
+  },
+
+  moveModalSubtitle: {
+    marginTop: 4,
+    color: "#858D95",
+    fontSize: 12.5,
+    fontWeight: "500",
+  },
+
+  moveModalCloseButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#F3F5F4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  moveModalLoader: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 55,
+  },
+
+  moveNoFolders: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 42,
+  },
+
+  moveNoFoldersIcon: {
+    width: 70,
+    height: 70,
+    borderRadius: 22,
+    backgroundColor: "#EAF8F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  moveNoFoldersTitle: {
+    marginTop: 14,
+    color: "#20262C",
+    fontSize: 17,
+    fontWeight: "800",
+  },
+
+  moveNoFoldersText: {
+    marginTop: 6,
+    color: "#858D95",
+    fontSize: 13,
+    textAlign: "center",
+  },
+
+  moveFolderList: {
+    marginTop: 14,
+  },
+
+  moveFolderItem: {
+    minHeight: 66,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    marginBottom: 10,
+    borderRadius: 17,
+    backgroundColor: "#F8FAF9",
+    borderWidth: 1,
+    borderColor: "#E8EDE9",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  moveFolderItemActive: {
+    backgroundColor: "#EAF8F0",
+    borderColor: "#BFE6CF",
+  },
+
+  moveFolderItemIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "#EAF8F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  moveFolderItemIconActive: {
+    backgroundColor: "#09A84E",
+  },
+
+  moveFolderItemInfo: {
+    flex: 1,
+    marginLeft: 12,
+    marginRight: 10,
+  },
+
+  moveFolderItemName: {
+    color: "#20262C",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+
+  moveFolderItemDate: {
+    marginTop: 3,
+    color: "#858D95",
+    fontSize: 11.5,
+    fontWeight: "500",
+  },
+
+  moveModalFooter: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#EDF0EE",
+  },
+
+  moveModalSaveButton: {
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: "#09AA4D",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+
+    shadowColor: "#078A3E",
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 3,
+  },
+
+  moveModalSaveDisabled: {
+    opacity: 0.72,
+  },
+
+  moveModalSaveText: {
+    marginLeft: 8,
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
   },
 });

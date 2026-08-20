@@ -686,7 +686,7 @@ const usedPercent =
             />
           </View>
 
-          <View
+          {/* <View
             style={{
               width:
                 actionCardWidth,
@@ -703,7 +703,7 @@ const usedPercent =
                 )
               }
             />
-          </View>
+          </View> */}
         </View>
 
         {/* Recent Activity */}

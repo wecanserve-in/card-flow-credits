@@ -1,5 +1,4 @@
 import React, {
-  useEffect,
   useRef,
   useState,
 } from "react";
@@ -11,7 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   useWindowDimensions,
-  ScrollView,
+  
 } from "react-native";
 import {
   SafeAreaView,
@@ -25,7 +24,7 @@ import {
 } from "expo-camera";
 import * as ImageManipulator from "expo-image-manipulator";
 
-import { AppEvent, getEvents } from "../services/eventService";
+
 
 type CardOrientation =
   | "landscape"
@@ -61,74 +60,7 @@ export default function ScannerScreen() {
   const [flashEnabled, setFlashEnabled] =
     useState(false);
 
-  const [events, setEvents] = useState<
-    AppEvent[]
-  >([]);
-
-  const [eventPickerOpen, setEventPickerOpen] =
-    useState(false);
-
-  const [activeEvent, setActiveEvent] =
-    useState<AppEvent | null>(null);
-
-  useEffect(() => {
-    let isActive = true;
-
-    (async () => {
-      try {
-        const data = await getEvents();
-
-        if (!isActive) return;
-
-        setEvents(data || []);
-
-        const currentEventId = (
-          globalThis as any
-        ).activeEventId;
-
-        if (currentEventId) {
-          const matched = (data || []).find(
-            (event) =>
-              event.id === currentEventId
-          );
-
-          if (matched) {
-            setActiveEvent(matched);
-          }
-        }
-      } catch (error) {
-        console.error(
-          "Load events for scanner error:",
-          error
-        );
-      }
-    })();
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
-
-  const selectEvent = (
-    event: AppEvent
-  ) => {
-    setActiveEvent(event);
-    setEventPickerOpen(false);
-
-    (globalThis as any).activeEventId =
-      event.id;
-
-    (globalThis as any).activeEventName =
-      event.name;
-  };
-
-  const detachEvent = () => {
-    setActiveEvent(null);
-    setEventPickerOpen(false);
-
-    delete (globalThis as any).activeEventId;
-    delete (globalThis as any).activeEventName;
-  };
+ 
 
   const [
     cardOrientation,
@@ -700,170 +632,6 @@ export default function ScannerScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Optional event attach banner */}
-      <View
-        pointerEvents="box-none"
-        style={[
-          styles.eventBannerWrap,
-          {
-            top: insets.top + 68,
-          },
-        ]}
-      >
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={[
-            styles.eventPill,
-            activeEvent &&
-              styles.eventPillActive,
-          ]}
-          onPress={() =>
-            setEventPickerOpen(
-              (current) => !current
-            )
-          }
-        >
-          <Ionicons
-            name={
-              activeEvent
-                ? "folder-open"
-                : "folder-open-outline"
-            }
-            size={16}
-            color={
-              activeEvent
-                ? "#122218"
-                : "#FFFFFF"
-            }
-          />
-
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.eventPillText,
-              activeEvent &&
-                styles.eventPillTextActive,
-            ]}
-          >
-            {activeEvent
-              ? `Event: ${activeEvent.name}`
-              : "Attach scans to an event? (optional)"}
-          </Text>
-
-          {activeEvent ? (
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={detachEvent}
-              hitSlop={10}
-            >
-              <Ionicons
-                name="close"
-                size={17}
-                color="#122218"
-              />
-            </TouchableOpacity>
-          ) : (
-            <Ionicons
-              name={
-                eventPickerOpen
-                  ? "chevron-up"
-                  : "chevron-down"
-              }
-              size={16}
-              color="#FFFFFF"
-            />
-          )}
-        </TouchableOpacity>
-
-        {eventPickerOpen && (
-          <View style={styles.eventPicker}>
-            <ScrollView
-              style={styles.eventPickerList}
-              nestedScrollEnabled
-              showsVerticalScrollIndicator={
-                false
-              }
-            >
-              {events.map((event) => (
-                <TouchableOpacity
-                  key={event.id}
-                  activeOpacity={0.82}
-                  style={styles.eventPickerRow}
-                  onPress={() =>
-                    selectEvent(event)
-                  }
-                >
-                  <Ionicons
-                    name={
-                      activeEvent?.id ===
-                      event.id
-                        ? "checkmark-circle"
-                        : "folder-outline"
-                    }
-                    size={18}
-                    color="#09A84E"
-                  />
-
-                  <View
-                    style={
-                      styles.eventPickerRowContent
-                    }
-                  >
-                    <Text
-                      numberOfLines={1}
-                      style={
-                        styles.eventPickerRowName
-                      }
-                    >
-                      {event.name}
-                    </Text>
-
-                    <Text
-                      style={
-                        styles.eventPickerRowMeta
-                      }
-                    >
-                      {event.contactCount ?? 0}{" "}
-                      {(event.contactCount ??
-                        0) === 1
-                        ? "contact"
-                        : "contacts"}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <TouchableOpacity
-              activeOpacity={0.82}
-              style={styles.newEventRow}
-              onPress={() => {
-                setEventPickerOpen(false);
-                router.push("/create-event");
-              }}
-            >
-              <View
-                style={
-                  styles.newEventIcon
-                }
-              >
-                <Ionicons
-                  name="add"
-                  size={18}
-                  color="#FFFFFF"
-                />
-              </View>
-
-              <Text
-                style={styles.newEventText}
-              >
-                Create New Event
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
       {/* Scanner area */}
       <View
         style={[
@@ -1312,124 +1080,6 @@ const styles = StyleSheet.create({
     borderColor: "#BDEACF",
   },
 
-  eventBannerWrap: {
-    position: "absolute",
-    left: 18,
-    right: 18,
-    zIndex: 25,
-    alignItems: "center",
-  },
-
-  eventPill: {
-    maxWidth: "100%",
-    minHeight: 36,
-    paddingHorizontal: 13,
-    borderRadius: 13,
-    backgroundColor:
-      "rgba(14, 20, 17, 0.64)",
-    borderWidth: 1,
-    borderColor:
-      "rgba(255, 255, 255, 0.18)",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  eventPillActive: {
-    backgroundColor: "#DDF7E8",
-    borderColor: "#BDEACF",
-  },
-
-  eventPillText: {
-    maxWidth: 240,
-    marginHorizontal: 7,
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-
-  eventPillTextActive: {
-    color: "#122218",
-  },
-
-  eventPicker: {
-    width: "100%",
-    maxWidth: 320,
-    marginTop: 8,
-    padding: 8,
-    borderRadius: 18,
-    backgroundColor:
-      "rgba(250, 252, 251, 0.98)",
-    borderWidth: 1,
-    borderColor:
-      "rgba(255, 255, 255, 0.35)",
-
-    shadowColor: "#000000",
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    elevation: 10,
-  },
-
-  eventPickerList: {
-    maxHeight: 170,
-  },
-
-  eventPickerRow: {
-    minHeight: 52,
-    paddingHorizontal: 10,
-    borderRadius: 13,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  eventPickerRowContent: {
-    flex: 1,
-    marginLeft: 10,
-    paddingRight: 6,
-  },
-
-  eventPickerRowName: {
-    color: "#252B28",
-    fontSize: 13,
-    fontWeight: "800",
-  },
-
-  eventPickerRowMeta: {
-    marginTop: 2,
-    color: "#89918D",
-    fontSize: 10.5,
-    fontWeight: "600",
-  },
-
-  newEventRow: {
-    minHeight: 50,
-    marginTop: 4,
-    paddingHorizontal: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#EDF0EE",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  newEventIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 11,
-    backgroundColor: "#09A84E",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  newEventText: {
-    marginLeft: 10,
-    color: "#078E42",
-    fontSize: 13,
-    fontWeight: "800",
-  },
-
   titleContainer: {
     flex: 1,
     marginHorizontal: 12,
@@ -1541,7 +1191,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 47,
     height: 47,
-    borderColor: "#35E27D",
   },
 
   topLeft: {
@@ -1550,6 +1199,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 5,
     borderLeftWidth: 5,
     borderTopLeftRadius: 21,
+    borderColor: "#4285F4",
   },
 
   topRight: {
@@ -1558,6 +1208,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 5,
     borderRightWidth: 5,
     borderTopRightRadius: 21,
+    borderColor: "#EA4335",
   },
 
   bottomLeft: {
@@ -1566,6 +1217,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 5,
     borderLeftWidth: 5,
     borderBottomLeftRadius: 21,
+    borderColor: "#FBBC05",
   },
 
   bottomRight: {
@@ -1574,6 +1226,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 5,
     borderBottomWidth: 5,
     borderBottomRightRadius: 21,
+    borderColor: "#34A853",
   },
 
   scanLine: {
