@@ -39,14 +39,19 @@ import {
 export default function ScannedQueueScreen() {
   const insets = useSafeAreaInsets();
 
-  const scannedImages: string[] =
-    (globalThis as any).scannedImages || [];
+  const [
+    queueImages,
+    setQueueImages,
+  ] = useState<string[]>(
+    (globalThis as any).scannedImages ||
+      []
+  );
 
   const [
     selectedCards,
     setSelectedCards,
   ] = useState<number[]>(
-    scannedImages.map(
+    queueImages.map(
       (_: string, index: number) =>
         index
     )
@@ -111,14 +116,14 @@ export default function ScannedQueueScreen() {
   const selectAllCards = () => {
     if (
       selectedCards.length ===
-      scannedImages.length
+      queueImages.length
     ) {
       setSelectedCards([]);
       return;
     }
 
     setSelectedCards(
-      scannedImages.map(
+      queueImages.map(
         (_: string, index: number) =>
           index
       )
@@ -148,7 +153,7 @@ export default function ScannedQueueScreen() {
       setLoading(true);
 
       const selectedImages =
-        scannedImages.filter(
+        queueImages.filter(
           (
             _: string,
             index: number
@@ -313,6 +318,13 @@ const currentUsed =
       ).extractedCards =
         extractedCards;
 
+      (
+        globalThis as any
+      ).scannedImages = [];
+
+      setQueueImages([]);
+      setSelectedCards([]);
+
       router.push("/contacts");
     } catch (error) {
       console.log(
@@ -356,7 +368,8 @@ const currentUsed =
               globalThis as any
             ).scannedImages = [];
 
-            router.back();
+            setQueueImages([]);
+            setSelectedCards([]);
           },
         },
       ]
@@ -371,9 +384,9 @@ const currentUsed =
   );
 
   const allSelected =
-    scannedImages.length > 0 &&
+    queueImages.length > 0 &&
     selectedCards.length ===
-      scannedImages.length;
+      queueImages.length;
 
   const renderCard = ({
     item,
@@ -480,12 +493,12 @@ const currentUsed =
             <Text
               style={styles.countText}
             >
-              {scannedImages.length}
+              {queueImages.length}
             </Text>
           </View>
         </View>
 
-        {scannedImages.length > 0 ? (
+        {queueImages.length > 0 ? (
           <>
             <View
               style={
@@ -516,7 +529,7 @@ const currentUsed =
                 >
                   {selectedCards.length} of{" "}
                   {
-                    scannedImages.length
+                    queueImages.length
                   }{" "}
                   selected
                 </Text>
@@ -605,7 +618,7 @@ const currentUsed =
         ) : null}
 
         <FlatList
-          data={scannedImages}
+          data={queueImages}
           numColumns={2}
           keyExtractor={(
             _,
@@ -624,7 +637,7 @@ const currentUsed =
               paddingBottom:
                 150 + insets.bottom,
             },
-            scannedImages.length ===
+            queueImages.length ===
               0 &&
               styles.emptyListContent,
           ]}
@@ -687,7 +700,7 @@ const currentUsed =
           }
         />
 
-        {scannedImages.length > 0 && (
+        {queueImages.length > 0 && (
           <View
             style={[
               styles.bottomContainer,

@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useRef,
   useState,
 } from "react";
@@ -17,7 +18,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import {
   CameraView,
   useCameraPermissions,
@@ -53,6 +54,17 @@ export default function ScannerScreen() {
 
   const [images, setImages] =
     useState<string[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const stored = (globalThis as any)
+        .scannedImages;
+
+      if (Array.isArray(stored)) {
+        setImages([...stored]);
+      }
+    }, [])
+  );
 
   const [isCapturing, setIsCapturing] =
     useState(false);
