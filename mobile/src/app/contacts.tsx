@@ -18,6 +18,7 @@ import { router, useFocusEffect } from "expo-router";
 
 import BottomNav from "@/components/BottomNav";
 import { saveContacts } from "../services/database";
+import { saveEventContacts } from "../services/eventService";
 
 type ContactItem = {
   name?: string;
@@ -38,6 +39,8 @@ export default function ContactsScreen() {
   const [search, setSearch] = useState("");
   const [contacts, setContacts] = useState<ContactItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [activeEventName, setActiveEventName] =
+    useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -47,6 +50,14 @@ export default function ContactsScreen() {
         Array.isArray(extractedCards)
           ? [...extractedCards]
           : []
+      );
+
+      const currentEventId = (globalThis as any).activeEventId;
+
+      setActiveEventName(
+        currentEventId
+          ? (globalThis as any).activeEventName || "Event"
+          : null
       );
     }, [])
   );
@@ -98,7 +109,25 @@ export default function ContactsScreen() {
     try {
       setSaving(true);
 
-      await saveContacts(contacts);
+      const activeEventId = (globalThis as any).activeEventId;
+
+      let savedToEventName: string | null = null;
+
+      if (activeEventId) {
+        savedToEventName =
+          (globalThis as any).activeEventName ||
+          "event";
+
+        await saveEventContacts(
+          activeEventId,
+          contacts
+        );
+
+        delete (globalThis as any).activeEventId;
+        delete (globalThis as any).activeEventName;
+      } else {
+        await saveContacts(contacts);
+      }
 
       const savedCount = contacts.length;
 
@@ -107,14 +136,25 @@ export default function ContactsScreen() {
       setSearch("");
 
       Alert.alert(
-        "Contacts Saved",
-        `${savedCount} ${
-          savedCount === 1 ? "contact was" : "contacts were"
-        } saved successfully.`,
+        savedToEventName
+          ? "Saved to Event"
+          : "Contacts Saved",
+        savedToEventName
+          ? `${savedCount} ${
+              savedCount === 1 ? "contact was" : "contacts were"
+            } saved to "${savedToEventName}".`
+          : `${savedCount} ${
+              savedCount === 1 ? "contact was" : "contacts were"
+            } saved successfully.`,
         [
           {
             text: "Done",
-            onPress: () => router.replace("/home"),
+            onPress: () =>
+              router.replace(
+                savedToEventName
+                  ? "/events"
+                  : "/home"
+              ),
           },
         ]
       );
@@ -363,6 +403,44 @@ export default function ContactsScreen() {
           )}
         </View>
 
+        {/* Event save indicator */}
+        {activeEventName ? (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.eventBanner}
+            onPress={() =>
+              router.push("/events")
+            }
+          >
+            <View style={styles.eventBannerIcon}>
+              <Ionicons
+                name="folder-open"
+                size={20}
+                color="#09A84E"
+              />
+            </View>
+
+            <View style={styles.eventBannerContent}>
+              <Text style={styles.eventBannerLabel}>
+                Saving to Event
+              </Text>
+
+              <Text
+                numberOfLines={1}
+                style={styles.eventBannerName}
+              >
+                {activeEventName}
+              </Text>
+            </View>
+
+            <Ionicons
+              name="chevron-forward"
+              size={19}
+              color="#09A84E"
+            />
+          </TouchableOpacity>
+        ) : null}
+
         {/* Contact List */}
         <FlatList
           data={filteredContacts}
@@ -579,6 +657,48 @@ const styles = StyleSheet.create({
     backgroundColor: "#EFFAF3",
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  eventBanner: {
+    minHeight: 64,
+    marginBottom: 15,
+    paddingHorizontal: 13,
+    borderRadius: 17,
+    backgroundColor: "#EAF8F0",
+    borderWidth: 1,
+    borderColor: "#D8F0E2",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  eventBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  eventBannerContent: {
+    flex: 1,
+    marginLeft: 11,
+    paddingRight: 8,
+  },
+
+  eventBannerLabel: {
+    color: "#6F8276",
+    fontSize: 10.5,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+
+  eventBannerName: {
+    marginTop: 3,
+    color: "#1C2A22",
+    fontSize: 14,
+    fontWeight: "800",
   },
 
   listContent: {

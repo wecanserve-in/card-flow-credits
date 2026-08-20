@@ -147,7 +147,8 @@ function calculateColumnWidths(
 }
 
 export async function exportContactsToExcel(
-  contacts: Contact[]
+  contacts: Contact[],
+  fileName?: string
 ): Promise<string> {
   try {
     if (
@@ -350,9 +351,17 @@ export async function exportContactsToExcel(
       bookType: "xlsx",
     });
 
-    const fileName =
+    const defaultFileName =
       `ScanMyCard_Business_Contacts_` +
       `${getFileDate()}.xlsx`;
+
+    const safeFileName = (fileName || defaultFileName)
+      .replace(/[\\/:*?"<>|]/g, "_")
+      .trim();
+
+    const resolvedFileName = safeFileName.endsWith(".xlsx")
+      ? safeFileName
+      : `${safeFileName}.xlsx`;
 
     if (!FileSystem.documentDirectory) {
       throw new Error(
@@ -361,7 +370,7 @@ export async function exportContactsToExcel(
     }
 
     const uri =
-      FileSystem.documentDirectory + fileName;
+      FileSystem.documentDirectory + resolvedFileName;
 
     await FileSystem.writeAsStringAsync(
       uri,

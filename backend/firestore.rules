@@ -25,6 +25,11 @@ service cloud.firestore {
             ]);
     }
 
+    // Users can read and manage their own in-app notifications
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Default deny all other collections
     match /{document=**} {
       allow read, write: if false;

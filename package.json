@@ -2,11 +2,19 @@
   "dependencies": {
     "axios": "^1.18.1",
     "crypto-js": "^4.2.0",
+    "expo": "~57.0.12",
+    "expo-constants": "~57.0.10",
+    "expo-notifications": "~57.0.10",
     "react-native-get-random-values": "^2.0.0",
     "react-native-razorpay": "^3.0.0",
-    "react-native-webview": "^14.0.1"
+    "react-native-webview": "^14.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.0"
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.2"
-  }
+  },
+  "name": "card-flow-credits",
+  "version": "1.0.0",
+  "scripts": {}
 }

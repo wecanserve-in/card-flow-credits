@@ -506,19 +506,19 @@ const usedPercent =
           <View
             style={styles.statsRow}
           >
-            <View
+          <View
               style={styles.statItem}
             >
               <Text
                 style={styles.statValue}
               >
-                {totalScans}
+                {remainingScans}
               </Text>
 
               <Text
                 style={styles.statLabel}
               >
-                Total Cards
+                Remaining
               </Text>
             </View>
 
@@ -550,21 +550,23 @@ const usedPercent =
               }
             />
 
-            <View
+  <View
               style={styles.statItem}
             >
               <Text
                 style={styles.statValue}
               >
-                {remainingScans}
+                {totalScans}
               </Text>
 
               <Text
                 style={styles.statLabel}
               >
-                Remaining
+                Total Cards
               </Text>
             </View>
+
+            
           </View>
 
           <View
@@ -679,6 +681,25 @@ const usedPercent =
               onPress={() =>
                 router.push(
                   "/usage"
+                )
+              }
+            />
+          </View>
+
+          <View
+            style={{
+              width:
+                actionCardWidth,
+            }}
+          >
+            <ActionCard
+              title="Events"
+              icon="calendar-outline"
+              iconColor="#4B7BEC"
+              iconBackground="#EEF3FF"
+              onPress={() =>
+                router.push(
+                  "/events"
                 )
               }
             />

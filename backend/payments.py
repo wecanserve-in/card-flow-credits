@@ -205,6 +205,18 @@ def _add_credits(uid: str, pack_id: str, payment_id: str, order_id: str):
             }
         )
 
+        try:
+            from notifications import send_push_to_user
+
+            send_push_to_user(
+                uid,
+                "Payment successful",
+                f"{purchased_scans} scan credits have been added to your account.",
+                "/plans",
+            )
+        except Exception as push_error:
+            print("[Payment] Push notification error:", push_error)
+
     except Exception as write_error:
         print("[Payment] Firestore write error:", write_error)
         raise HTTPException(

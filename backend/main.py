@@ -8,10 +8,12 @@ from image_preprocessing import preprocess_card
 from gemini_extractor import extract_multiple_with_gemini
 from export_excel import generate_excel_in_memory
 from payments import router as payment_router, _verify_firebase_token
+from notifications import router as notification_router
 
 app = FastAPI()
 
 app.include_router(payment_router)
+app.include_router(notification_router)
 
 app.add_middleware(
     CORSMiddleware,
