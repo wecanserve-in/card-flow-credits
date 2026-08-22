@@ -33,6 +33,7 @@ def send_expo_push(token: str, title: str, body: str, data: Optional[dict] = Non
         "body": body,
         "sound": "default",
         "priority": "high",
+        "channelId": "default",
     }
 
     if data:
@@ -108,6 +109,22 @@ def send_notification(
         request.title.strip(),
         request.body.strip(),
         request.actionRoute,
+    )
+
+    return {"success": sent}
+
+
+@router.post("/test")
+def test_notification(
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+):
+    uid = _verify_firebase_token(authorization)
+
+    sent = send_push_to_user(
+        uid,
+        "Test Notification",
+        "Push notifications are working!",
+        "/home",
     )
 
     return {"success": sent}
