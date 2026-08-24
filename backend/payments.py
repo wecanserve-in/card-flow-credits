@@ -19,7 +19,7 @@ from firebase_admin import (
     credentials,
     firestore,
 )
-from firebase_admin.firestore import FieldValue
+from firebase_admin.firestore import Increment
 
 from pydantic import BaseModel
 
@@ -195,7 +195,7 @@ def _add_credits(uid: str, pack_id: str, payment_id: str, order_id: str):
             {
                 "packId": pack_id,
                 "packName": pack_name,
-                "totalScans": FieldValue.increment(purchased_scans),
+                "totalScans": Increment(purchased_scans),
                 "usedScans": used,
                 "lastPaymentId": payment_id,
                 "lastOrderId": order_id,
