@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI, UploadFile, File, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -9,6 +10,7 @@ from gemini_extractor import extract_multiple_with_gemini
 from export_excel import generate_excel_in_memory
 from payments import router as payment_router, _verify_firebase_token
 from notifications import router as notification_router
+from r2_upload import upload_profile_photo
 
 app = FastAPI()
 
@@ -17,7 +19,11 @@ app.include_router(notification_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://scanmycard-126413727192.asia-south1.run.app",
+        "http://localhost:8081",
+        "http://localhost:19006",
+    ],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -50,12 +56,15 @@ async def upload_cards(
             "mime_type": file.content_type or "image/jpeg"
         })
 
-        # Remove original bytes from memory
         del image_bytes
         await file.close()
 
     try:
-        results = extract_multiple_with_gemini(image_cards)
+        loop = asyncio.get_event_loop()
+        results = await loop.run_in_executor(
+            None,
+            lambda: extract_multiple_with_gemini(image_cards)
+        )
 
         for card in results:
             card["source"] = "gemini"
@@ -131,3 +140,25 @@ def payment_failed():
     return RedirectResponse(
         url="scanmycard://payment-failed"
     )
+
+
+@app.post("/upload/profile-photo")
+async def upload_profile_photo_endpoint(
+    file: UploadFile = File(...),
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+):
+    uid = _verify_firebase_token(authorization)
+
+    image_bytes = await file.read()
+
+    if len(image_bytes) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be under 5MB")
+
+    content_type = file.content_type or "image/jpeg"
+
+    try:
+        url = upload_profile_photo(uid, image_bytes, content_type)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+    return {"url": url}

@@ -16,6 +16,8 @@ import {
 
 import { auth, db } from "./firebase";
 
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
 export type NotificationType =
   | "extraction_success"
   | "extraction_failed"
@@ -124,6 +126,35 @@ export async function createNotification({
     );
 
     return null;
+  }
+}
+
+export async function sendPushNotification(
+  title: string,
+  body: string,
+  actionRoute?: string
+) {
+  const user = auth.currentUser;
+
+  if (!user || !BASE_URL) {
+    return;
+  }
+
+  try {
+    const token = await user.getIdToken();
+
+    const url = `${BASE_URL.replace(/\/+$/, "")}/notifications/send`;
+
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ title, body, actionRoute }),
+    });
+  } catch (error) {
+    console.log("[Push] Send failed:", error);
   }
 }
 

@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { getStringParam } from "../utils/payment";
-import { createNotification } from "../services/notificationService";
+import { createNotification, sendPushNotification } from "../services/notificationService";
 
 export default function PaymentFailedScreen() {
   const params = useLocalSearchParams();
@@ -30,6 +30,12 @@ export default function PaymentFailedScreen() {
         paymentId || orderId || message
       }`,
     });
+
+    sendPushNotification(
+      cancelled ? "Payment cancelled" : "Payment failed",
+      message,
+      "/plans"
+    );
   }, [message, orderId, paymentId, reason]);
 
   return (

@@ -354,6 +354,7 @@ const usedPercent =
                   style={
                     styles.avatarPhoto
                   }
+                  resizeMode="cover"
                 />
               ) : (
                 <Image
@@ -964,6 +965,7 @@ const styles =
     avatarPhoto: {
       width: "100%",
       height: "100%",
+      borderRadius: 28,
     },
 
     avatarLogo: {

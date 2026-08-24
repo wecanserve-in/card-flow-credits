@@ -30,7 +30,7 @@ import {
   getEvents,
 } from "../services/eventService";
 import { exportContactsToExcel } from "../services/excelService";
-import { createNotification } from "../services/notificationService";
+import { createNotification, sendPushNotification } from "../services/notificationService";
 
 function formatEventDate(event: AppEvent): string {
   if (event.date) {
@@ -161,6 +161,12 @@ export default function EventsScreen() {
         actionRoute: "/events",
         eventKey: `event-export-success-${event.id}-${Date.now()}`,
       });
+
+      sendPushNotification(
+        "Event Excel exported",
+        `An Excel workbook for "${event.name}" containing ${contacts.length} contacts was generated successfully.`,
+        "/events"
+      );
     } catch (error) {
       console.error("Event export error:", error);
 
@@ -171,6 +177,12 @@ export default function EventsScreen() {
         actionRoute: "/events",
         eventKey: `event-export-failed-${event.id}-${Date.now()}`,
       });
+
+      sendPushNotification(
+        "Event export failed",
+        `The Excel workbook for "${event.name}" could not be generated.`,
+        "/events"
+      );
 
       Alert.alert(
         "Export Failed",

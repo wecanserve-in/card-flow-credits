@@ -19,6 +19,7 @@ from firebase_admin import (
     credentials,
     firestore,
 )
+from firebase_admin.firestore import FieldValue
 
 from pydantic import BaseModel
 
@@ -186,15 +187,15 @@ def _add_credits(uid: str, pack_id: str, payment_id: str, order_id: str):
         user_snapshot = user_ref.get()
         user_data = user_snapshot.to_dict() if user_snapshot.exists else {}
 
-        old_total = int(user_data.get("totalScans", 0) or 0)
         used = int(user_data.get("usedScans", 0) or 0)
+        old_total = int(user_data.get("totalScans", 0) or 0)
         new_total = old_total + purchased_scans
 
         user_ref.set(
             {
                 "packId": pack_id,
                 "packName": pack_name,
-                "totalScans": new_total,
+                "totalScans": FieldValue.increment(purchased_scans),
                 "usedScans": used,
                 "lastPaymentId": payment_id,
                 "lastOrderId": order_id,
@@ -405,7 +406,7 @@ def recover_payment(
             }
         )
     except Exception:
-        pass
+        raise HTTPException(status_code=400, detail="Invalid payment signature.")
 
     notes = order.get("notes", {})
     order_uid = str(notes.get("uid", ""))

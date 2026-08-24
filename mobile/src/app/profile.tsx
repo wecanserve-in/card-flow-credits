@@ -37,6 +37,7 @@ import {
   db,
 } from "../services/firebase";
 import BottomNav from "../components/BottomNav";
+import { uploadProfilePhoto } from "../services/uploadService";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -64,6 +65,9 @@ export default function ProfileScreen() {
     useState(true);
 
   const [saving, setSaving] =
+    useState(false);
+
+  const [uploading, setUploading] =
     useState(false);
 
   const avatarFallback =
@@ -190,11 +194,24 @@ export default function ProfileScreen() {
     try {
       setSaving(true);
 
+      let finalPhotoURL = photo;
+
+      if (
+        photo &&
+        !photo.startsWith("http")
+      ) {
+        setUploading(true);
+        finalPhotoURL =
+          await uploadProfilePhoto(photo);
+        setUploading(false);
+        setPhoto(finalPhotoURL);
+      }
+
       await updateProfile(user, {
         displayName: cleanName,
         photoURL:
-          photo.startsWith("http")
-            ? photo
+          finalPhotoURL.startsWith("http")
+            ? finalPhotoURL
             : user.photoURL || null,
       });
 
@@ -206,7 +223,7 @@ export default function ProfileScreen() {
           designation:
             designation.trim(),
           phone: phone.trim(),
-          photoURL: photo,
+          photoURL: finalPhotoURL,
           updatedAt: Date.now(),
         }
       );
@@ -234,6 +251,7 @@ export default function ProfileScreen() {
       );
     } finally {
       setSaving(false);
+      setUploading(false);
     }
   };
 
@@ -319,12 +337,20 @@ export default function ProfileScreen() {
                   activeOpacity={0.82}
                   style={styles.cameraButton}
                   onPress={pickImage}
+                  disabled={uploading}
                 >
-                  <Ionicons
-                    name="camera"
-                    size={18}
-                    color="#FFFFFF"
-                  />
+                  {uploading ? (
+                    <ActivityIndicator
+                      size="small"
+                      color="#FFFFFF"
+                    />
+                  ) : (
+                    <Ionicons
+                      name="camera"
+                      size={18}
+                      color="#FFFFFF"
+                    />
+                  )}
                 </TouchableOpacity>
               </View>
 
@@ -342,15 +368,25 @@ export default function ProfileScreen() {
                 activeOpacity={0.8}
                 style={styles.changePhoto}
                 onPress={pickImage}
+                disabled={uploading}
               >
-                <Ionicons
-                  name="image-outline"
-                  size={18}
-                  color="#09A84E"
-                />
+                {uploading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#09A84E"
+                  />
+                ) : (
+                  <Ionicons
+                    name="image-outline"
+                    size={18}
+                    color="#09A84E"
+                  />
+                )}
 
                 <Text style={styles.changeText}>
-                  Change Photo
+                  {uploading
+                    ? "Uploading..."
+                    : "Change Photo"}
                 </Text>
               </TouchableOpacity>
             </View>

@@ -1,6 +1,9 @@
 import React, {
   useEffect,
   useState,
+  useRef,
+  useCallback,
+  memo,
 } from "react";
 import {
   View,
@@ -11,6 +14,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Modal,
+  Animated,
 } from "react-native";
 import {
   SafeAreaView,
@@ -34,7 +39,58 @@ import {
 import {
   createCreditNotification,
   createNotification,
+  sendPushNotification,
 } from "../services/notificationService";
+
+const CardItem = memo(({
+  item,
+  index,
+  selected,
+  onPress,
+}: {
+  item: string;
+  index: number;
+  selected: boolean;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity
+    activeOpacity={0.88}
+    style={[
+      styles.cardContainer,
+      !selected && styles.unselectedCard,
+    ]}
+    onPress={onPress}
+  >
+    <Image
+      source={{ uri: item }}
+      style={styles.cardImage}
+      resizeMode="cover"
+    />
+    <View
+      style={[
+        styles.imageOverlay,
+        selected && styles.selectedOverlay,
+      ]}
+    />
+    <View
+      style={[
+        styles.selectionButton,
+        selected && styles.selectionButtonActive,
+      ]}
+    >
+      {selected ? (
+        <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+      ) : (
+        <View style={styles.unselectedCircle} />
+      )}
+    </View>
+    <View style={styles.cardNumber}>
+      <Text style={styles.cardNumberText}>
+        Card {index + 1}
+      </Text>
+    </View>
+  </TouchableOpacity>
+));
 
 export default function ScannedQueueScreen() {
   const insets = useSafeAreaInsets();
@@ -60,8 +116,52 @@ export default function ScannedQueueScreen() {
   const [loading, setLoading] =
     useState(false);
 
+  const [extractedCount, setExtractedCount] =
+    useState(0);
+
+  const fadeAnim = useRef(
+    new Animated.Value(0)
+  ).current;
+
+  const scaleAnim = useRef(
+    new Animated.Value(0.85)
+  ).current;
+
   const [userData, setUserData] =
     useState<User | null>(null);
+
+  useEffect(() => {
+    if (loading) {
+      fadeAnim.setValue(0);
+      scaleAnim.setValue(0.85);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 350,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 8,
+          tension: 65,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      let count = 0;
+      const total = selectedCards.length;
+      const interval = setInterval(() => {
+        count = Math.min(count + 1, total);
+        setExtractedCount(count);
+        if (count >= total) {
+          clearInterval(interval);
+        }
+      }, 600);
+      return () => clearInterval(interval);
+    } else {
+      setExtractedCount(0);
+    }
+  }, [loading]);
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -92,26 +192,27 @@ export default function ScannedQueueScreen() {
     return unsubscribe;
   }, []);
 
-  const toggleCard = (
-    index: number
-  ) => {
-    setSelectedCards(
-      (currentCards) => {
-        if (
-          currentCards.includes(index)
-        ) {
-          return currentCards.filter(
-            (item) => item !== index
-          );
-        }
+  const toggleCard = useCallback(
+    (index: number) => {
+      setSelectedCards(
+        (currentCards) => {
+          if (
+            currentCards.includes(index)
+          ) {
+            return currentCards.filter(
+              (item) => item !== index
+            );
+          }
 
-        return [
-          ...currentCards,
-          index,
-        ];
-      }
-    );
-  };
+          return [
+            ...currentCards,
+            index,
+          ];
+        }
+      );
+    },
+    []
+  );
 
   const selectAllCards = () => {
     if (
@@ -269,6 +370,12 @@ const currentUsed =
             `extraction-empty-${Date.now()}`,
         });
 
+        sendPushNotification(
+          "No card details found",
+          "No readable business card details could be extracted. Please scan the cards again.",
+          "/scanner"
+        );
+
         Alert.alert(
           "No Details Found",
           "No readable card details were found. Please scan the cards again."
@@ -307,6 +414,16 @@ const currentUsed =
           `extraction-success-${Date.now()}-${extractedCards.length}`,
       });
 
+      sendPushNotification(
+        "Cards extracted",
+        `${extractedCards.length} ${
+          extractedCards.length === 1
+            ? "business card was"
+            : "business cards were"
+        } extracted successfully.`,
+        "/saved-contacts"
+      );
+
       await createCreditNotification({
         remaining: newRemaining,
         used: newUsed,
@@ -341,6 +458,12 @@ const currentUsed =
         eventKey:
           `extraction-failed-${Date.now()}`,
       });
+
+      sendPushNotification(
+        "Extraction failed",
+        "We could not extract the selected business cards. Please try again.",
+        "/scanner"
+      );
 
       Alert.alert(
         "Extraction Failed",
@@ -387,75 +510,6 @@ const currentUsed =
     queueImages.length > 0 &&
     selectedCards.length ===
       queueImages.length;
-
-  const renderCard = ({
-    item,
-    index,
-  }: {
-    item: string;
-    index: number;
-  }) => {
-    const selected =
-      selectedCards.includes(index);
-
-    return (
-      <TouchableOpacity
-        activeOpacity={0.88}
-        style={[
-          styles.cardContainer,
-          !selected &&
-            styles.unselectedCard,
-        ]}
-        onPress={() =>
-          toggleCard(index)
-        }
-      >
-        <Image
-          source={{ uri: item }}
-          style={styles.cardImage}
-          resizeMode="cover"
-        />
-
-        <View
-          style={[
-            styles.imageOverlay,
-            selected &&
-              styles.selectedOverlay,
-          ]}
-        />
-
-        <View
-          style={[
-            styles.selectionButton,
-            selected &&
-              styles.selectionButtonActive,
-          ]}
-        >
-          {selected ? (
-            <Ionicons
-              name="checkmark"
-              size={15}
-              color="#FFFFFF"
-            />
-          ) : (
-            <View
-              style={
-                styles.unselectedCircle
-              }
-            />
-          )}
-        </View>
-
-        <View style={styles.cardNumber}>
-          <Text
-            style={styles.cardNumberText}
-          >
-            Card {index + 1}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
 
   return (
     <SafeAreaView
@@ -513,7 +567,7 @@ const currentUsed =
                 <Ionicons
                   name="images-outline"
                   size={22}
-                  color="#09A84E"
+                  color="#EFA300"
                 />
               </View>
 
@@ -624,7 +678,14 @@ const currentUsed =
             _,
             index
           ) => index.toString()}
-          renderItem={renderCard}
+          renderItem={({ item, index }) => (
+            <CardItem
+              item={item}
+              index={index}
+              selected={selectedCards.includes(index)}
+              onPress={() => toggleCard(index)}
+            />
+          )}
           showsVerticalScrollIndicator={
             false
           }
@@ -811,14 +872,26 @@ const currentUsed =
           </View>
         )}
 
-        {loading && (
+        <Modal
+          visible={loading}
+          transparent
+          animationType="fade"
+        >
           <View
             style={
               styles.loadingOverlay
             }
           >
-            <View
-              style={styles.loadingCard}
+            <Animated.View
+              style={[
+                styles.loadingCard,
+                {
+                  opacity: fadeAnim,
+                  transform: [
+                    { scale: scaleAnim },
+                  ],
+                },
+              ]}
             >
               <View
                 style={
@@ -827,7 +900,7 @@ const currentUsed =
               >
                 <ActivityIndicator
                   size="large"
-                  color="#09A84E"
+                  color="#ED5447"
                 />
               </View>
 
@@ -852,31 +925,44 @@ const currentUsed =
 
               <View
                 style={
-                  styles.loadingStatus
+                  styles.loadingProgress
+                }
+              >
+                <Text
+                  style={
+                    styles.loadingProgressText
+                  }
+                >
+                  {extractedCount} /{" "}
+                  {selectedCards.length}{" "}
+                  scanned
+                </Text>
+              </View>
+
+              <View
+                style={
+                  styles.loadingBarBg
                 }
               >
                 <View
-                  style={
-                    styles.loadingDot
-                  }
+                  style={[
+                    styles.loadingBarFill,
+                    {
+                      width: `${
+                        (extractedCount /
+                          Math.max(
+                            selectedCards.length,
+                            1
+                          )) *
+                        100
+                      }%`,
+                    },
+                  ]}
                 />
-
-                <Text
-                  style={
-                    styles.loadingStatusText
-                  }
-                >
-                  Extracting{" "}
-                  {selectedCards.length}{" "}
-                  {selectedCards.length ===
-                  1
-                    ? "card"
-                    : "cards"}
-                </Text>
               </View>
-            </View>
+            </Animated.View>
           </View>
-        )}
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -979,7 +1065,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: "#EAF8F0",
+    backgroundColor: "#FFF5DE",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1025,9 +1111,9 @@ const styles = StyleSheet.create({
     minHeight: 68,
     paddingHorizontal: 16,
     borderRadius: 18,
-    backgroundColor: "#EFF9F3",
+    backgroundColor: "#FFF5DE",
     borderWidth: 1,
-    borderColor: "#DBF1E4",
+    borderColor: "#F5E6B8",
     flexDirection: "row",
     alignItems: "center",
   },
@@ -1046,7 +1132,7 @@ const styles = StyleSheet.create({
 
   usageValue: {
     marginTop: 4,
-    color: "#078E42",
+    color: "#EFA300",
     fontSize: 18,
     fontWeight: "900",
   },
@@ -1058,7 +1144,7 @@ const styles = StyleSheet.create({
   usageDivider: {
     width: 1,
     height: 35,
-    backgroundColor: "#D2EADC",
+    backgroundColor: "#F5E6B8",
   },
 
   listContent: {
@@ -1311,12 +1397,11 @@ const styles = StyleSheet.create({
   },
 
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     backgroundColor:
       "rgba(13, 19, 16, 0.55)",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 999,
     paddingHorizontal: 24,
   },
 
@@ -1343,7 +1428,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 24,
-    backgroundColor: "#EAF8F0",
+    backgroundColor: "#FFF0EE",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1365,27 +1450,33 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  loadingStatus: {
-    minHeight: 36,
+  loadingProgress: {
     marginTop: 18,
-    paddingHorizontal: 13,
-    borderRadius: 12,
-    backgroundColor: "#EAF8F0",
-    flexDirection: "row",
-    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#FFF0EE",
   },
 
-  loadingDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: "#09A84E",
-  },
-
-  loadingStatusText: {
-    marginLeft: 7,
-    color: "#078E42",
-    fontSize: 11.5,
+  loadingProgressText: {
+    color: "#ED5447",
+    fontSize: 13,
     fontWeight: "800",
+    textAlign: "center",
+  },
+
+  loadingBarBg: {
+    marginTop: 14,
+    width: "100%",
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#F1F3F2",
+    overflow: "hidden",
+  },
+
+  loadingBarFill: {
+    height: "100%",
+    borderRadius: 3,
+    backgroundColor: "#ED5447",
   },
 });

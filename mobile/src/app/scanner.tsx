@@ -336,7 +336,7 @@ export default function ScannerScreen() {
       const photo =
         await cameraRef.current.takePictureAsync(
           {
-            quality: 0.9,
+            quality: 0.7,
 
             /*
              * Keep this false so Expo processes the
@@ -396,9 +396,12 @@ export default function ScannerScreen() {
             {
               crop: cropArea,
             },
+            {
+              resize: { width: 1200 },
+            },
           ],
           {
-            compress: 0.9,
+            compress: 0.7,
             format:
               ImageManipulator.SaveFormat
                 .JPEG,

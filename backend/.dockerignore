@@ -15,3 +15,6 @@ venv/
 .vscode
 
 *.log
+
+serviceAccountKey.json
+firestore.rules

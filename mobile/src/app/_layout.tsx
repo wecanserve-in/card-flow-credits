@@ -26,9 +26,11 @@ export default function RootLayout() {
         }
 
         if (isActive) {
-          router.replace("/home");
+          initializePushNotifications().then((cleanup) => {
+            if (isActive) cleanupPush = cleanup;
+          });
 
-          cleanupPush = await initializePushNotifications();
+          router.replace("/home");
         }
       }
     );

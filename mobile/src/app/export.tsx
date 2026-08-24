@@ -24,7 +24,7 @@ import * as Sharing from "expo-sharing";
 
 import { getContacts } from "../services/database";
 import { exportContactsToExcel } from "../services/excelService";
-import { createNotification } from "../services/notificationService";
+import { createNotification, sendPushNotification } from "../services/notificationService";
 
 export default function ExportScreen() {
   const insets = useSafeAreaInsets();
@@ -128,6 +128,12 @@ export default function ExportScreen() {
         actionRoute: "/export",
         eventKey: `export-success-${Date.now()}`,
       });
+
+      sendPushNotification(
+        "Excel exported",
+        `An Excel workbook containing ${contacts.length} ${contacts.length === 1 ? "contact was" : "contacts were"} generated successfully.`,
+        "/export"
+      );
     } catch (error) {
       console.log(
         "Excel export error:",
@@ -142,6 +148,12 @@ export default function ExportScreen() {
         actionRoute: "/export",
         eventKey: `export-failed-${Date.now()}`,
       });
+
+      sendPushNotification(
+        "Export failed",
+        "Your Excel workbook could not be generated.",
+        "/export"
+      );
 
       Alert.alert(
         "Export Failed",

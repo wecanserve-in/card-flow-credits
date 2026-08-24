@@ -19,7 +19,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import { getStringParam } from "../utils/payment";
-import { createNotification } from "../services/notificationService";
+import { createNotification, sendPushNotification } from "../services/notificationService";
 
 export default function PaymentSuccessScreen() {
   const params = useLocalSearchParams();
@@ -43,6 +43,12 @@ export default function PaymentSuccessScreen() {
       actionRoute: "/home",
       eventKey: `payment-success-${paymentId || orderId || planName}`,
     });
+
+    sendPushNotification(
+      "Payment successful",
+      `${planName} was activated successfully.`,
+      "/home"
+    );
   }, [orderId, paymentId, planName]);
 
   return (

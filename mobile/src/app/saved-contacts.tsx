@@ -734,11 +734,11 @@ export default function SavedContactsScreen() {
             }
           >
 
-            <Ionicons
-              name="folder-open-outline"
-              size={18}
-              color="#09A84E"
-            />
+                    <Ionicons
+                      name="folder-open-outline"
+                      size={35}
+                      color="#ED5447"
+                    />
 
             <Text
               style={
@@ -932,7 +932,7 @@ export default function SavedContactsScreen() {
                 <Ionicons
                   name="folder"
                   size={19}
-                  color="#09A84E"
+                  color="#EFA300"
                 />
               </View>
 
@@ -986,7 +986,7 @@ export default function SavedContactsScreen() {
               <Ionicons
                 name="close"
                 size={18}
-                color="#078E42"
+                color="#ED5447"
               />
 
             </TouchableOpacity>
@@ -1201,11 +1201,11 @@ export default function SavedContactsScreen() {
                   }
                 >
 
-                  <Ionicons
-                    name="folder-open-outline"
-                    size={27}
-                    color="#09AA4D"
-                  />
+                    <Ionicons
+                      name="folder-open-outline"
+                      size={27}
+                      color="#7056B8"
+                    />
 
                 </View>
 
@@ -1529,7 +1529,7 @@ export default function SavedContactsScreen() {
                           color={
                             !selectedFolderId
                               ? "#FFFFFF"
-                              : "#09A84E"
+                              : "#EFA300"
                           }
                         />
                       </View>
@@ -1607,7 +1607,7 @@ export default function SavedContactsScreen() {
                         <Ionicons
                           name="folder"
                           size={24}
-                          color="#09A84E"
+                          color="#EFA300"
                         />
 
                       </View>
@@ -2205,10 +2205,10 @@ const styles =
       paddingHorizontal: 13,
       borderRadius: 14,
       backgroundColor:
-        "#EAF8F0",
+        "#F1EDFF",
       borderWidth: 1,
       borderColor:
-        "#D7EEE0",
+        "#D4C8F5",
       flexDirection:
         "row",
       alignItems:
@@ -2220,7 +2220,7 @@ const styles =
 
     headerFoldersText: {
       marginLeft: 6,
-      color: "#09A84E",
+      color: "#7056B8",
       fontSize: 13,
       fontWeight: "800",
     },
@@ -2507,10 +2507,10 @@ const styles =
       paddingVertical: 9,
       borderRadius: 17,
       backgroundColor:
-        "#EAF8F0",
+        "#FFF5DE",
       borderWidth: 1,
       borderColor:
-        "#D8F0E2",
+        "#F5E6B8",
       flexDirection:
         "row",
       alignItems:
@@ -2709,7 +2709,7 @@ const styles =
       height: 56,
       borderRadius: 18,
       backgroundColor:
-        "#EAF8F0",
+        "#F1EDFF",
       alignItems:
         "center",
       justifyContent:
@@ -2796,7 +2796,7 @@ const styles =
       height: 48,
       borderRadius: 14,
       backgroundColor:
-        "#09A84E",
+        "#ED5447",
       alignItems:
         "center",
       justifyContent:
@@ -2885,9 +2885,9 @@ const styles =
 
     folderItemActive: {
       backgroundColor:
-        "#EAF8F0",
+        "#F1EDFF",
       borderColor:
-        "#BFE6CF",
+        "#D4C8F5",
     },
 
 
@@ -2896,7 +2896,7 @@ const styles =
       height: 46,
       borderRadius: 14,
       backgroundColor:
-        "#EAF8F0",
+        "#FFF5DE",
       alignItems:
         "center",
       justifyContent:
@@ -2906,7 +2906,7 @@ const styles =
 
     folderItemIconActive: {
       backgroundColor:
-        "#09A84E",
+        "#7056B8",
     },
 
 
@@ -2946,7 +2946,7 @@ const styles =
       height: 70,
       borderRadius: 22,
       backgroundColor:
-        "#EAF8F0",
+        "#FFF0EE",
       alignItems:
         "center",
       justifyContent:
@@ -2976,7 +2976,7 @@ const styles =
       marginTop: 15,
       borderRadius: 15,
       backgroundColor:
-        "#09AA4D",
+        "#ED5447",
       flexDirection:
         "row",
       alignItems:
@@ -2985,7 +2985,7 @@ const styles =
         "center",
 
       shadowColor:
-        "#078A3E",
+        "#C44336",
       shadowOpacity: 0.18,
       shadowRadius: 7,
       shadowOffset: {
