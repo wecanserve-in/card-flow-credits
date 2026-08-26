@@ -1,207 +1,162 @@
 # CardFlow
 
-Transform business cards into organized contact data in seconds.
+> Extract. Organize. Export.
 
-CardFlow is an AI-powered business card scanner that extracts contact information from visiting cards and automatically converts it into structured digital records. Users can upload one or multiple business cards, review extracted details, and export contacts directly to Excel.
-
-**Live Demo:** https://cardflow.wecanserve.in/
+AI-powered business card scanner that transforms physical visiting cards into structured digital contacts in seconds.
 
 ---
 
-## Overview
+## What It Does
 
-Managing business cards manually is time-consuming and error-prone. CardFlow eliminates manual data entry by leveraging Google's multimodal AI capabilities to instantly capture and structure contact information from business card images.
+Upload a business card image → Gemini Vision extracts the details → Export to Excel. Done.
 
-The system extracts:
+**Extracted Fields:**
 
-* Full Name
-* Company Name
-* Designation
-* Phone Number
-* Email Address
-* Website
-* Country
-* Address
-
-The extracted information is displayed in a clean interface and automatically saved to an Excel file for future use.
+| Field | Description |
+|-------|-------------|
+| Name | Contact name |
+| Company | Organization |
+| Designation | Job title |
+| Phone | Contact number |
+| Email | Email address |
+| Website | URL |
+| Country | Country |
+| Address | Business address |
 
 ---
 
-## Key Features
+## Features
 
-### AI-Powered Business Card Recognition
+- **AI Card Scanning** — Upload images, get structured contact data via Vertex AI
+- **Multi-Card Processing** — Scan multiple cards in one session
+- **Excel Export** — Download contacts as `.xlsx`
+- **Credit System** — Purchase scan packs via Razorpay
+- **Push Notifications** — Expo push notifications for payment updates, low credits
+- **Profile Photos** — Upload and store via Cloudflare R2
+- **Payment History** — Track all purchases
+- **Mobile + Web** — Android/iOS app + web dashboard
 
-Upload business card images and let Gemini Vision analyze the card content directly from the image.
+---
 
-### Intelligent Contact Extraction
+## Tech Stack
 
-Convert unstructured card data into organized contact records with AI-assisted parsing.
+| Layer | Technology |
+|-------|-----------|
+| Mobile | Expo SDK 56, React Native, TypeScript |
+| Web | React 19, Vite |
+| Backend | Python 3.11, FastAPI |
+| AI | Google Vertex AI (Gemini 2.5 Flash Lite) |
+| Auth | Firebase Auth, Google Sign-In |
+| Database | Firebase Firestore |
+| Payments | Razorpay |
+| Storage | Firebase Storage, Cloudflare R2 |
+| Notifications | Expo Push Notifications |
 
-### Multi-Card Processing
+---
 
-Process multiple business cards in a single upload session.
+## Project Structure
 
-### Automatic Excel Export
-
-All extracted contacts are automatically stored and exported into a centralized Excel spreadsheet.
-
-### Smart Contact Detection
-
-Automatically identifies:
-
-* Names
-* Companies
-* Designations
-* Phone Numbers
-* Email Addresses
-* Websites
-* Countries
-* Addresses
-
-### Modern User Experience
-
-* Responsive interface
-* Drag-and-drop uploads
-* Loading indicators
-* Downloadable Excel records
-* Mobile-friendly design
+```
+card-flow-credits/
+├── backend/
+│   ├── main.py              # FastAPI entry point
+│   ├── gemini_extractor.py  # Vertex AI card extraction
+│   ├── payments.py          # Razorpay integration
+│   ├── notifications.py     # Push notifications
+│   ├── export_excel.py      # Excel generation
+│   ├── image_preprocessing.py
+│   ├── r2_upload.py         # Cloudflare R2
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx
+│   │   └── firebase.js
+│   └── package.json
+├── mobile/
+│   ├── src/
+│   │   ├── app/             # 29 screens (Expo Router)
+│   │   └── services/        # API, auth, payments, notifications
+│   ├── app.json
+│   └── package.json
+└── README.md
+```
 
 ---
 
 ## How It Works
 
-### Step 1
-
-Upload one or more business card images.
-
-### Step 2
-
-Gemini Vision analyzes the card image and extracts visible text and layout information.
-
-### Step 3
-
-AI processes the extracted content and identifies structured contact details.
-
-### Step 4
-
-Results are displayed in a clean, organized format for review.
-
-### Step 5
-
-Contacts are automatically saved and exported to Excel.
+1. **Upload** — User captures or selects business card images
+2. **Preprocess** — Images are optimized for AI analysis
+3. **Extract** — Vertex AI reads the card and returns structured JSON
+4. **Review** — User reviews extracted contact details
+5. **Export** — Contacts saved to Excel for download
 
 ---
 
-## Supported Formats
+## Plans
 
-* PNG
-* JPG
-* JPEG
+| Plan | Price (INR) | Credits | Per Card |
+|------|------------|---------|----------|
+| Personal Starter | 99 | 50 | 2.00 |
+| Personal Popular | 499 | 750 | 1.50 |
+| Personal Pro | 999 | 1000 | 1.00 |
+| Business Starter | 2499 | 2775 | 0.90 |
+| Business Pro | 3999 | 5710 | 0.70 |
+| Business Enterprise | 5999 | 10000 | 0.60 |
 
-For best results:
-
-* Upload clear images
-* Keep cards properly aligned
-* Avoid blurry or low-resolution photos
-* Ensure text is clearly visible
-
----
-
-## Exported Data Structure
-
-| Field       | Description                  |
-| ----------- | ---------------------------- |
-| Name        | Contact name                 |
-| Company     | Organization name            |
-| Designation | Job title                    |
-| Phone       | Contact number               |
-| Country     | Country identified from card |
-| Email       | Email address                |
-| Website     | Company or personal website  |
-| Address     | Business address             |
+*Prices include 18% GST.*
 
 ---
 
-## Technology Stack
-
-### Frontend
-
-* React
-* Vite
-* Modern CSS
+## Getting Started
 
 ### Backend
 
-* FastAPI
-* Python
+```bash
+cd backend
+pip install -r requirements.txt
+cp .env.example .env   # add your keys
+uvicorn main:app --port 8080
+```
 
-### AI Vision & Extraction
+### Mobile
 
-* Google Gemini Vision
-* Gemini Multimodal Models
+```bash
+cd mobile
+npm install
+npx expo start
+```
 
-### Data Processing
+### Web
 
-* Pandas
-* Regular Expressions
-* PyCountry
-
-### Data Export
-
-* OpenPyXL
-* Pandas
-
----
-
-## Use Cases
-
-### Sales Teams
-
-Digitize visiting cards collected during meetings, exhibitions, and client visits.
-
-### Business Development
-
-Build and maintain a structured contact database without manual entry.
-
-### Events & Conferences
-
-Capture hundreds of leads and organize them instantly.
-
-### Recruiters
-
-Store candidate and professional contact information efficiently.
-
-### Startups & SMEs
-
-Create a centralized repository of business contacts from physical cards.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ---
 
-## Security & Privacy
+## Environment Variables
 
-Uploaded images are processed solely for contact information extraction. Users retain full ownership and control of their extracted data and exported Excel files.
+Backend `.env`:
 
----
-
-## Roadmap
-
-Future enhancements include:
-
-* Google Sheets Integration
-* CRM Integration
-* Advanced Duplicate Detection
-* Contact Search & Filtering
-* PDF Business Card Support
-* Contact Management Dashboard
-* QR Code Detection
-* Lead Categorization
-* CSV Export
-* API Access
+```
+GEMINI_API_KEY=
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+FIREBASE_PROJECT_ID=
+FIREBASE_SERVICE_ACCOUNT_PATH=
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=
+R2_PUBLIC_URL=
+```
 
 ---
 
-## Product Name
+## License
 
-**CardFlow**
-
-*Extract. Organize. Export.*
+Proprietary. All rights reserved.
