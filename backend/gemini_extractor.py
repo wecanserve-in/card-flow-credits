@@ -13,7 +13,7 @@ DEBUG = False
 client = genai.Client(
     vertexai=True,
     project="card-flow-6da93",
-    location="asia-south1",
+    location="us-central1",
 )
 
 
