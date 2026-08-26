@@ -18,7 +18,12 @@ if not GEMINI_API_KEY:
         "GEMINI_API_KEY was not found in the environment variables."
     )
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = genai.Client(
+    vertexai=True,
+    api_key=GEMINI_API_KEY,
+    project="card-flow-6da93",
+    location="global",
+)
 
 
 CARD_SCHEMA = {

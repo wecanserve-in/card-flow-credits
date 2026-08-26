@@ -16,7 +16,9 @@ import {
 
 import { auth, db } from "./firebase";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+const BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  "https://scanmycard-126413727192.asia-south1.run.app";
 
 export type NotificationType =
   | "extraction_success"

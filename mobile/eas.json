@@ -6,22 +6,55 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://scanmycard-126413727192.asia-south1.run.app",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCTUqlZrvkN8wED-cIZ3IqsGP95swxa94w",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "card-flow-6da93.firebaseapp.com", 
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "card-flow-6da93",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "card-flow-6da93.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "126413727192",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:126413727192:android:3164016875b9373a05fead",
+        "EXPO_PUBLIC_APP_ENCRYPTION_KEY": "my-super-secret-long-key-123456",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "126413727192-vhri6psu4k7eibnp4a939rpni7d2r1ok.apps.googleusercontent.com",
+        "EXPO_PUBLIC_RAZORPAY_TEST_MODE": "true"
+      }
     },
     "preview": {
       "distribution": "internal",
       "environment": "preview",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://scanmycard-126413727192.asia-south1.run.app",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCTUqlZrvkN8wED-cIZ3IqsGP95swxa94w",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "card-flow-6da93.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "card-flow-6da93",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "card-flow-6da93.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "126413727192",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:126413727192:android:3164016875b9373a05fead",
+        "EXPO_PUBLIC_APP_ENCRYPTION_KEY": "my-super-secret-long-key-123456",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "126413727192-vhri6psu4k7eibnp4a939rpni7d2r1ok.apps.googleusercontent.com",
+        "EXPO_PUBLIC_RAZORPAY_TEST_MODE": "true"
       }
     },
-   "production": {
-  "autoIncrement": true,
-  "environment": "production",
-  "android": {
-    "buildType": "apk"
-  }
-}
+    "production": {
+      "autoIncrement": true,
+      "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://scanmycard-126413727192.asia-south1.run.app",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCTUqlZrvkN8wED-cIZ3IqsGP95swxa94w",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "card-flow-6da93.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "card-flow-6da93",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "card-flow-6da93.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "126413727192",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:126413727192:android:3164016875b9373a05fead",
+        "EXPO_PUBLIC_APP_ENCRYPTION_KEY": "my-super-secret-long-key-123456",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "126413727192-vhri6psu4k7eibnp4a939rpni7d2r1ok.apps.googleusercontent.com",
+        "EXPO_PUBLIC_RAZORPAY_TEST_MODE": "true"
+      }
+    }
   },
   "submit": {
     "production": {}

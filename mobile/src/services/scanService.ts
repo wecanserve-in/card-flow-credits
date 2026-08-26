@@ -1,11 +1,9 @@
 import { File } from "expo-file-system";
 import { auth } from "./firebase";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
-
-if (!BASE_URL) {
-  throw new Error("EXPO_PUBLIC_API_URL is not configured");
-}
+const BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  "https://scanmycard-126413727192.asia-south1.run.app";
 
 const API_URL = `${BASE_URL.replace(/\/+$/, "")}/upload`;
 

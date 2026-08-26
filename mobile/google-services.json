@@ -51,6 +51,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "126413727192-c5vtgeccrn1r1bi2m5khrfenst5liai7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wecanserve.scanmycard",
+            "certificate_hash": "36e80ef772a017041000f5c5d23771143a33ede4"
+          }
+        },
+        {
           "client_id": "126413727192-vhri6psu4k7eibnp4a939rpni7d2r1ok.apps.googleusercontent.com",
           "client_type": 3
         }

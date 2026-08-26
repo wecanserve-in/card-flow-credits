@@ -26,9 +26,13 @@ export default function RootLayout() {
         }
 
         if (isActive) {
-          initializePushNotifications().then((cleanup) => {
-            if (isActive) cleanupPush = cleanup;
-          });
+          initializePushNotifications()
+            .then((cleanup) => {
+              if (isActive && cleanup) cleanupPush = cleanup;
+            })
+            .catch((error) => {
+              console.warn("[RootLayout] Push notification init error:", error);
+            });
 
           router.replace("/home");
         }

@@ -1,7 +1,8 @@
 import CryptoJS from "crypto-js";
 
 const SECRET =
-  process.env.EXPO_PUBLIC_APP_ENCRYPTION_KEY || "";
+  process.env.EXPO_PUBLIC_APP_ENCRYPTION_KEY ||
+  "my-super-secret-long-key-123456";
 
 // 32-byte AES key
 const KEY = CryptoJS.SHA256(SECRET);

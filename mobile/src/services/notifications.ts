@@ -243,19 +243,28 @@ export async function initializePushNotifications() {
       Notifications
     );
 
-  const lastResponse =
-    Notifications.getLastNotificationResponse();
+  try {
+    const lastResponse =
+      typeof Notifications.getLastNotificationResponseAsync === "function"
+        ? await Notifications.getLastNotificationResponseAsync()
+        : null;
 
-  if (lastResponse?.notification) {
-    const url = getNotificationUrl(
-      lastResponse.notification
-    );
+    if (lastResponse?.notification) {
+      const url = getNotificationUrl(
+        lastResponse.notification
+      );
 
-    if (url) {
-      setTimeout(() => {
-        router.push(url as any);
-      }, 300);
+      if (url) {
+        setTimeout(() => {
+          router.push(url as any);
+        }, 300);
+      }
     }
+  } catch (error) {
+    console.warn(
+      "[Push] Failed to check initial notification response:",
+      error
+    );
   }
 
   return () => {
