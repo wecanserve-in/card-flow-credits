@@ -1,5 +1,4 @@
 import json
-import os
 import time
 from typing import Any
 
@@ -11,18 +10,10 @@ load_dotenv()
 
 DEBUG = False
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-if not GEMINI_API_KEY:
-    raise RuntimeError(
-        "GEMINI_API_KEY was not found in the environment variables."
-    )
-
 client = genai.Client(
     vertexai=True,
-    api_key=GEMINI_API_KEY,
     project="card-flow-6da93",
-    location="global",
+    location="asia-south1",
 )
 
 
