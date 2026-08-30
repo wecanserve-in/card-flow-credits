@@ -29,6 +29,7 @@ import {
 } from "firebase/firestore";
 import {
   updateProfile,
+  signOut,
 } from "firebase/auth";
 import * as ImagePicker from "expo-image-picker";
 
@@ -36,8 +37,10 @@ import {
   auth,
   db,
 } from "../services/firebase";
+import { api } from "../services/api";
 import BottomNav from "../components/BottomNav";
 import { uploadProfilePhoto } from "../services/uploadService";
+import { deleteAccount } from "../services/accountService";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -68,6 +71,9 @@ export default function ProfileScreen() {
     useState(false);
 
   const [uploading, setUploading] =
+    useState(false);
+
+  const [deleting, setDeleting] =
     useState(false);
 
   const avatarFallback =
@@ -255,6 +261,35 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "This will permanently delete your account and all data. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeleting(true);
+              await deleteAccount();
+              await signOut(auth);
+              router.replace("/login");
+            } catch (error: any) {
+              Alert.alert(
+                "Delete Failed",
+                error?.message || "Unable to delete account. Please try again."
+              );
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.loaderPage}>
@@ -389,6 +424,49 @@ export default function ProfileScreen() {
                     : "Change Photo"}
                 </Text>
               </TouchableOpacity>
+
+              {photo ? (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={styles.removePhoto}
+                  onPress={() => {
+                    Alert.alert(
+                      "Remove Photo",
+                      "Are you sure you want to remove your profile photo?",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                          text: "Remove",
+                          style: "destructive",
+                          onPress: async () => {
+                            try {
+                              setUploading(true);
+                              await api.post("/remove/profile-photo");
+                              setPhoto("");
+                              await updateProfile(user!, { photoURL: "" });
+                            } catch {
+                              Alert.alert("Error", "Failed to remove photo. Please try again.");
+                            } finally {
+                              setUploading(false);
+                            }
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                  disabled={uploading}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={18}
+                    color="#E34E4E"
+                  />
+
+                  <Text style={styles.removePhotoText}>
+                    Remove Photo
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
 
             {/* Personal Information */}
@@ -508,19 +586,22 @@ export default function ProfileScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               style={styles.deleteButton}
-              onPress={() =>
-                Alert.alert(
-                  "Delete Account",
-                  "Account deletion is not available yet."
-                )
-              }
+              onPress={handleDeleteAccount}
+              disabled={deleting}
             >
               <View style={styles.deleteIcon}>
-                <Ionicons
-                  name="trash-outline"
-                  size={19}
-                  color="#E34E4E"
-                />
+                {deleting ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#E34E4E"
+                  />
+                ) : (
+                  <Ionicons
+                    name="trash-outline"
+                    size={19}
+                    color="#E34E4E"
+                  />
+                )}
               </View>
 
               <View style={styles.deleteInformation}>
@@ -785,6 +866,24 @@ const styles = StyleSheet.create({
   changeText: {
     marginLeft: 7,
     color: "#09A84E",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  removePhoto: {
+    marginTop: 8,
+    minHeight: 39,
+    paddingHorizontal: 15,
+    borderRadius: 13,
+    backgroundColor: "#FFF0F0",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  removePhotoText: {
+    marginLeft: 7,
+    color: "#E34E4E",
     fontSize: 13,
     fontWeight: "800",
   },

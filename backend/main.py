@@ -8,9 +8,9 @@ from typing import Optional
 from image_preprocessing import preprocess_card
 from gemini_extractor import extract_multiple_with_gemini
 from export_excel import generate_excel_in_memory
-from payments import router as payment_router, _verify_firebase_token
+from payments import router as payment_router, _verify_firebase_token, _get_firestore
 from notifications import router as notification_router
-from r2_upload import upload_profile_photo
+from r2_upload import upload_profile_photo, delete_profile_photo
 
 app = FastAPI()
 
@@ -162,3 +162,65 @@ async def upload_profile_photo_endpoint(
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
     return {"url": url}
+
+
+@app.post("/remove/profile-photo")
+async def remove_profile_photo(
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+):
+    uid = _verify_firebase_token(authorization)
+    db = _get_firestore()
+
+    try:
+        delete_profile_photo(uid)
+    except Exception:
+        pass
+
+    db.collection("users").document(uid).update({
+        "photoURL": "",
+        "photoKey": "",
+    })
+
+    return {"success": True}
+
+
+@app.post("/account/delete")
+async def delete_account(
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+):
+    uid = _verify_firebase_token(authorization)
+    db = _get_firestore()
+
+    subcollections = ["contacts", "folders", "events", "notifications"]
+
+    for sub in subcollections:
+        docs = db.collection("users").document(uid).collection(sub).stream()
+        for doc in docs:
+            if sub == "events":
+                nested = db.collection("users").document(uid).collection("events").document(doc.id).collection("contacts").stream()
+                for nested_doc in nested:
+                    nested_doc.reference.delete()
+            doc.reference.delete()
+
+    payments = (
+        db.collection("processedPayments")
+        .where("uid", "==", uid)
+        .stream()
+    )
+    for p in payments:
+        p.reference.delete()
+
+    try:
+        delete_profile_photo(uid)
+    except Exception:
+        pass
+
+    db.collection("users").document(uid).delete()
+
+    from firebase_admin import auth as firebase_auth
+    try:
+        firebase_auth.delete_user(uid)
+    except Exception:
+        pass
+
+    return {"success": True, "message": "Account and all data deleted."}

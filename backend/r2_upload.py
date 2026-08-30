@@ -45,3 +45,13 @@ def upload_profile_photo(user_uid: str, image_bytes: bytes, content_type: str = 
     )
 
     return f"{R2_PUBLIC_URL}/{key}"
+
+
+def delete_profile_photo(user_uid: str):
+    s3 = _get_s3_client()
+
+    prefix = f"profile-photos/{user_uid}/"
+    response = s3.list_objects_v2(Bucket=R2_BUCKET_NAME, Prefix=prefix)
+
+    for obj in response.get("Contents", []):
+        s3.delete_object(Bucket=R2_BUCKET_NAME, Key=obj["Key"])
