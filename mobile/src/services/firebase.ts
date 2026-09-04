@@ -7,6 +7,10 @@ import {
   Auth,
 } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
+
+const ANDROID_APP_ID = "1:126413727192:android:3164016875b9373a05fead";
+const IOS_APP_ID = "1:126413727192:ios:10acf2ac42ad8d2b05fead";
 
 const firebaseConfig = {
   apiKey:
@@ -25,7 +29,7 @@ const firebaseConfig = {
     "126413727192",
   appId:
     process.env.EXPO_PUBLIC_FIREBASE_APP_ID ||
-    "1:126413727192:android:3164016875b9373a05fead",
+    (Platform.OS === "ios" ? IOS_APP_ID : ANDROID_APP_ID),
 };
 
 const app =

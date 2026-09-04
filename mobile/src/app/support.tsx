@@ -121,7 +121,7 @@ export default function SupportScreen() {
       iconBackground: "#EAF8F0",
       onPress: () =>
         openExternalURL(
-          "https://wa.me/919999999999",
+          "https://wa.me/9029005313",
           "WhatsApp support could not be opened."
         ),
     },
@@ -133,7 +133,7 @@ export default function SupportScreen() {
       iconBackground: "#FFF5DE",
       onPress: () =>
         openExternalURL(
-          "mailto:support@ScanMyCard.app?subject=ScanMyCard Support",
+          "mailto:wecanserve23@gmail.com?subject=ScanMyCard Support",
           "Your email application could not be opened."
         ),
     },
@@ -465,7 +465,7 @@ export default function SupportScreen() {
               style={styles.infoRow}
               onPress={() =>
                 openExternalURL(
-                  "mailto:support@ScanMyCard.app",
+                  "mailto:wecanserve23@gmail.com",
                   "Your email application could not be opened."
                 )
               }
@@ -489,7 +489,7 @@ export default function SupportScreen() {
                 </Text>
 
                 <Text style={styles.infoValue}>
-                  support@ScanMyCard.app
+                 wecanserve23@gmail.com
                 </Text>
               </View>
 
@@ -502,7 +502,7 @@ export default function SupportScreen() {
 
             <View style={styles.infoDivider} />
 
-            <View style={styles.infoRow}>
+            {/* <View style={styles.infoRow}>
               <View
                 style={[
                   styles.infoIcon,
@@ -525,7 +525,7 @@ export default function SupportScreen() {
                   Monday–Saturday, 10:00 AM–7:00 PM
                 </Text>
               </View>
-            </View>
+            </View> */}
 
             <View style={styles.infoDivider} />
 

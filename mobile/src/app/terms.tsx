@@ -294,7 +294,7 @@ export default function TermsScreen() {
               style={styles.contactRow}
               onPress={() =>
                 openLink(
-                  "mailto:support@ScanMyCard.app?subject=Terms and Conditions Question",
+                  "mailto:wecanserve23@gmail.com?subject=Terms and Conditions Question",
                   "Your email application could not be opened."
                 )
               }
@@ -318,7 +318,7 @@ export default function TermsScreen() {
                 </Text>
 
                 <Text style={styles.contactValue}>
-                  support@ScanMyCard.app
+                 wecanserve23@gmail.com
                 </Text>
               </View>
 
@@ -336,7 +336,7 @@ export default function TermsScreen() {
               style={styles.contactRow}
               onPress={() =>
                 openLink(
-                  "https://www.ScanMyCard.app",
+                  "https://scanmycard.in/",
                   "The ScanMyCard website could not be opened."
                 )
               }
@@ -360,7 +360,7 @@ export default function TermsScreen() {
                 </Text>
 
                 <Text style={styles.contactValue}>
-                  www.ScanMyCard.app
+                 https://scanmycard.in/
                 </Text>
               </View>
 

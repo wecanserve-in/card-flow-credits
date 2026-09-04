@@ -76,6 +76,9 @@ export default function ProfileScreen() {
   const [deleting, setDeleting] =
     useState(false);
 
+  const [isEditing, setIsEditing] =
+    useState(false);
+
   const avatarFallback =
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
       name || user?.displayName || "User"
@@ -234,16 +237,11 @@ export default function ProfileScreen() {
         }
       );
 
+      setIsEditing(false);
+
       Alert.alert(
         "Profile Updated",
-        "Your profile information was saved successfully.",
-        [
-          {
-            text: "Done",
-            onPress: () =>
-              router.back(),
-          },
-        ]
+        "Your profile information was saved successfully."
       );
     } catch (error) {
       console.error(
@@ -353,7 +351,42 @@ export default function ProfileScreen() {
                 </Text>
               </View>
 
-              <View style={styles.headerSpacer} />
+              <TouchableOpacity
+                activeOpacity={0.86}
+                disabled={saving}
+                style={[
+                  isEditing
+                    ? styles.headerSaveButton
+                    : styles.headerEditButton,
+                  saving && styles.disabledButton,
+                ]}
+                onPress={() => {
+                  if (isEditing) {
+                    saveProfile();
+                  } else {
+                    setIsEditing(true);
+                  }
+                }}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons
+                      name={
+                        isEditing
+                          ? "checkmark-circle-outline"
+                          : "create-outline"
+                      }
+                      size={18}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.headerSaveText}>
+                      {isEditing ? "Save" : "Edit Profile"}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
 
             {/* Profile Photo */}
@@ -368,25 +401,27 @@ export default function ProfileScreen() {
                   style={styles.avatar}
                 />
 
-                <TouchableOpacity
-                  activeOpacity={0.82}
-                  style={styles.cameraButton}
-                  onPress={pickImage}
-                  disabled={uploading}
-                >
-                  {uploading ? (
-                    <ActivityIndicator
-                      size="small"
-                      color="#FFFFFF"
-                    />
-                  ) : (
-                    <Ionicons
-                      name="camera"
-                      size={18}
-                      color="#FFFFFF"
-                    />
-                  )}
-                </TouchableOpacity>
+                {isEditing ? (
+                  <TouchableOpacity
+                    activeOpacity={0.82}
+                    style={styles.cameraButton}
+                    onPress={pickImage}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <ActivityIndicator
+                        size="small"
+                        color="#FFFFFF"
+                      />
+                    ) : (
+                      <Ionicons
+                        name="camera"
+                        size={18}
+                        color="#FFFFFF"
+                      />
+                    )}
+                  </TouchableOpacity>
+                ) : null}
               </View>
 
               <Text style={styles.profileName}>
@@ -399,73 +434,79 @@ export default function ProfileScreen() {
                   "No email available"}
               </Text>
 
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={styles.changePhoto}
-                onPress={pickImage}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <ActivityIndicator
-                    size="small"
-                    color="#09A84E"
-                  />
-                ) : (
-                  <Ionicons
-                    name="image-outline"
-                    size={18}
-                    color="#09A84E"
-                  />
-                )}
+              {isEditing ? (
+                <View style={styles.photoActionsRow}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={styles.changePhoto}
+                    onPress={pickImage}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <ActivityIndicator
+                        size="small"
+                        color="#09A84E"
+                      />
+                    ) : (
+                      <Ionicons
+                        name="image-outline"
+                        size={18}
+                        color="#09A84E"
+                      />
+                    )}
 
-                <Text style={styles.changeText}>
-                  {uploading
-                    ? "Uploading..."
-                    : "Change Photo"}
-                </Text>
-              </TouchableOpacity>
+                    <Text style={styles.changeText}>
+                      {uploading
+                        ? "Uploading..."
+                        : "Change Photo"}
+                    </Text>
+                  </TouchableOpacity>
 
-              {photo ? (
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={styles.removePhoto}
-                  onPress={() => {
-                    Alert.alert(
-                      "Remove Photo",
-                      "Are you sure you want to remove your profile photo?",
-                      [
-                        { text: "Cancel", style: "cancel" },
-                        {
-                          text: "Remove",
-                          style: "destructive",
-                          onPress: async () => {
-                            try {
-                              setUploading(true);
-                              await api.post("/remove/profile-photo");
-                              setPhoto("");
-                              await updateProfile(user!, { photoURL: "" });
-                            } catch {
-                              Alert.alert("Error", "Failed to remove photo. Please try again.");
-                            } finally {
-                              setUploading(false);
-                            }
-                          },
-                        },
-                      ]
-                    );
-                  }}
-                  disabled={uploading}
-                >
-                  <Ionicons
-                    name="trash-outline"
-                    size={18}
-                    color="#E34E4E"
-                  />
-
-                  <Text style={styles.removePhotoText}>
-                    Remove Photo
-                  </Text>
-                </TouchableOpacity>
+                  {photo ? (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={styles.removePhoto}
+                      onPress={() => {
+                        Alert.alert(
+                          "Remove Photo",
+                          "Are you sure you want to remove your profile photo?",
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            {
+                              text: "Remove",
+                              style: "destructive",
+                              onPress: async () => {
+                                try {
+                                  setUploading(true);
+                                  await api.post("/remove/profile-photo");
+                                  setPhoto("");
+                                  await updateProfile(user!, { photoURL: "" });
+                                } catch {
+                                  Alert.alert(
+                                    "Error",
+                                    "Failed to remove photo. Please try again."
+                                  );
+                                } finally {
+                                  setUploading(false);
+                                }
+                              },
+                            },
+                          ]
+                        );
+                      }}
+                      disabled={uploading}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color="#E34E4E"
+                      />
+                      <Text style={styles.removePhotoText}>
+                        Remove Photo
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
               ) : null}
             </View>
 
@@ -488,6 +529,7 @@ export default function ProfileScreen() {
                 onChangeText={setName}
                 placeholder="Enter your full name"
                 autoCapitalize="words"
+                editable={isEditing}
               />
 
               <View style={styles.divider} />
@@ -509,6 +551,7 @@ export default function ProfileScreen() {
                 onChangeText={setPhone}
                 placeholder="+91 XXXXX XXXXX"
                 keyboardType="phone-pad"
+                editable={isEditing}
               />
             </View>
 
@@ -531,6 +574,7 @@ export default function ProfileScreen() {
                 onChangeText={setCompany}
                 placeholder="Enter your company"
                 autoCapitalize="words"
+                editable={isEditing}
               />
 
               <View style={styles.divider} />
@@ -542,45 +586,9 @@ export default function ProfileScreen() {
                 onChangeText={setDesignation}
                 placeholder="Founder, Manager, Designer..."
                 autoCapitalize="words"
+                editable={isEditing}
               />
             </View>
-
-            {/* Save Button */}
-            <TouchableOpacity
-              activeOpacity={0.86}
-              disabled={saving}
-              style={[
-                styles.saveButton,
-                saving &&
-                  styles.disabledButton,
-              ]}
-              onPress={saveProfile}
-            >
-              {saving ? (
-                <>
-                  <ActivityIndicator
-                    size="small"
-                    color="#FFFFFF"
-                  />
-
-                  <Text style={styles.saveText}>
-                    Saving Changes...
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={22}
-                    color="#FFFFFF"
-                  />
-
-                  <Text style={styles.saveText}>
-                    Save Changes
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
 
             {/* Delete Account */}
             <TouchableOpacity
@@ -774,8 +782,49 @@ const styles = StyleSheet.create({
     marginLeft: 13,
   },
 
-  headerSpacer: {
-    width: 44,
+  headerEditButton: {
+    minWidth: 112,
+    height: 42,
+    paddingHorizontal: 13,
+    borderRadius: 13,
+    backgroundColor: "#09AA4D",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#078A3E",
+    shadowOpacity: 0.18,
+    shadowRadius: 7,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 3,
+  },
+
+  headerSaveButton: {
+    minWidth: 82,
+    height: 42,
+    paddingHorizontal: 13,
+    borderRadius: 13,
+    backgroundColor: "#09AA4D",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#078A3E",
+    shadowOpacity: 0.18,
+    shadowRadius: 7,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 3,
+  },
+
+  headerSaveText: {
+    marginLeft: 6,
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
   },
 
   heading: {
@@ -852,8 +901,15 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  changePhoto: {
+  photoActionsRow: {
     marginTop: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+
+  changePhoto: {
     minHeight: 39,
     paddingHorizontal: 15,
     borderRadius: 13,
@@ -871,7 +927,6 @@ const styles = StyleSheet.create({
   },
 
   removePhoto: {
-    marginTop: 8,
     minHeight: 39,
     paddingHorizontal: 15,
     borderRadius: 13,
@@ -973,34 +1028,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#EDF0EE",
   },
 
-  saveButton: {
-    height: 58,
-    marginTop: 26,
-    borderRadius: 17,
-    backgroundColor: "#09AA4D",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-
-    shadowColor: "#078A3E",
-    shadowOpacity: 0.22,
-    shadowRadius: 9,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 5,
-  },
-
   disabledButton: {
     opacity: 0.72,
-  },
-
-  saveText: {
-    marginLeft: 9,
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "800",
   },
 
   deleteButton: {

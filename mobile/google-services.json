@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "126413727192-q2mfhblc5esmsa9744q6o6pa2bmf7bn8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wecanserve.scan2sheet",
+            "certificate_hash": "491195bfd9ec71e439ea4b46e728d6be7ae4e588"
+          }
+        },
+        {
           "client_id": "126413727192-vhri6psu4k7eibnp4a939rpni7d2r1ok.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -37,6 +45,13 @@
             {
               "client_id": "126413727192-vhri6psu4k7eibnp4a939rpni7d2r1ok.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "126413727192-5nj252sd7ip4ultncdmcf0bd2o15mfhb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wecanserve.scanmycard"
+              }
             }
           ]
         }
@@ -59,6 +74,14 @@
           }
         },
         {
+          "client_id": "126413727192-nilp2n7dd52v8u9a2g96merbg29disc4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wecanserve.scanmycard",
+            "certificate_hash": "491195bfd9ec71e439ea4b46e728d6be7ae4e588"
+          }
+        },
+        {
           "client_id": "126413727192-vhri6psu4k7eibnp4a939rpni7d2r1ok.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -74,6 +97,13 @@
             {
               "client_id": "126413727192-vhri6psu4k7eibnp4a939rpni7d2r1ok.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "126413727192-5nj252sd7ip4ultncdmcf0bd2o15mfhb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wecanserve.scanmycard"
+              }
             }
           ]
         }

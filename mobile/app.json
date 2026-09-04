@@ -8,6 +8,8 @@
     "scheme": "scanmycard",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "com.wecanserve.scanmycard",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "icon": "./assets/images/icon.png"
     },
     "android": {

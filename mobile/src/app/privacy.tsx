@@ -166,7 +166,7 @@ export default function PrivacyPolicyScreen() {
             />
 
             <Text style={styles.lastUpdated}>
-              Last updated: 8 July 2026
+              Last updated: 4 Sept 2026
             </Text>
           </View>
 
@@ -295,7 +295,7 @@ export default function PrivacyPolicyScreen() {
               style={styles.contactRow}
               onPress={() =>
                 openLink(
-                  "mailto:support@ScanMyCard.app?subject=Privacy Policy Question",
+                  "mailto:wecanserve23@gmail.com?subject=Privacy Policy Question",
                   "Your email application could not be opened."
                 )
               }
@@ -319,8 +319,7 @@ export default function PrivacyPolicyScreen() {
                 </Text>
 
                 <Text style={styles.contactValue}>
-                  support@ScanMyCard.app
-                </Text>
+wecanserve23@gmail.com                </Text>
               </View>
 
               <Ionicons
@@ -337,7 +336,7 @@ export default function PrivacyPolicyScreen() {
               style={styles.contactRow}
               onPress={() =>
                 openLink(
-                  "https://www.ScanMyCard.app",
+                  "https://scanmycard.in/",
                   "The ScanMyCard website could not be opened."
                 )
               }
@@ -361,7 +360,7 @@ export default function PrivacyPolicyScreen() {
                 </Text>
 
                 <Text style={styles.contactValue}>
-                  www.ScanMyCard.app
+                  https://scanmycard.in/
                 </Text>
               </View>
 
