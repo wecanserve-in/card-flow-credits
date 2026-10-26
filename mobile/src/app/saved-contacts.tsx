@@ -23,11 +23,14 @@ import {
 } from "react-native-safe-area-context";
 
 import { Ionicons } from "@expo/vector-icons";
+import * as Sharing from "expo-sharing";
 
 import {
   router,
   useFocusEffect,
 } from "expo-router";
+
+import { exportContactsToExcel } from "../services/excelService";
 
 import BottomNav from "@/components/BottomNav";
 
@@ -36,6 +39,7 @@ import {
   getFolders,
   createFolder,
   setContactFolders,
+  deleteContacts,
   FolderItem,
 } from "../services/database";
 
@@ -59,11 +63,6 @@ type ContactItem = {
   createdAt?: number;
 };
 
-type SortType =
-  | "latest"
-  | "oldest";
-
-
 /* =====================================================
    SCREEN
 ===================================================== */
@@ -83,11 +82,23 @@ export default function SavedContactsScreen() {
   const [search, setSearch] =
     useState("");
 
-  const [sortType, setSortType] =
-    useState<SortType>("latest");
-
   const [loading, setLoading] =
     useState(true);
+
+  const [selectionMode, setSelectionMode] =
+    useState(false);
+
+  const [selectedContactIds, setSelectedContactIds] =
+    useState<string[]>([]);
+
+  const [showBulkMoveModal, setShowBulkMoveModal] =
+    useState(false);
+
+  const [bulkMoving, setBulkMoving] =
+    useState(false);
+
+  const [showMenu, setShowMenu] =
+    useState(false);
 
 
   /* =====================================================
@@ -103,11 +114,6 @@ export default function SavedContactsScreen() {
   ] = useState<string | null>(
     null
   );
-
-  const [
-    showFolders,
-    setShowFolders,
-  ] = useState(false);
 
   const [
     longPressContact,
@@ -209,87 +215,95 @@ export default function SavedContactsScreen() {
 
 
   /* =====================================================
-     FILTER + SORT
+     FILTER
   ===================================================== */
+
+  const activeExportContacts = useMemo(() => {
+    if (!selectedFolderId) {
+      return contacts;
+    }
+
+    return contacts.filter((contact) =>
+      (contact.folderIds || []).includes(selectedFolderId)
+    );
+  }, [contacts, selectedFolderId]);
 
   const filteredContacts =
     useMemo(() => {
-      let data = [
-        ...contacts,
-      ];
+      let data = [...contacts];
 
       if (selectedFolderId) {
         data = data.filter((item) =>
-          (item.folderIds || []).includes(
-            selectedFolderId
-          )
-        );
-      } else {
-        data = data.filter(
-          (item) =>
-            (item.folderIds || [])
-              .length === 0
+          (item.folderIds || []).includes(selectedFolderId)
         );
       }
 
-      data.sort((a, b) => {
-        const firstDate =
-          a.updatedAt ||
-          a.createdAt ||
-          0;
-
-        const secondDate =
-          b.updatedAt ||
-          b.createdAt ||
-          0;
-
-        return sortType ===
-          "latest"
-          ? secondDate -
-              firstDate
-          : firstDate -
-              secondDate;
-      });
-
-
-      const keyword =
-        search
-          .trim()
-          .toLowerCase();
-
+      const keyword = search.trim().toLowerCase();
 
       if (!keyword) {
         return data;
       }
 
+      return data.filter((item) => {
+        const searchableText = [
+          item.name,
+          item.designation,
+          item.company,
+          item.phone,
+          item.email,
+          item.website,
+          item.address,
+          item.country,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
 
-      return data.filter(
-        (item) => {
-          const searchableText = [
-            item.name,
-            item.designation,
-            item.company,
-            item.phone,
-            item.email,
-            item.website,
-            item.address,
-            item.country,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
+        return searchableText.includes(keyword);
+      });
+    }, [contacts, search, selectedFolderId]);
 
-          return searchableText.includes(
-            keyword
-          );
-        }
+
+  /* =====================================================
+     MULTI SELECT
+  ===================================================== */
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedContactIds([]);
+  };
+
+  const toggleContactSelection = (contact: ContactItem) => {
+    if (!contact.id) {
+      return;
+    }
+
+    setSelectedContactIds((prev) =>
+      prev.includes(contact.id!)
+        ? prev.filter((id) => id !== contact.id)
+        : [...prev, contact.id!]
+    );
+  };
+
+  const selectAllVisibleContacts = () => {
+    const visibleIds = filteredContacts
+      .map((contact) => contact.id)
+      .filter(Boolean) as string[];
+
+    setSelectedContactIds(visibleIds);
+  };
+
+  const handleStartSelection = (contact?: ContactItem) => {
+    setSelectionMode(true);
+
+    if (contact?.id) {
+      setSelectedContactIds((prev) =>
+        prev.includes(contact.id!)
+          ? prev
+          : [...prev, contact.id!]
       );
-    }, [
-      contacts,
-      search,
-      sortType,
-      selectedFolderId,
-    ]);
+    }
+  };
 
 
   /* =====================================================
@@ -299,6 +313,11 @@ export default function SavedContactsScreen() {
   const handleOpenContact = (
     contact: ContactItem
   ) => {
+    if (selectionMode) {
+      toggleContactSelection(contact);
+      return;
+    }
+
     (
       globalThis as any
     ).selectedContact =
@@ -311,45 +330,168 @@ export default function SavedContactsScreen() {
 
 
   /* =====================================================
+     BULK MOVE + DELETE
+  ===================================================== */
+
+  const handleOpenBulkMove = async () => {
+    if (selectedContactIds.length === 0 || bulkMoving) {
+      return;
+    }
+
+    setShowBulkMoveModal(true);
+    setSelectedFolderIds([]);
+    setLoadingMoveFolders(true);
+
+    try {
+      const data = await getFolders();
+      setFolders(data);
+    } catch (error) {
+      console.error(
+        "Failed to load folders:",
+        error
+      );
+      setFolders([]);
+    } finally {
+      setLoadingMoveFolders(false);
+    }
+  };
+
+  const handleSaveBulkFolders = async () => {
+    if (
+      selectedContactIds.length === 0 ||
+      bulkMoving
+    ) {
+      return;
+    }
+
+    setBulkMoving(true);
+
+    try {
+      await Promise.all(
+        selectedContactIds.map((contactId) =>
+          setContactFolders(
+            contactId,
+            selectedFolderIds
+          )
+        )
+      );
+
+      setShowBulkMoveModal(false);
+
+      const movedCount =
+        selectedContactIds.length;
+
+      setSelectionMode(false);
+      setSelectedContactIds([]);
+
+      await loadContacts();
+
+      Alert.alert(
+        "Contacts Updated",
+        `${movedCount} ${
+          movedCount === 1
+            ? "contact was"
+            : "contacts were"
+        } moved ${
+          selectedFolderIds.length > 0
+            ? "to the selected folder(s)."
+            : "back to My Cards."
+        }`
+      );
+    } catch (error: any) {
+      console.error(
+        "Bulk move error:",
+        error
+      );
+
+      Alert.alert(
+        "Update Failed",
+        error?.message ||
+          "Unable to move the selected contacts. Please try again."
+      );
+    } finally {
+      setBulkMoving(false);
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedContactIds.length === 0) {
+      return;
+    }
+
+    const count =
+      selectedContactIds.length;
+
+    Alert.alert(
+      count === 1
+        ? "Delete Contact?"
+        : `Delete ${count} Contacts?`,
+      count === 1
+        ? "This contact will be permanently deleted from your saved contacts."
+        : "These contacts will be permanently deleted from your saved contacts.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setLoading(true);
+
+              await deleteContacts(
+                selectedContactIds
+              );
+
+              setSelectionMode(false);
+              setSelectedContactIds([]);
+
+              await loadContacts();
+
+              Alert.alert(
+                "Deleted",
+                `${count} ${
+                  count === 1
+                    ? "contact"
+                    : "contacts"
+                } deleted successfully.`
+              );
+            } catch (error: any) {
+              console.error(
+                "Delete contacts error:",
+                error
+              );
+
+              Alert.alert(
+                "Delete Failed",
+                error?.message ||
+                  "Unable to delete the selected contacts. Please try again."
+              );
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+
+  /* =====================================================
      LONG PRESS MOVE TO FOLDER
   ===================================================== */
 
   const handleLongPressContact = (
     contact: ContactItem
   ) => {
-    setLongPressContact(
-      contact
-    );
+    if (selectionMode) {
+      toggleContactSelection(contact);
+      return;
+    }
 
-    setSelectedFolderIds([
-      ...(contact.folderIds || []),
-    ]);
-
-    setShowMoveContactModal(
-      true
-    );
-
-    setLoadingMoveFolders(
-      true
-    );
-
-    getFolders()
-      .then((data) => {
-        setFolders(data);
-      })
-      .catch((error) => {
-        console.error(
-          "Failed to load folders:",
-          error
-        );
-
-        setFolders([]);
-      })
-      .finally(() => {
-        setLoadingMoveFolders(
-          false
-        );
-      });
+    handleStartSelection(contact);
   };
 
 
@@ -482,6 +624,86 @@ export default function SavedContactsScreen() {
 
 
   /* =====================================================
+     DIRECT EXCEL EXPORT
+  ===================================================== */
+
+  const handleDirectExcelExport = async () => {
+    try {
+      setShowMenu(false);
+
+      const activeFolder = selectedFolderId
+        ? folders.find(
+            (folder) => folder.id === selectedFolderId
+          )
+        : null;
+
+      // Export the contacts belonging to the currently active folder.
+      // When "All" is active, export all saved contacts. Search is intentionally ignored.
+      const exportContacts = selectedFolderId
+        ? contacts.filter((contact) =>
+            (contact.folderIds || []).includes(
+              selectedFolderId
+            )
+          )
+        : contacts;
+
+      if (exportContacts.length === 0) {
+        Alert.alert(
+          "No Contacts",
+          activeFolder
+            ? `There are no contacts in "${activeFolder.name}".`
+            : "There are no saved contacts to export."
+        );
+        return;
+      }
+
+      const fileUri = await exportContactsToExcel(
+        exportContacts
+      );
+
+      if (!fileUri) {
+        Alert.alert(
+          "Export Failed",
+          "Failed to generate the Excel file."
+        );
+        return;
+      }
+
+      const sharingAvailable =
+        await Sharing.isAvailableAsync();
+
+      if (!sharingAvailable) {
+        Alert.alert(
+          "Export Ready",
+          "The Excel file was generated, but sharing is not available on this device."
+        );
+        return;
+      }
+
+      await Sharing.shareAsync(fileUri, {
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        dialogTitle: activeFolder
+          ? `Export ${activeFolder.name}`
+          : "Export All Contacts",
+        UTI:
+          "org.openxmlformats.spreadsheetml.sheet",
+      });
+    } catch (error) {
+      console.error(
+        "Direct Excel export error:",
+        error
+      );
+
+      Alert.alert(
+        "Export Failed",
+        "Unable to export the contacts to Excel. Please try again."
+      );
+    }
+  };
+
+
+  /* =====================================================
      CONTACT CARD
   ===================================================== */
 
@@ -523,6 +745,37 @@ export default function SavedContactsScreen() {
           )
         }
       >
+
+        {/* Selection Checkbox */}
+
+        {selectionMode && (
+          <View
+            style={[
+              styles.selectionCheckbox,
+              selectedContactIds.includes(
+                item.id || ""
+              ) && styles.selectionCheckboxActive,
+            ]}
+          >
+            <Ionicons
+              name={
+                selectedContactIds.includes(
+                  item.id || ""
+                )
+                  ? "checkmark"
+                  : "square-outline"
+              }
+              size={18}
+              color={
+                selectedContactIds.includes(
+                  item.id || ""
+                )
+                  ? "#FFFFFF"
+                  : "#09A84E"
+              }
+            />
+          </View>
+        )}
 
         {/* Avatar */}
 
@@ -698,6 +951,8 @@ export default function SavedContactsScreen() {
 
             <Text
               style={styles.title}
+              numberOfLines={1}
+              ellipsizeMode="tail"
             >
               Saved Contacts
             </Text>
@@ -720,37 +975,157 @@ export default function SavedContactsScreen() {
           </View>
 
 
-          {/* FOLDERS TOP RIGHT */}
+          {selectionMode ? (
+            <View style={styles.selectionHeaderActions}>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                style={styles.selectAllButton}
+                onPress={() => {
+                  const visibleCount =
+                    filteredContacts.filter(
+                      (contact) => contact.id
+                    ).length;
 
-          <TouchableOpacity
-            activeOpacity={0.82}
-            style={
-              styles.headerFoldersButton
-            }
-            onPress={() =>
-              setShowFolders(
-                true
-              )
-            }
-          >
+                  if (
+                    visibleCount > 0 &&
+                    selectedContactIds.length ===
+                      visibleCount
+                  ) {
+                    setSelectedContactIds([]);
+                  } else {
+                    selectAllVisibleContacts();
+                  }
+                }}
+              >
+                <Ionicons
+                  name={
+                    filteredContacts.length > 0 &&
+                    selectedContactIds.length ===
+                      filteredContacts.filter(
+                        (contact) => contact.id
+                      ).length
+                      ? "checkbox"
+                      : "square-outline"
+                  }
+                  size={20}
+                  color="#09A84E"
+                />
+                <Text style={styles.selectAllText}>
+                  {filteredContacts.length > 0 &&
+                  selectedContactIds.length ===
+                    filteredContacts.filter(
+                      (contact) => contact.id
+                    ).length
+                    ? "Deselect"
+                    : "Select All"}
+                </Text>
+              </TouchableOpacity>
 
-                    <Ionicons
-                      name="folder-open-outline"
-                      size={35}
-                      color="#ED5447"
-                    />
-
-            <Text
-              style={
-                styles.headerFoldersText
-              }
+              <TouchableOpacity
+                activeOpacity={0.82}
+                style={styles.cancelSelectionButton}
+                onPress={exitSelectionMode}
+              >
+                <Ionicons
+                  name="close"
+                  size={20}
+                  color="#687078"
+                />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.82}
+              style={styles.menuButton}
+              onPress={() => setShowMenu(true)}
             >
-              Folders
-            </Text>
-
-          </TouchableOpacity>
+              <Ionicons
+                name="menu-outline"
+                size={28}
+                color="#20262C"
+              />
+            </TouchableOpacity>
+          )}
 
         </View>
+
+
+        {/* =================================================
+            TOP MENU
+        ================================================= */}
+
+        <Modal
+          visible={showMenu}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowMenu(false)}
+        >
+          <View style={styles.menuOverlay}>
+            <TouchableOpacity
+              activeOpacity={1}
+              style={styles.menuBackdrop}
+              onPress={() => setShowMenu(false)}
+            />
+
+            <View style={styles.menuCard}>
+              <TouchableOpacity
+                activeOpacity={0.78}
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowMenu(false);
+                  handleStartSelection();
+                }}
+              >
+                <View style={styles.menuItemIconGreen}>
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={19}
+                    color="#09A84E"
+                  />
+                </View>
+
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>
+                    Select
+                  </Text>
+                  <Text style={styles.menuItemSubtitle}>
+                    Select multiple contacts
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                activeOpacity={0.78}
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowMenu(false);
+                  setFolderName("");
+                  setShowCreateFolder(true);
+                }}
+              >
+                <View style={styles.menuItemIconPurple}>
+                  <Ionicons
+                    name="folder-open-outline"
+                    size={19}
+                    color="#7056B8"
+                  />
+                </View>
+
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>
+                    Create New Folder
+                  </Text>
+                  <Text style={styles.menuItemSubtitle}>
+                    Organize your contacts
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+            </View>
+          </View>
+        </Modal>
 
 
         {/* =================================================
@@ -809,192 +1184,208 @@ export default function SavedContactsScreen() {
 
 
         {/* =================================================
-            FILTERS
+            FOLDER FILTERS
         ================================================= */}
 
-        <View
-          style={styles.filterRow}
-        >
-
-          {/* LATEST */}
-
-          <TouchableOpacity
-            activeOpacity={0.82}
-            style={[
-              styles.filterBtn,
-              sortType ===
-                "latest" &&
-                styles.activeFilter,
-            ]}
-            onPress={() =>
-              setSortType(
-                "latest"
-              )
-            }
+        <View style={styles.folderSection}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.folderFilterContent}
+            style={styles.folderFilterScroll}
           >
-
-            <Ionicons
-              name="arrow-down-outline"
-              size={16}
-              color={
-                sortType ===
-                "latest"
-                  ? "#FFFFFF"
-                  : "#687078"
-              }
-            />
-
-
-            <Text
+            <TouchableOpacity
+              activeOpacity={0.82}
               style={[
-                styles.filterText,
-                sortType ===
-                  "latest" &&
-                  styles.activeFilterText,
+                styles.folderFilterBtn,
+                !selectedFolderId && styles.folderFilterBtnActive,
               ]}
+              onPress={() => setSelectedFolderId(null)}
             >
-              Latest
-            </Text>
+              <Ionicons
+                name="apps-outline"
+                size={16}
+                color={!selectedFolderId ? "#FFFFFF" : "#687078"}
+              />
+              <Text
+                style={[
+                  styles.folderFilterText,
+                  !selectedFolderId && styles.folderFilterTextActive,
+                ]}
+              >
+                All
+              </Text>
+            </TouchableOpacity>
 
-          </TouchableOpacity>
+            {folders.map((folder) => {
+              const active = selectedFolderId === folder.id;
 
-
-          {/* OLDEST */}
-
-          <TouchableOpacity
-            activeOpacity={0.82}
-            style={[
-              styles.filterBtn,
-              sortType ===
-                "oldest" &&
-                styles.activeFilter,
-            ]}
-            onPress={() =>
-              setSortType(
-                "oldest"
-              )
-            }
-          >
-
-            <Ionicons
-              name="arrow-up-outline"
-              size={16}
-              color={
-                sortType ===
-                "oldest"
-                  ? "#FFFFFF"
-                  : "#687078"
-              }
-            />
-
-
-            <Text
-              style={[
-                styles.filterText,
-                sortType ===
-                  "oldest" &&
-                  styles.activeFilterText,
-              ]}
-            >
-              Oldest
-            </Text>
-
-          </TouchableOpacity>
-
+              return (
+                <TouchableOpacity
+                  key={folder.id}
+                  activeOpacity={0.82}
+                  style={[
+                    styles.folderFilterBtn,
+                    active && styles.folderFilterBtnActive,
+                  ]}
+                  onPress={() => setSelectedFolderId(folder.id)}
+                >
+                  <Ionicons
+                    name="folder-outline"
+                    size={16}
+                    color={active ? "#FFFFFF" : "#EFA300"}
+                  />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.folderFilterText,
+                      active && styles.folderFilterTextActive,
+                    ]}
+                  >
+                    {folder.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
-
         {/* =================================================
-            ACTIVE FOLDER BANNER
+            DOWNLOAD CARD
         ================================================= */}
 
-        {selectedFolderId ? (
-
-          <View
-            style={styles.folderBanner}
-          >
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={
-                styles.folderBannerMain
+        <TouchableOpacity
+          activeOpacity={0.84}
+          style={styles.downloadContactsCard}
+          onPress={handleDirectExcelExport}
+          disabled={activeExportContacts.length === 0}
+        >
+          <View style={styles.downloadContactsIcon}>
+            <Ionicons
+              name="download-outline"
+              size={21}
+              color={
+                activeExportContacts.length === 0
+                  ? "#A9B0B5"
+                  : "#09A84E"
               }
-              onPress={() =>
-                setShowFolders(true)
-              }
-            >
-
-              <View
-                style={
-                  styles.folderBannerIcon
-                }
-              >
-                <Ionicons
-                  name="folder"
-                  size={19}
-                  color="#EFA300"
-                />
-              </View>
-
-
-              <View
-                style={
-                  styles.folderBannerContent
-                }
-              >
-
-                <Text
-                  style={
-                    styles.folderBannerLabel
-                  }
-                >
-                  Viewing folder
-                </Text>
-
-
-                <Text
-                  numberOfLines={1}
-                  style={
-                    styles.folderBannerName
-                  }
-                >
-                  {folders.find(
-                    (folder) =>
-                      folder.id ===
-                      selectedFolderId
-                  )?.name ||
-                    "Folder"}
-                </Text>
-
-              </View>
-
-            </TouchableOpacity>
-
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              style={
-                styles.folderBannerClear
-              }
-              onPress={() =>
-                setSelectedFolderId(
-                  null
-                )
-              }
-            >
-
-              <Ionicons
-                name="close"
-                size={18}
-                color="#ED5447"
-              />
-
-            </TouchableOpacity>
-
+            />
           </View>
 
-        ) : null}
+          <View style={styles.downloadContactsContent}>
+            <Text
+              style={[
+                styles.downloadContactsTitle,
+                activeExportContacts.length === 0 &&
+                  styles.downloadContactsTitleDisabled,
+              ]}
+            >
+              Download Contacts
+            </Text>
+            <Text style={styles.downloadContactsSubtitle}>
+              {activeExportContacts.length === 0
+                ? "No contacts available"
+                : selectedFolderId
+                  ? `${activeExportContacts.length} ${
+                      activeExportContacts.length === 1
+                        ? "contact"
+                        : "contacts"
+                    } from ${
+                      folders.find(
+                        (folder) => folder.id === selectedFolderId
+                      )?.name || "this folder"
+                    }`
+                  : `${activeExportContacts.length} ${
+                      activeExportContacts.length === 1
+                        ? "saved contact"
+                        : "saved contacts"
+                    }`}
+            </Text>
+          </View>
 
+          <View style={styles.downloadContactsAction}>
+            <Text
+              style={[
+                styles.downloadContactsActionText,
+                activeExportContacts.length === 0 &&
+                  styles.downloadContactsActionTextDisabled,
+              ]}
+            >
+              Excel
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={17}
+              color={
+                activeExportContacts.length === 0
+                  ? "#A9B0B5"
+                  : "#09A84E"
+              }
+            />
+          </View>
+        </TouchableOpacity>
+
+        {selectionMode && (
+          <View style={styles.bulkActionBar}>
+            <View style={styles.bulkSelectionInfo}>
+              <View style={styles.bulkSelectionBadge}>
+                <Text style={styles.bulkSelectionBadgeText}>
+                  {selectedContactIds.length}
+                </Text>
+              </View>
+
+              <Text style={styles.bulkSelectionText}>
+                {selectedContactIds.length === 0
+                  ? "Select contacts"
+                  : selectedContactIds.length === 1
+                    ? "1 contact selected"
+                    : `${selectedContactIds.length} contacts selected`}
+              </Text>
+            </View>
+
+            <View style={styles.bulkActionButtons}>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                disabled={selectedContactIds.length === 0}
+                style={[
+                  styles.bulkMoveButton,
+                  selectedContactIds.length === 0 &&
+                    styles.bulkActionDisabled,
+                ]}
+                onPress={handleOpenBulkMove}
+              >
+                <Ionicons
+                  name="folder-open-outline"
+                  size={19}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.bulkMoveButtonText}>
+                  Move
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.82}
+                disabled={selectedContactIds.length === 0}
+                style={[
+                  styles.bulkDeleteButton,
+                  selectedContactIds.length === 0 &&
+                    styles.bulkActionDisabled,
+                ]}
+                onPress={handleDeleteSelected}
+              >
+                <Ionicons
+                  name="trash-outline"
+                  size={19}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.bulkDeleteButtonText}>
+                  Delete
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* =================================================
             CONTACT LIST
@@ -1339,377 +1730,240 @@ export default function SavedContactsScreen() {
 
 
         {/* =================================================
-            VIEW FOLDERS MODAL
+            BULK MOVE MODAL
         ================================================= */}
 
         <Modal
-          visible={
-            showFolders
-          }
+          visible={showBulkMoveModal}
           transparent
           animationType="slide"
-          onRequestClose={() =>
-            setShowFolders(
-              false
-            )
-          }
-        >
-
-          <View
-            style={
-              styles.folderOverlay
+          onRequestClose={() => {
+            if (!bulkMoving) {
+              setShowBulkMoveModal(false);
             }
-          >
-
-            <View
-              style={
-                styles.folderListModal
-              }
-            >
-
-              {/* HEADER */}
-
-              <View
-                style={
-                  styles.folderListHeader
-                }
-              >
-
-                <View>
-
-                  <Text
-                    style={
-                      styles.folderListTitle
-                    }
-                  >
-                    Your Folders
-                  </Text>
-
-
-                  <Text
-                    style={
-                      styles.folderListSubtitle
-                    }
-                  >
-                    {folders.length}{" "}
-                    {
-                      folders.length ===
-                      1
-                        ? "folder"
-                        : "folders"
-                    }
-                  </Text>
-
+          }}
+        >
+          <View style={styles.moveOverlay}>
+            <View style={styles.moveModal}>
+              <View style={styles.moveModalHeader}>
+                <View style={styles.moveModalIcon}>
+                  <Ionicons
+                    name="move-outline"
+                    size={26}
+                    color="#09AA4D"
+                  />
                 </View>
 
+                <View style={styles.moveModalTitleWrap}>
+                  <Text
+                    style={styles.moveModalTitle}
+                    numberOfLines={1}
+                  >
+                    Move {selectedContactIds.length}{" "}
+                    {selectedContactIds.length === 1
+                      ? "Contact"
+                      : "Contacts"}
+                  </Text>
+
+                  <Text style={styles.moveModalSubtitle}>
+                    Choose folders for all selected contacts
+                  </Text>
+                </View>
 
                 <TouchableOpacity
-                  activeOpacity={
-                    0.7
-                  }
-                  style={
-                    styles.modalCloseButton
-                  }
+                  activeOpacity={0.7}
+                  style={styles.moveModalCloseButton}
+                  disabled={bulkMoving}
                   onPress={() =>
-                    setShowFolders(
-                      false
-                    )
+                    setShowBulkMoveModal(false)
                   }
                 >
-
                   <Ionicons
                     name="close"
                     size={21}
                     color="#737B82"
                   />
-
                 </TouchableOpacity>
-
               </View>
 
-
-              {/* FOLDERS */}
-
-              {folders.length ===
-              0 ? (
-
-                <View
-                  style={
-                    styles.noFolders
-                  }
-                >
-
-                  <View
-                    style={
-                      styles.noFoldersIcon
-                    }
-                  >
-
+              {loadingMoveFolders ? (
+                <View style={styles.moveModalLoader}>
+                  <ActivityIndicator
+                    size="large"
+                    color="#09A84E"
+                  />
+                </View>
+              ) : folders.length === 0 ? (
+                <View style={styles.moveNoFolders}>
+                  <View style={styles.moveNoFoldersIcon}>
                     <Ionicons
                       name="folder-open-outline"
                       size={35}
                       color="#09A84E"
                     />
-
                   </View>
 
-
-                  <Text
-                    style={
-                      styles.noFoldersTitle
-                    }
-                  >
+                  <Text style={styles.moveNoFoldersTitle}>
                     No folders yet
                   </Text>
 
-
-                  <Text
-                    style={
-                      styles.noFoldersText
-                    }
-                  >
-                    Create a folder to
-                    organize your contacts.
+                  <Text style={styles.moveNoFoldersText}>
+                    Create a folder first to move contacts into it.
                   </Text>
-
                 </View>
-
               ) : (
-
-                <FlatList
-                  data={folders}
-                  keyExtractor={(
-                    item
-                  ) =>
-                    item.id
-                  }
-                  showsVerticalScrollIndicator={
-                    false
-                  }
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  style={styles.moveFolderList}
                   contentContainerStyle={{
-                    paddingTop: 15,
                     paddingBottom: 5,
                   }}
-                  ListHeaderComponent={(
-                    <TouchableOpacity
-                      activeOpacity={
-                        0.82
-                      }
+                >
+                  <TouchableOpacity
+                    activeOpacity={0.82}
+                    style={[
+                      styles.moveFolderItem,
+                      selectedFolderIds.length === 0 &&
+                        styles.moveFolderItemActive,
+                    ]}
+                    disabled={bulkMoving}
+                    onPress={() =>
+                      setSelectedFolderIds([])
+                    }
+                  >
+                    <View
                       style={[
-                        styles.folderItem,
-                        !selectedFolderId &&
-                          styles.folderItemActive,
+                        styles.moveFolderItemIcon,
+                        selectedFolderIds.length === 0 &&
+                          styles.moveFolderItemIconActive,
                       ]}
-                      onPress={() => {
-
-                        setSelectedFolderId(
-                          null
-                        );
-
-                        setShowFolders(
-                          false
-                        );
-
-                      }}
                     >
-<View
+                      <Ionicons
+                        name={
+                          selectedFolderIds.length === 0
+                            ? "checkbox"
+                            : "square-outline"
+                        }
+                        size={22}
+                        color={
+                          selectedFolderIds.length === 0
+                            ? "#FFFFFF"
+                            : "#09A84E"
+                        }
+                      />
+                    </View>
+
+                    <View style={styles.moveFolderItemInfo}>
+                      <Text
+                        numberOfLines={1}
+                        style={styles.moveFolderItemName}
+                      >
+                        General
+                      </Text>
+
+                      <Text style={styles.moveFolderItemDate}>
+                        {selectedFolderIds.length === 0
+                          ? "Save in My Cards, outside folders"
+                          : "Tap to clear folder selection"}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {folders.map((folder) => {
+                    const isChecked =
+                      selectedFolderIds.includes(folder.id);
+
+                    return (
+                      <TouchableOpacity
+                        key={folder.id}
+                        activeOpacity={0.82}
+                        style={[
+                          styles.moveFolderItem,
+                          isChecked &&
+                            styles.moveFolderItemActive,
+                        ]}
+                        disabled={bulkMoving}
+                        onPress={() =>
+                          toggleFolder(folder.id)
+                        }
+                      >
+                        <View
                           style={[
-                            styles.folderItemIcon,
-                            !selectedFolderId &&
-                              styles.folderItemIconActive,
+                            styles.moveFolderItemIcon,
+                            isChecked &&
+                              styles.moveFolderItemIconActive,
                           ]}
                         >
-                        <Ionicons
-                          name={
-                            !selectedFolderId
-                              ? "checkmark"
-                              : "person"
-                          }
-                          size={22}
-                          color={
-                            !selectedFolderId
-                              ? "#FFFFFF"
-                              : "#EFA300"
-                          }
-                        />
-                      </View>
+                          <Ionicons
+                            name={
+                              isChecked
+                                ? "checkbox"
+                                : "square-outline"
+                            }
+                            size={22}
+                            color={
+                              isChecked
+                                ? "#FFFFFF"
+                                : "#09A84E"
+                            }
+                          />
+                        </View>
 
-                      <View
-                        style={
-                          styles.folderItemInfo
-                        }
-                      >
-                        <Text
-                          style={
-                            styles.folderItemName
-                          }
-                        >
-                          My Cards
-                        </Text>
+                        <View style={styles.moveFolderItemInfo}>
+                          <Text
+                            numberOfLines={1}
+                            style={styles.moveFolderItemName}
+                          >
+                            {folder.name}
+                          </Text>
 
-                        <Text
-                          style={
-                            styles.folderItemDate
-                          }
-                        >
-                          {
-                            contacts.filter(
-                              (contact) =>
-                                (contact.folderIds ||
-                                  []).length ===
-                                0
-                            ).length
-                          }{" "}
-                          contacts without folders
-                        </Text>
-                      </View>
-
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color="#AAB1B7"
-                      />
-                    </TouchableOpacity>
-                  )}
-                  renderItem={({
-                    item,
-                  }) => (
-
-                    <TouchableOpacity
-                      activeOpacity={
-                        0.82
-                      }
-                      style={[
-                        styles.folderItem,
-                        selectedFolderId ===
-                          item.id &&
-                          styles.folderItemActive,
-                      ]}
-                      onPress={() => {
-
-                        setSelectedFolderId(
-                          item.id
-                        );
-
-                        setShowFolders(
-                          false
-                        );
-
-                      }}
-                    >
-
-                      <View
-                        style={
-                          styles.folderItemIcon
-                        }
-                      >
-
-                        <Ionicons
-                          name="folder"
-                          size={24}
-                          color="#EFA300"
-                        />
-
-                      </View>
-
-
-                      <View
-                        style={
-                          styles.folderItemInfo
-                        }
-                      >
-
-                        <Text
-                          style={
-                            styles.folderItemName
-                          }
-                          numberOfLines={
-                            1
-                          }
-                        >
-                          {item.name}
-                        </Text>
-
-
-                        <Text
-                          style={
-                            styles.folderItemDate
-                          }
-                        >
-                          Created{" "}
-                          {item.createdAt
-                            ? new Date(
-                                item.createdAt
-                              ).toLocaleDateString()
-                            : "Recently"}
-                        </Text>
-
-                      </View>
-
-
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color="#AAB1B7"
-                      />
-
-                    </TouchableOpacity>
-
-                  )}
-
-                />
-
+                          <Text style={styles.moveFolderItemDate}>
+                            {isChecked
+                              ? "Selected for all contacts"
+                              : "Tap to select for all contacts"}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
               )}
 
-
-              {/* CREATE NEW FOLDER */}
-
-              <TouchableOpacity
-                activeOpacity={
-                  0.84
-                }
-                style={
-                  styles.modalCreateFolderButton
-                }
-                onPress={() => {
-
-                  setShowFolders(
-                    false
-                  );
-
-
-                  setTimeout(() => {
-
-                    setShowCreateFolder(
-                      true
-                    );
-
-                  }, 250);
-
-                }}
-              >
-
-                <Ionicons
-                  name="add"
-                  size={20}
-                  color="#FFFFFF"
-                />
-
-
-                <Text
-                  style={
-                    styles.modalCreateFolderText
+              <View style={styles.moveModalFooter}>
+                <TouchableOpacity
+                  activeOpacity={0.86}
+                  style={[
+                    styles.moveModalSaveButton,
+                    bulkMoving &&
+                      styles.moveModalSaveDisabled,
+                  ]}
+                  disabled={
+                    bulkMoving ||
+                    loadingMoveFolders
                   }
+                  onPress={handleSaveBulkFolders}
                 >
-                  Create New Folder
-                </Text>
-
-              </TouchableOpacity>
-
+                  {bulkMoving ? (
+                    <ActivityIndicator
+                      size="small"
+                      color="#FFFFFF"
+                    />
+                  ) : (
+                    <>
+                      <Ionicons
+                        name="checkmark-circle-outline"
+                        size={20}
+                        color="#FFFFFF"
+                      />
+                      <Text style={styles.moveModalSaveText}>
+                        Apply to Selected
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-
           </View>
-
         </Modal>
 
 
@@ -2183,6 +2437,94 @@ const styles =
     },
 
 
+    headerActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+
+
+    menuButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 14,
+      backgroundColor: "#FFFFFF",
+      borderWidth: 1,
+      borderColor: "#E5EAE7",
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: "#17261D",
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      shadowOffset: {
+        width: 0,
+        height: 3,
+      },
+      elevation: 2,
+    },
+
+
+    selectButton: {
+      height: 42,
+      paddingHorizontal: 11,
+      borderRadius: 14,
+      backgroundColor: "#EAF8F0",
+      borderWidth: 1,
+      borderColor: "#BFE6CF",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+
+    selectButtonText: {
+      marginLeft: 5,
+      color: "#078E42",
+      fontSize: 12.5,
+      fontWeight: "800",
+    },
+
+
+    selectionHeaderActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+
+
+    selectAllButton: {
+      height: 42,
+      paddingHorizontal: 11,
+      borderRadius: 14,
+      backgroundColor: "#EAF8F0",
+      borderWidth: 1,
+      borderColor: "#BFE6CF",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+
+    selectAllText: {
+      marginLeft: 5,
+      color: "#078E42",
+      fontSize: 12,
+      fontWeight: "800",
+    },
+
+
+    cancelSelectionButton: {
+      width: 42,
+      height: 42,
+      borderRadius: 14,
+      backgroundColor: "#FFFFFF",
+      borderWidth: 1,
+      borderColor: "#E5EAE7",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+
     title: {
       color: "#171C21",
       fontSize: 23,
@@ -2202,7 +2544,7 @@ const styles =
 
     headerFoldersButton: {
       height: 42,
-      paddingHorizontal: 13,
+      paddingHorizontal: 10,
       borderRadius: 14,
       backgroundColor:
         "#F1EDFF",
@@ -2215,16 +2557,180 @@ const styles =
         "center",
       justifyContent:
         "center",
+      flexShrink: 0,
     },
 
 
     headerFoldersText: {
-      marginLeft: 6,
+      marginLeft: 4,
       color: "#7056B8",
-      fontSize: 13,
+      fontSize: 11.5,
+      fontWeight: "800",
+      flexShrink: 1,
+    },
+
+
+    /* ================= TOP MENU ================= */
+
+    menuOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.08)",
+      alignItems: "flex-end",
+    },
+
+
+    menuBackdrop: {
+      ...StyleSheet.absoluteFillObject,
+    },
+
+
+    menuCard: {
+      width: 245,
+      marginTop: 76,
+      marginRight: 20,
+      paddingVertical: 7,
+      borderRadius: 18,
+      backgroundColor: "#FFFFFF",
+      borderWidth: 1,
+      borderColor: "#E5EAE7",
+      shadowColor: "#17261D",
+      shadowOpacity: 0.14,
+      shadowRadius: 16,
+      shadowOffset: {
+        width: 0,
+        height: 7,
+      },
+      elevation: 7,
+      zIndex: 10,
+    },
+
+
+    menuItem: {
+      minHeight: 62,
+      paddingHorizontal: 12,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
+
+    menuItemIconGreen: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
+      backgroundColor: "#EAF8F0",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+
+    menuItemIconPurple: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
+      backgroundColor: "#F1EDFF",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+
+
+    menuItemContent: {
+      flex: 1,
+      marginLeft: 11,
+    },
+
+
+    menuItemTitle: {
+      color: "#20262C",
+      fontSize: 13.5,
       fontWeight: "800",
     },
 
+
+    menuItemSubtitle: {
+      marginTop: 3,
+      color: "#858D95",
+      fontSize: 11,
+      fontWeight: "500",
+    },
+
+
+    menuDivider: {
+      height: 1,
+      marginHorizontal: 12,
+      backgroundColor: "#EEF1EF",
+    },
+
+    /* ================= DOWNLOAD CARD ================= */
+
+    downloadContactsCard: {
+      minHeight: 66,
+      marginTop: 2,
+      marginBottom: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderRadius: 16,
+      backgroundColor: "#F2FBF6",
+      borderWidth: 1,
+      borderColor: "#CFECDD",
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
+    downloadContactsIcon: {
+      width: 42,
+      height: 42,
+      borderRadius: 13,
+      backgroundColor: "#E1F6E9",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    downloadContactsContent: {
+      flex: 1,
+      marginLeft: 11,
+    },
+
+    downloadContactsTitle: {
+      color: "#20262C",
+      fontSize: 14,
+      fontWeight: "800",
+    },
+
+    downloadContactsTitleDisabled: {
+      color: "#8E969D",
+    },
+
+    downloadContactsSubtitle: {
+      marginTop: 3,
+      color: "#7A858D",
+      fontSize: 11.5,
+      fontWeight: "500",
+    },
+
+    downloadContactsAction: {
+      minWidth: 62,
+      height: 34,
+      paddingHorizontal: 9,
+      borderRadius: 11,
+      backgroundColor: "#FFFFFF",
+      borderWidth: 1,
+      borderColor: "#BFE3CC",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    downloadContactsActionText: {
+      marginRight: 2,
+      color: "#09A84E",
+      fontSize: 11.5,
+      fontWeight: "800",
+    },
+
+    downloadContactsActionTextDisabled: {
+      color: "#A9B0B5",
+    },
 
     /* ================= SEARCH ================= */
 
@@ -2349,6 +2855,26 @@ const styles =
 
 
     /* ================= CONTACT CARD ================= */
+
+    selectionCheckbox: {
+      width: 30,
+      height: 30,
+      marginRight: 10,
+      marginTop: 10,
+      borderRadius: 9,
+      backgroundColor: "#FFFFFF",
+      borderWidth: 1.5,
+      borderColor: "#B8C1BB",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+
+    selectionCheckboxActive: {
+      backgroundColor: "#09A84E",
+      borderColor: "#09A84E",
+    },
+
 
     card: {
       minHeight: 106,
@@ -2494,6 +3020,158 @@ const styles =
       color: "#858D95",
       fontSize: 13,
       fontWeight: "500",
+    },
+
+
+    /* ================= BULK ACTION BAR ================= */
+
+    folderSection: {
+      width: "100%",
+      marginTop: 14,
+      marginBottom: 4,
+    },
+
+    folderFilterScroll: {
+      flexGrow: 0,
+    },
+
+    folderFilterContent: {
+      gap: 8,
+      paddingRight: 8,
+      paddingVertical: 2,
+      alignItems: "center",
+    },
+
+    folderFilterBtn: {
+      height: 40,
+      paddingHorizontal: 13,
+      borderRadius: 13,
+      backgroundColor: "#FFFFFF",
+      borderWidth: 1,
+      borderColor: "#E2E7E4",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      maxWidth: 180,
+      flexGrow: 0,
+      flexShrink: 0,
+      alignSelf: "flex-start",
+    },
+
+    folderFilterBtnActive: {
+      backgroundColor: "#09A84E",
+      borderColor: "#09A84E",
+    },
+
+    folderFilterText: {
+      marginLeft: 6,
+      color: "#687078",
+      fontSize: 12.5,
+      fontWeight: "700",
+      maxWidth: 135,
+      flexShrink: 1,
+    },
+
+    folderFilterTextActive: {
+      color: "#FFFFFF",
+    },
+
+    bulkActionBar: {
+      minHeight: 58,
+      marginBottom: 13,
+      paddingHorizontal: 11,
+      paddingVertical: 8,
+      borderRadius: 17,
+      backgroundColor: "#FFFFFF",
+      borderWidth: 1,
+      borderColor: "#E5EAE7",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+
+
+    bulkSelectionInfo: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      minWidth: 0,
+    },
+
+
+    bulkSelectionBadge: {
+      width: 34,
+      height: 34,
+      borderRadius: 12,
+      backgroundColor: "#EAF8F0",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+
+    bulkSelectionBadgeText: {
+      color: "#078E42",
+      fontSize: 14,
+      fontWeight: "900",
+    },
+
+
+    bulkSelectionText: {
+      flexShrink: 1,
+      marginLeft: 9,
+      color: "#20262C",
+      fontSize: 12.5,
+      fontWeight: "700",
+    },
+
+
+    bulkActionButtons: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+    },
+
+
+    bulkMoveButton: {
+      height: 40,
+      paddingHorizontal: 11,
+      borderRadius: 12,
+      backgroundColor: "#09A84E",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+
+    bulkMoveButtonText: {
+      marginLeft: 5,
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontWeight: "800",
+    },
+
+
+    bulkDeleteButton: {
+      height: 40,
+      paddingHorizontal: 11,
+      borderRadius: 12,
+      backgroundColor: "#ED5447",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+
+    bulkDeleteButtonText: {
+      marginLeft: 5,
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontWeight: "800",
+    },
+
+
+    bulkActionDisabled: {
+      opacity: 0.45,
     },
 
 

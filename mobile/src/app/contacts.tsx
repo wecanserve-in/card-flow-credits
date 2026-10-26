@@ -46,13 +46,13 @@ export default function ContactsScreen() {
   const [contacts, setContacts] = useState<ContactItem[]>([]);
   const [saving, setSaving] = useState(false);
 
-  const [showSaveFolderModal, setShowSaveFolderModal] =
-    useState(false);
-
   const [folders, setFolders] = useState<FolderItem[]>([]);
 
-  const [selectedFolderId, setSelectedFolderId] =
-    useState<string | null>(null);
+  // Selection is available directly on the extracted contacts page.
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedContactIndices, setSelectedContactIndices] = useState<number[]>([]);
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
+  const [pendingFolderId, setPendingFolderId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -121,93 +121,77 @@ export default function ContactsScreen() {
   const normalizePhone = (phone?: string) =>
     (phone || "").replace(/\D/g, "").slice(-10);
 
-  const handleSaveContacts = async () => {
-    if (contacts.length === 0 || saving) {
-      return;
-    }
-
-    await loadFolders();
-    setSelectedFolderId(null);
-    setShowSaveFolderModal(true);
+  const toggleContactSelection = (index: number) => {
+    setSelectedContactIndices((previous) =>
+      previous.includes(index)
+        ? previous.filter((item) => item !== index)
+        : [...previous, index]
+    );
   };
 
-  const handleConfirmSaveContacts = async () => {
-    if (contacts.length === 0 || saving) {
-      return;
-    }
+  const selectAllContacts = () => {
+    setSelectedContactIndices(
+      contacts.map((_, index) => index)
+    );
+  };
+
+  const clearSelection = () => {
+    setSelectedContactIndices([]);
+    setSelectionMode(false);
+  };
+
+  const handleSaveSelectedContacts = async () => {
+    if (selectedContactIndices.length === 0 || saving) return;
+    await loadFolders();
+    setPendingFolderId(null);
+    setShowFolderPicker(true);
+  };
+
+  const handleSaveSelectedToFolder = async (folderId: string | null) => {
+    if (selectedContactIndices.length === 0 || saving) return;
 
     try {
       setSaving(true);
+      const selectedSet = new Set(selectedContactIndices);
+      const selectedContacts = contacts.filter((_, index) => selectedSet.has(index));
 
-      // Save the exact edited contacts currently shown on the preview screen.
-      await saveContacts(contacts);
+      await saveContacts(selectedContacts);
 
-      // General = no folder assignment.
-      if (selectedFolderId) {
+      if (folderId) {
         const savedContacts = await getContacts();
-
-        for (const contact of contacts) {
+        for (const contact of selectedContacts) {
           const email = normalizeEmail(contact.email);
           const phone = normalizePhone(contact.phone);
-
           const matchedContact = savedContacts.find((saved: any) => {
             const savedEmail = normalizeEmail(saved.email);
             const savedPhone = normalizePhone(saved.phone);
-
-            if (email && savedEmail) {
-              return email === savedEmail;
-            }
-
-            if (phone && savedPhone) {
-              return phone === savedPhone;
-            }
-
+            if (email && savedEmail) return email === savedEmail;
+            if (phone && savedPhone) return phone === savedPhone;
             return false;
           });
-
           if (matchedContact?.id) {
-            await setContactFolders(
-              matchedContact.id,
-              [selectedFolderId]
-            );
+            await setContactFolders(matchedContact.id, [folderId]);
           }
         }
       }
 
-      const savedCount = contacts.length;
-      const selectedFolder = folders.find(
-        (folder) => folder.id === selectedFolderId
-      );
-
-      (globalThis as any).extractedCards = [];
-
-      setContacts([]);
+      const remainingContacts = contacts.filter((_, index) => !selectedSet.has(index));
+      setContacts(remainingContacts);
+      (globalThis as any).extractedCards = remainingContacts;
+      setSelectedContactIndices([]);
+      setSelectionMode(false);
+      setShowFolderPicker(false);
+      setPendingFolderId(null);
       setSearch("");
-      setShowSaveFolderModal(false);
 
-      Alert.alert(
-        "Contacts Saved",
-        selectedFolder
-          ? `${savedCount} ${
-              savedCount === 1 ? "contact was" : "contacts were"
-            } saved in "${selectedFolder.name}".`
-          : `${savedCount} ${
-              savedCount === 1 ? "contact was" : "contacts were"
-            } saved successfully.`,
-        [
-          {
-            text: "Done",
-            onPress: () => router.replace("/home"),
-          },
-        ]
-      );
+      if (remainingContacts.length === 0) {
+        router.replace("/home");
+      }
     } catch (error: any) {
-      console.error("Save contacts error:", error);
-
+      console.error("Save selected contacts error:", error);
       Alert.alert(
         "Save Failed",
-        error?.message ||
-          "Unable to save your contacts. Please try again."
+        error?.message || "Unable to save the selected contacts. Please try again."
       );
     } finally {
       setSaving(false);
@@ -235,8 +219,34 @@ export default function ContactsScreen() {
       <TouchableOpacity
         activeOpacity={0.84}
         style={styles.card}
-        onPress={() => handleEditContact(index)}
+        onPress={() =>
+          selectionMode
+            ? toggleContactSelection(index)
+            : handleEditContact(index)
+        }
+        onLongPress={() => {
+          setSelectionMode(true);
+          toggleContactSelection(index);
+        }}
       >
+        {selectionMode && (
+          <View
+            style={[
+              styles.selectionCheckbox,
+              selectedContactIndices.includes(index) &&
+                styles.selectionCheckboxActive,
+            ]}
+          >
+            {selectedContactIndices.includes(index) && (
+              <Ionicons
+                name="checkmark"
+                size={15}
+                color="#FFFFFF"
+              />
+            )}
+          </View>
+        )}
+
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
             {initial}
@@ -397,13 +407,52 @@ export default function ContactsScreen() {
             </Text>
           </View>
 
-          <View style={styles.headerIcon}>
-            <Ionicons
-              name="people-outline"
-              size={24}
-              color="#09A84E"
-            />
-          </View>
+          {selectionMode ? (
+            <View style={styles.selectionHeaderActions}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.selectAllButton}
+                onPress={() => {
+                  if (selectedContactIndices.length === contacts.length) {
+                    setSelectedContactIndices([]);
+                  } else {
+                    selectAllContacts();
+                  }
+                }}
+              >
+                <Text style={styles.selectAllText}>
+                  {selectedContactIndices.length === contacts.length
+                    ? "Deselect All"
+                    : "Select All"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.closeSelectionButton}
+                onPress={clearSelection}
+              >
+                <Ionicons
+                  name="close"
+                  size={21}
+                  color="#20262C"
+                />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.82}
+              style={styles.headerSelectButton}
+              onPress={() => setSelectionMode(true)}
+            >
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={20}
+                color="#09A84E"
+              />
+              <Text style={styles.headerSelectText}>Select</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Search */}
@@ -521,46 +570,32 @@ export default function ContactsScreen() {
           }
         />
 
-        {/* Save Button */}
+        {/* Page-level selection and save actions */}
         {contacts.length > 0 && (
           <View
-            style={[
-              styles.bottomAction,
-              {
-                bottom: 76 + insets.bottom,
-              },
-            ]}
+            style={[styles.bottomAction, { bottom: 76 + insets.bottom }]}
           >
             <TouchableOpacity
               activeOpacity={0.86}
-              disabled={saving}
+              disabled={saving || (selectionMode && selectedContactIndices.length === 0)}
               style={[
                 styles.saveButton,
-                saving && styles.disabledButton,
+                (saving || (selectionMode && selectedContactIndices.length === 0)) && styles.disabledButton,
               ]}
-              onPress={handleSaveContacts}
+              onPress={selectionMode ? handleSaveSelectedContacts : () => setSelectionMode(true)}
             >
               {saving ? (
                 <>
-                  <ActivityIndicator
-                    size="small"
-                    color="#FFFFFF"
-                  />
-
-                  <Text style={styles.saveText}>
-                    Saving Contacts...
-                  </Text>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.saveText}>Saving...</Text>
                 </>
               ) : (
                 <>
-                  <Ionicons
-                    name="save-outline"
-                    size={22}
-                    color="#FFFFFF"
-                  />
-
+                  <Ionicons name="save-outline" size={22} color="#FFFFFF" />
                   <Text style={styles.saveText}>
-                    Save All ({contacts.length})
+                    {selectionMode
+                      ? `Save Selected (${selectedContactIndices.length})`
+                      : `Select Cards (${contacts.length})`}
                   </Text>
                 </>
               )}
@@ -568,33 +603,29 @@ export default function ContactsScreen() {
           </View>
         )}
 
-        {/* Save All -> Folder selection modal */}
+        {/* Folder picker for selected cards */}
         <Modal
-          visible={showSaveFolderModal}
+          visible={showFolderPicker}
           transparent
           animationType="slide"
-          onRequestClose={() => {
-            if (!saving) {
-              setShowSaveFolderModal(false);
-            }
-          }}
+          onRequestClose={() => setShowFolderPicker(false)}
         >
           <View style={styles.saveModalOverlay}>
-            <View style={styles.saveModal}>
+            <View style={styles.folderPickerModal}>
               <View style={styles.saveModalHeader}>
-                <View style={styles.saveModalIcon}>
-                  <Ionicons
-                    name="save-outline"
-                    size={25}
-                    color="#09A84E"
-                  />
+                <View>
+                  <Text style={styles.saveModalTitle}>
+                    Save Selected Cards
+                  </Text>
+                  <Text style={styles.saveModalSubtitle}>
+                    {selectedContactIndices.length} selected {selectedContactIndices.length === 1 ? "card" : "cards"}
+                  </Text>
                 </View>
 
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  disabled={saving}
                   style={styles.modalCloseButton}
-                  onPress={() => setShowSaveFolderModal(false)}
+                  onPress={() => setShowFolderPicker(false)}
                 >
                   <Ionicons
                     name="close"
@@ -604,198 +635,59 @@ export default function ContactsScreen() {
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.saveModalTitle}>
-                Save Contacts
-              </Text>
-
-              <Text style={styles.saveModalSubtitle}>
-                {contacts.length}{" "}
-                {contacts.length === 1 ? "contact" : "contacts"} are ready
-                to be saved.
-              </Text>
-
-              <Text style={styles.saveQuestion}>
-                Where do you want to save them?
-              </Text>
-
-              {/* General */}
               <TouchableOpacity
                 activeOpacity={0.82}
-                disabled={saving}
-                style={[
-                  styles.saveOption,
-                  selectedFolderId === null &&
-                    styles.saveOptionActive,
-                ]}
-                onPress={() => setSelectedFolderId(null)}
+                style={[styles.folderChoice, pendingFolderId === null && styles.folderChoiceActive]}
+                onPress={() => setPendingFolderId(null)}
               >
-                <View
-                  style={[
-                    styles.saveOptionIcon,
-                    selectedFolderId === null &&
-                      styles.saveOptionIconActive,
-                  ]}
-                >
-                  <Ionicons
-                    name="people-outline"
-                    size={22}
-                    color={
-                      selectedFolderId === null
-                        ? "#09A84E"
-                        : "#727B76"
-                    }
-                  />
-                </View>
-
-                <View style={styles.saveOptionContent}>
-                  <Text style={styles.saveOptionTitle}>
-                    General
-                  </Text>
-
-                  <Text style={styles.saveOptionSubtitle}>
-                    Save without a folder
-                  </Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.radioOuter,
-                    selectedFolderId === null &&
-                      styles.radioOuterActive,
-                  ]}
-                >
-                  {selectedFolderId === null && (
-                    <View style={styles.radioInner} />
-                  )}
-                </View>
+                <Ionicons
+                  name="people-outline"
+                  size={22}
+                  color="#09A84E"
+                />
+                <Text style={styles.folderChoiceText}>General</Text>
               </TouchableOpacity>
 
-              {/* Folder heading */}
-              <Text style={styles.folderSectionTitle}>
-                SAVE IN FOLDER
-              </Text>
-
-              {folders.length > 0 ? (
-                <FlatList
-                  data={folders}
-                  keyExtractor={(item) => item.id}
-                  showsVerticalScrollIndicator={false}
-                  style={styles.folderList}
-                  contentContainerStyle={{
-                    paddingBottom: 4,
-                  }}
-                  renderItem={({ item }) => {
-                    const active =
-                      selectedFolderId === item.id;
-
-                    return (
-                      <TouchableOpacity
-                        activeOpacity={0.82}
-                        disabled={saving}
-                        style={[
-                          styles.saveOption,
-                          active && styles.saveOptionActive,
-                        ]}
-                        onPress={() =>
-                          setSelectedFolderId(item.id)
-                        }
-                      >
-                        <View
-                          style={[
-                            styles.saveOptionIcon,
-                            active &&
-                              styles.saveOptionIconActive,
-                          ]}
-                        >
-                          <Ionicons
-                            name="folder-outline"
-                            size={22}
-                            color={
-                              active
-                                ? "#09A84E"
-                                : "#727B76"
-                            }
-                          />
-                        </View>
-
-                        <View
-                          style={styles.saveOptionContent}
-                        >
-                          <Text
-                            style={styles.saveOptionTitle}
-                            numberOfLines={1}
-                          >
-                            {item.name}
-                          </Text>
-
-                          <Text
-                            style={styles.saveOptionSubtitle}
-                          >
-                            Save all contacts here
-                          </Text>
-                        </View>
-
-                        <View
-                          style={[
-                            styles.radioOuter,
-                            active &&
-                              styles.radioOuterActive,
-                          ]}
-                        >
-                          {active && (
-                            <View
-                              style={styles.radioInner}
-                            />
-                          )}
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  }}
-                />
-              ) : (
-                <View style={styles.noFolderBox}>
+              {folders.map((folder) => (
+                <TouchableOpacity
+                  key={folder.id}
+                  activeOpacity={0.82}
+                  style={[styles.folderChoice, pendingFolderId === folder.id && styles.folderChoiceActive]}
+                  onPress={() => setPendingFolderId(folder.id)}
+                >
                   <Ionicons
-                    name="folder-open-outline"
-                    size={23}
-                    color="#09A84E"
+                    name="folder-outline"
+                    size={22}
+                    color="#EFA300"
                   />
+                  <Text
+                    numberOfLines={1}
+                    style={styles.folderChoiceText}
+                  >
+                    {folder.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
 
-                  <View style={styles.noFolderContent}>
-                    <Text style={styles.noFolderTitle}>
-                      No folders created
-                    </Text>
-
-                    <Text style={styles.noFolderText}>
-                      Create a folder from Saved Contacts first.
-                    </Text>
-                  </View>
-                </View>
+              {folders.length === 0 && (
+                <Text style={styles.noFolderPickerText}>
+                  No folders created yet. Create one from Saved Contacts.
+                </Text>
               )}
 
               <TouchableOpacity
                 activeOpacity={0.85}
-                disabled={saving}
-                style={[
-                  styles.finalSaveButton,
-                  saving && styles.disabledButton,
-                ]}
-                onPress={handleConfirmSaveContacts}
+                disabled={saving || (folders.length > 0 && pendingFolderId === undefined)}
+                style={[styles.finalSaveButton, saving && styles.disabledButton]}
+                onPress={() => handleSaveSelectedToFolder(pendingFolderId)}
               >
                 {saving ? (
-                  <ActivityIndicator
-                    size="small"
-                    color="#FFFFFF"
-                  />
+                  <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
-                    <Ionicons
-                      name="checkmark-circle-outline"
-                      size={21}
-                      color="#FFFFFF"
-                    />
-
+                    <Ionicons name="checkmark-circle-outline" size={21} color="#FFFFFF" />
                     <Text style={styles.finalSaveText}>
-                      Save All ({contacts.length})
+                      Save Selected ({selectedContactIndices.length})
                     </Text>
                   </>
                 )}
@@ -1087,6 +979,173 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "800",
+  },
+
+  headerSelectButton: {
+    minHeight: 42,
+    paddingHorizontal: 13,
+    borderRadius: 14,
+    backgroundColor: "#EFFAF3",
+    borderWidth: 1,
+    borderColor: "#CBEBD8",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  headerSelectText: {
+    marginLeft: 6,
+    color: "#09A84E",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  selectionHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  selectAllButton: {
+    minHeight: 42,
+    paddingHorizontal: 12,
+    borderRadius: 13,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#DCE4DF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  selectAllText: {
+    color: "#09A84E",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  closeSelectionButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: "#F1F4F2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  selectionCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    marginRight: 11,
+    marginTop: 14,
+    borderWidth: 2,
+    borderColor: "#C7D0CA",
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  selectionCheckboxActive: {
+    backgroundColor: "#09A84E",
+    borderColor: "#09A84E",
+  },
+
+  selectionActionBar: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    minHeight: 58,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 17,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#DCE5DF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    zIndex: 20,
+    elevation: 8,
+  },
+
+  selectionCountBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 7,
+  },
+
+  selectionCountNumber: {
+    color: "#09A84E",
+    fontSize: 16,
+    fontWeight: "900",
+  },
+
+  selectionCountText: {
+    marginLeft: 5,
+    color: "#6F7973",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  assignFolderButton: {
+    height: 44,
+    paddingHorizontal: 15,
+    borderRadius: 13,
+    backgroundColor: "#09A84E",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  assignFolderText: {
+    marginLeft: 7,
+    color: "#FFFFFF",
+    fontSize: 12.5,
+    fontWeight: "800",
+  },
+
+  folderPickerModal: {
+    width: "100%",
+    maxHeight: "70%",
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 25,
+  },
+
+  folderChoice: {
+    minHeight: 58,
+    marginTop: 9,
+    paddingHorizontal: 15,
+    borderRadius: 15,
+    backgroundColor: "#F8FAF9",
+    borderWidth: 1,
+    borderColor: "#E5EAE7",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  folderChoiceActive: {
+    backgroundColor: "#EFF9F3",
+    borderColor: "#09A84E",
+  },
+
+  folderChoiceText: {
+    flex: 1,
+    marginLeft: 11,
+    color: "#20262C",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  noFolderPickerText: {
+    marginTop: 15,
+    color: "#858D95",
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "500",
   },
 
   bottomAction: {

@@ -410,11 +410,7 @@ const progressPercentage =
                 </View>
               </View>
 
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color="#A8AFB5"
-              />
+              
             </View>
 
             <View style={styles.infoDivider} />
@@ -510,7 +506,7 @@ const progressPercentage =
           </TouchableOpacity>
         </View>
 
-        <BottomNav active="plans" />
+        <BottomNav active="history" />
       </View>
     </SafeAreaView>
   );

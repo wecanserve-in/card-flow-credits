@@ -424,6 +424,18 @@ export default function ScannerScreen() {
       );
 
       /*
+       * Remember the orientation used when this individual card was captured.
+       * The Scanned Cards screen uses this to choose the correct box shape.
+       */
+      const orientationMap =
+        (globalThis as any).scannedCardOrientations || {};
+
+      (globalThis as any).scannedCardOrientations = {
+        ...orientationMap,
+        [croppedImage.uri]: cardOrientation,
+      };
+
+      /*
        * Add only the cropped image.
        * The original full image is not added.
        */

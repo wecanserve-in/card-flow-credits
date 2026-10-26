@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   Platform,
 } from "react-native";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -73,9 +73,49 @@ const navItems: NavItem[] = [
 export default function BottomNav({
   active,
 }: {
-  active: ActiveTab;
+  active?: ActiveTab;
 }) {
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+
+  const getActiveTab = (): ActiveTab | undefined => {
+    if (active) {
+      return active;
+    }
+
+    if (pathname === "/home" || pathname === "/") {
+      return "home";
+    }
+
+    if (pathname === "/saved-contacts") {
+      return "contacts";
+    }
+
+    if (
+      pathname === "/usage" ||
+      pathname.startsWith("/usage/")
+    ) {
+      return "history";
+    }
+
+    if (
+      pathname === "/settings" ||
+      pathname.startsWith("/settings/")
+    ) {
+      return "settings";
+    }
+
+    if (
+      pathname === "/scanner" ||
+      pathname.startsWith("/scanner/")
+    ) {
+      return "scan";
+    }
+
+    return undefined;
+  };
+
+  const currentActiveTab = getActiveTab();
 
   return (
     <View
@@ -88,16 +128,22 @@ export default function BottomNav({
     >
       <View style={styles.nav}>
         {navItems.map((item) => {
-          const isActive = active === item.key;
+          const isActive =
+            currentActiveTab === item.key;
           const isScan = item.key === "scan";
 
           if (isScan) {
             return (
-              <View key={item.key} style={styles.scanSlot}>
+              <View
+                key={item.key}
+                style={styles.scanSlot}
+              >
                 <TouchableOpacity
                   style={styles.scanCircle}
                   activeOpacity={0.85}
-                  onPress={() => router.push(item.route as any)}
+                  onPress={() =>
+                    router.push(item.route as any)
+                  }
                 >
                   <Ionicons
                     name="add"
@@ -114,10 +160,16 @@ export default function BottomNav({
               key={item.key}
               style={styles.navItem}
               activeOpacity={0.75}
-              onPress={() => router.push(item.route as any)}
+              onPress={() =>
+                router.push(item.route as any)
+              }
             >
               <Ionicons
-                name={isActive ? item.activeIcon : item.icon}
+                name={
+                  isActive
+                    ? item.activeIcon
+                    : item.icon
+                }
                 size={21}
                 color={
                   isActive
@@ -130,7 +182,8 @@ export default function BottomNav({
                 numberOfLines={1}
                 style={[
                   styles.navText,
-                  isActive && styles.navTextActive,
+                  isActive &&
+                    styles.navTextActive,
                 ]}
               >
                 {item.label}
@@ -214,7 +267,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.white,
 
     shadowColor: COLORS.green,
-    shadowOpacity: Platform.OS === "ios" ? 0.24 : 0.32,
+    shadowOpacity:
+      Platform.OS === "ios" ? 0.24 : 0.32,
     shadowRadius: 9,
     shadowOffset: {
       width: 0,

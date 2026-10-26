@@ -625,6 +625,169 @@ export async function clearContacts() {
   }
 };
 
+
+/* =====================================================
+   DELETE CONTACTS
+===================================================== */
+
+/**
+ * Permanently delete one or more saved contacts
+ * for the currently logged-in user.
+ */
+export async function deleteContacts(
+  contactIds: string[]
+) {
+  try {
+    const uid =
+      auth.currentUser?.uid;
+
+    if (!uid) {
+      throw new Error(
+        "User not logged in"
+      );
+    }
+
+    const normalizedIds =
+      Array.isArray(contactIds)
+        ? Array.from(
+            new Set(
+              contactIds.filter(Boolean)
+            )
+          )
+        : [];
+
+    if (
+      normalizedIds.length === 0
+    ) {
+      return true;
+    }
+
+    const contactsRef =
+      collection(
+        db,
+        "users",
+        uid,
+        "contacts"
+      );
+
+    const snapshot =
+      await getDocs(
+        contactsRef
+      );
+
+    const deletedContacts =
+      snapshot.docs.filter(
+        (document) =>
+          normalizedIds.includes(
+            document.id
+          )
+      );
+
+    await Promise.all(
+      deletedContacts.map(
+        (document) =>
+          deleteDoc(
+            document.ref
+          )
+      )
+    );
+
+    deletedContacts.forEach(
+      (document) => {
+        const data =
+          document.data();
+
+        const encrypted =
+          data.encryptedData;
+
+        if (!encrypted) {
+          return;
+        }
+
+        const contact =
+          decryptData(
+            encrypted
+          );
+
+        if (!contact) {
+          return;
+        }
+
+        const email =
+          normalizeEmail(
+            contact.email
+          );
+
+        const phone =
+          normalizePhone(
+            contact.phone
+          );
+
+        if (email) {
+          existingEmails.delete(
+            email
+          );
+        }
+
+        if (phone) {
+          existingPhones.delete(
+            phone
+          );
+        }
+      }
+    );
+
+    const storageKey =
+      getStorageKey();
+
+    const cached =
+      await AsyncStorage.getItem(
+        storageKey
+      );
+
+    if (cached) {
+      try {
+        const parsed =
+          JSON.parse(cached);
+
+        const remaining =
+          Array.isArray(parsed)
+            ? parsed.filter(
+                (contact: any) =>
+                  !normalizedIds.includes(
+                    contact?.id
+                  )
+              )
+            : [];
+
+        await AsyncStorage.setItem(
+          storageKey,
+          JSON.stringify(
+            remaining
+          )
+        );
+      } catch {
+        await getContacts();
+      }
+    }
+
+    console.log(
+      "Contacts deleted:",
+      normalizedIds
+    );
+
+    return true;
+  } catch (error) {
+    console.log(
+      "❌ Delete Contacts Error:",
+      error
+    );
+
+    throw error;
+  }
+};
+
+
 /* =====================================================
    FOLDERS
 ===================================================== */

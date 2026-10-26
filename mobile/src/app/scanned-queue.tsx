@@ -2,6 +2,7 @@ import React, {
   useEffect,
   useState,
   useRef,
+  useMemo,
   useCallback,
   memo,
 } from "react";
@@ -9,7 +10,6 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   Image,
   TouchableOpacity,
   Alert,
@@ -47,16 +47,26 @@ const CardItem = memo(({
   index,
   selected,
   onPress,
+  onZoom,
+  imageAspectRatio,
 }: {
   item: string;
   index: number;
   selected: boolean;
   onPress: () => void;
+  onZoom: () => void;
+  imageAspectRatio?: number;
 }) => (
   <TouchableOpacity
     activeOpacity={0.88}
     style={[
       styles.cardContainer,
+      {
+        width: imageAspectRatio && imageAspectRatio < 1
+          ? "82%"
+          : "100%",
+        aspectRatio: imageAspectRatio || 1.55,
+      },
       !selected && styles.unselectedCard,
     ]}
     onPress={onPress}
@@ -64,27 +74,56 @@ const CardItem = memo(({
     <Image
       source={{ uri: item }}
       style={styles.cardImage}
-      resizeMode="cover"
+      resizeMode="contain"
     />
+
     <View
+      pointerEvents="none"
       style={[
         styles.imageOverlay,
         selected && styles.selectedOverlay,
       ]}
     />
+
     <View
+      pointerEvents="none"
       style={[
         styles.selectionButton,
         selected && styles.selectionButtonActive,
       ]}
     >
       {selected ? (
-        <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+        <Ionicons
+          name="checkmark"
+          size={15}
+          color="#FFFFFF"
+        />
       ) : (
         <View style={styles.unselectedCircle} />
       )}
     </View>
-    <View style={styles.cardNumber}>
+
+    {selected && (
+      <TouchableOpacity
+        activeOpacity={0.82}
+        style={styles.zoomButton}
+        onPress={(event) => {
+          event.stopPropagation();
+          onZoom();
+        }}
+      >
+        <Ionicons
+          name="expand-outline"
+          size={17}
+          color="#FFFFFF"
+        />
+      </TouchableOpacity>
+    )}
+
+    <View
+      pointerEvents="none"
+      style={styles.cardNumber}
+    >
       <Text style={styles.cardNumberText}>
         Card {index + 1}
       </Text>
@@ -112,6 +151,75 @@ export default function ScannedQueueScreen() {
         index
     )
   );
+
+  const [zoomedImage, setZoomedImage] =
+    useState<string | null>(null);
+
+  // Keep the preview card ratio aligned with the actual captured image.
+  // This is important for vertical business cards so they are not forced
+  // into the horizontal thumbnail shape.
+  const [imageAspectRatios, setImageAspectRatios] =
+    useState<Record<string, number>>({});
+
+  // The scanner records the orientation of each individual photo.
+  // This allows a single scan batch to contain both portrait and landscape cards.
+  const scannedCardOrientations =
+    (globalThis as any).scannedCardOrientations || {};
+
+  useEffect(() => {
+    queueImages.forEach((uri) => {
+      if (imageAspectRatios[uri]) return;
+
+      Image.getSize(
+        uri,
+        (width, height) => {
+          if (width > 0 && height > 0) {
+            const detectedRatio = width / height;
+            const orientation =
+              scannedCardOrientations[uri];
+
+            const ratio =
+              orientation === "portrait"
+                ? 1 / 1.62
+                : orientation === "landscape"
+                  ? 1.62
+                  : detectedRatio;
+
+            setImageAspectRatios((current) => {
+              if (current[uri]) return current;
+              return {
+                ...current,
+                [uri]: ratio,
+              };
+            });
+          }
+        },
+        (error) => {
+          console.log("Unable to read card image size:", error);
+        }
+      );
+    });
+  }, [queueImages, imageAspectRatios]);
+
+  // Use two independent columns so portrait and landscape cards can have
+  // different heights without creating the large row gaps from numColumns.
+  const masonryColumns = useMemo(() => {
+    const columns: { item: string; index: number }[][] = [[], []];
+    const heights = [0, 0];
+
+    queueImages.forEach((item, index) => {
+      const ratio = imageAspectRatios[item] || 1.55;
+      const isPortrait = ratio < 1;
+      const widthFactor = isPortrait ? 0.82 : 1;
+      const estimatedHeight = widthFactor / ratio + 0.08;
+
+      const columnIndex = heights[0] <= heights[1] ? 0 : 1;
+      columns[columnIndex].push({ item, index });
+      heights[columnIndex] += estimatedHeight;
+    });
+
+    return columns;
+  }, [queueImages, imageAspectRatios]);
 
   const [loading, setLoading] =
     useState(false);
@@ -439,6 +547,10 @@ const currentUsed =
         globalThis as any
       ).scannedImages = [];
 
+      (
+        globalThis as any
+      ).scannedCardOrientations = {};
+
       setQueueImages([]);
       setSelectedCards([]);
 
@@ -490,6 +602,10 @@ const currentUsed =
             (
               globalThis as any
             ).scannedImages = [];
+
+            (
+              globalThis as any
+            ).scannedCardOrientations = {};
 
             setQueueImages([]);
             setSelectedCards([]);
@@ -671,46 +787,36 @@ const currentUsed =
           </>
         ) : null}
 
-        <FlatList
-          data={queueImages}
-          numColumns={2}
-          keyExtractor={(
-            _,
-            index
-          ) => index.toString()}
-          renderItem={({ item, index }) => (
-            <CardItem
-              item={item}
-              index={index}
-              selected={selectedCards.includes(index)}
-              onPress={() => toggleCard(index)}
-            />
-          )}
-          showsVerticalScrollIndicator={
-            false
-          }
-          columnWrapperStyle={
-            styles.gridRow
-          }
-          contentContainerStyle={[
-            styles.listContent,
-            {
-              paddingBottom:
-                150 + insets.bottom,
-            },
-            queueImages.length ===
-              0 &&
-              styles.emptyListContent,
-          ]}
-          ListEmptyComponent={
-            <View
-              style={styles.emptyState}
-            >
+        {queueImages.length > 0 ? (
+          <View
+            style={[
+              styles.masonryContainer,
+              { paddingBottom: 150 + insets.bottom },
+            ]}
+          >
+            {masonryColumns.map((column, columnIndex) => (
               <View
-                style={
-                  styles.emptyIcon
-                }
+                key={`masonry-column-${columnIndex}`}
+                style={styles.masonryColumn}
               >
+                {column.map(({ item, index }) => (
+                  <CardItem
+                    key={`${item}-${index}`}
+                    item={item}
+                    index={index}
+                    selected={selectedCards.includes(index)}
+                    onPress={() => toggleCard(index)}
+                    onZoom={() => setZoomedImage(item)}
+                    imageAspectRatio={imageAspectRatios[item]}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={[styles.emptyListContent, { flex: 1 }]}>
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIcon}>
                 <Ionicons
                   name="scan-outline"
                   size={40}
@@ -718,17 +824,11 @@ const currentUsed =
                 />
               </View>
 
-              <Text
-                style={
-                  styles.emptyTitle
-                }
-              >
+              <Text style={styles.emptyTitle}>
                 No cards scanned
               </Text>
 
-              <Text
-                style={styles.emptyText}
-              >
+              <Text style={styles.emptyText}>
                 Scan a business card first,
                 then return here to review
                 and extract its details.
@@ -736,12 +836,8 @@ const currentUsed =
 
               <TouchableOpacity
                 activeOpacity={0.85}
-                style={
-                  styles.scanButton
-                }
-                onPress={() =>
-                  router.back()
-                }
+                style={styles.scanButton}
+                onPress={() => router.back()}
               >
                 <Ionicons
                   name="camera-outline"
@@ -749,17 +845,13 @@ const currentUsed =
                   color="#FFFFFF"
                 />
 
-                <Text
-                  style={
-                    styles.scanButtonText
-                  }
-                >
+                <Text style={styles.scanButtonText}>
                   Open Scanner
                 </Text>
               </TouchableOpacity>
             </View>
-          }
-        />
+          </View>
+        )}
 
         {queueImages.length > 0 && (
           <View
@@ -871,6 +963,46 @@ const currentUsed =
             </TouchableOpacity>
           </View>
         )}
+
+        <Modal
+          visible={zoomedImage !== null}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setZoomedImage(null)}
+        >
+          <View style={styles.zoomOverlay}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.zoomCloseButton}
+              onPress={() => setZoomedImage(null)}
+            >
+              <Ionicons
+                name="close"
+                size={24}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+
+            {zoomedImage ? (
+              <Image
+                source={{ uri: zoomedImage }}
+                style={styles.zoomImage}
+                resizeMode="contain"
+              />
+            ) : null}
+
+            <View style={styles.zoomHint}>
+              <Ionicons
+                name="scan-outline"
+                size={16}
+                color="#FFFFFF"
+              />
+              <Text style={styles.zoomHintText}>
+                Preview card
+              </Text>
+            </View>
+          </View>
+        </Modal>
 
         <Modal
           visible={loading}
@@ -1152,14 +1284,23 @@ const styles = StyleSheet.create({
     paddingTop: 18,
   },
 
-  gridRow: {
-    justifyContent: "space-between",
+  masonryContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingHorizontal: 14,
+    paddingTop: 18,
+    gap: 10,
+  },
+
+  masonryColumn: {
+    flex: 1,
+    alignItems: "flex-start",
+    gap: 10,
   },
 
   cardContainer: {
-    width: "48.5%",
-    aspectRatio: 1.55,
-    marginBottom: 12,
+    width: "100%",
+    marginBottom: 0,
     borderRadius: 18,
     overflow: "hidden",
     backgroundColor: "#E9EEEB",
@@ -1237,6 +1378,68 @@ const styles = StyleSheet.create({
       "rgba(18, 24, 21, 0.68)",
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  zoomButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: "rgba(20, 27, 23, 0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+  },
+
+  zoomOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.96)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
+  },
+
+  zoomImage: {
+    width: "100%",
+    height: "78%",
+  },
+
+  zoomCloseButton: {
+    position: "absolute",
+    top: 54,
+    right: 20,
+    zIndex: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: "rgba(255, 255, 255, 0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  zoomHint: {
+    position: "absolute",
+    bottom: 38,
+    minHeight: 38,
+    paddingHorizontal: 14,
+    borderRadius: 13,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  zoomHintText: {
+    marginLeft: 7,
+    color: "#FFFFFF",
+    fontSize: 12.5,
+    fontWeight: "600",
   },
 
   cardNumberText: {

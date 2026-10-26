@@ -45,14 +45,6 @@ type MenuItem = {
 
 const menuItems: MenuItem[] = [
   {
-    title: "Account Settings",
-    subtitle: "Update your personal details",
-    icon: "person-outline",
-    route: "/profile",
-    iconColor: "#09A84E",
-    iconBackground: "#EAF8F0",
-  },
-  {
     title: "Subscription & Billing",
     subtitle: "Manage your plan and payments",
     icon: "card-outline",
@@ -803,4 +795,4 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: "500",
   },
-});
+}); 

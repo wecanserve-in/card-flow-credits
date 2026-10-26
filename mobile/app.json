@@ -22,26 +22,26 @@
       "predictiveBackGestureEnabled": false
     },
     "plugins": [
-  "expo-router",
-  [
-    "expo-splash-screen",
-    {
-      "backgroundColor": "#FFFFFF",
-      "image": "./assets/images/icon.png",
-      "imageWidth": 180
-    }
-  ],
-  "expo-sqlite",
-  "expo-sharing",
-  "expo-secure-store",
-  "expo-web-browser",
-  [
-    "expo-notifications",
-    {
-      "defaultChannel": "default"
-    }
-  ]
-],
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/images/icon.png",
+          "imageWidth": 180
+        }
+      ],
+      "expo-sqlite",
+      "expo-sharing",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "default"
+        }
+      ]
+    ],
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
@@ -53,9 +53,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "8f373124-1f1e-40cb-bff5-88ccca9ffbc1"
+        "projectId": "7e87d7b2-de0d-44dc-aed4-ed414e914631"
       }
     },
-    "owner": "ananddangii20"
+    "owner": "wecanserve"
   }
 }
