@@ -53,3 +53,9 @@ backend/serviceAccountKey.json
 backend/.env
 
 .env
+
+# Android signing keys
+*.jks
+*.keystore
+*.pem
+credentials.json
