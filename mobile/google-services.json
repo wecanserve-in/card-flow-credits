@@ -82,6 +82,14 @@
           }
         },
         {
+          "client_id": "126413727192-d2orfj62lb9ud1je3scqqsq6ca9fvj99.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wecanserve.scanmycard",
+            "certificate_hash": "22699c96a2dc9120d3816e4be933a895647f00fe"
+          }
+        },
+        {
           "client_id": "126413727192-nilp2n7dd52v8u9a2g96merbg29disc4.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
