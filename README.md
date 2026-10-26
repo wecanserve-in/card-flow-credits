@@ -1,161 +1,68 @@
-# CardFlow
+# ScanMyCard
 
-> Extract. Organize. Export.
+AI business-card scanner. Photograph cards → Gemini extracts the details → save, organize into folders, and export to Excel.
 
-AI-powered business card scanner that transforms physical visiting cards into structured digital contacts in seconds.
-
----
-
-## What It Does
-
-Upload a business card image → Gemini Vision extracts the details → Export to Excel. Done.
-
-**Extracted Fields:**
-
-| Field | Description |
-|-------|-------------|
-| Name | Contact name |
-| Company | Organization |
-| Designation | Job title |
-| Phone | Contact number |
-| Email | Email address |
-| Website | URL |
-| Country | Country |
-| Address | Business address |
-
----
-
-## Features
-
-- **AI Card Scanning** — Upload images, get structured contact data via Vertex AI
-- **Multi-Card Processing** — Scan multiple cards in one session
-- **Excel Export** — Download contacts as `.xlsx`
-- **Credit System** — Purchase scan packs via Razorpay
-- **Push Notifications** — Expo push notifications for payment updates, low credits
-- **Profile Photos** — Upload and store via Cloudflare R2
-- **Payment History** — Track all purchases
-- **Mobile + Web** — Android/iOS app + web dashboard
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Mobile | Expo SDK 56, React Native, TypeScript |
-| Web | React 19, Vite |
-| Backend | Python 3.11, FastAPI |
-| AI | Google Vertex AI (Gemini 2.5 Flash Lite) |
-| Auth | Firebase Auth, Google Sign-In |
-| Database | Firebase Firestore |
-| Payments | Razorpay |
-| Storage | Firebase Storage, Cloudflare R2 |
-| Notifications | Expo Push Notifications |
-
----
-
-## Project Structure
+## Project structure
 
 ```
 card-flow-credits/
-├── backend/
-│   ├── main.py              # FastAPI entry point
-│   ├── gemini_extractor.py  # Vertex AI card extraction
-│   ├── payments.py          # Razorpay integration
-│   ├── notifications.py     # Push notifications
-│   ├── export_excel.py      # Excel generation
-│   ├── image_preprocessing.py
-│   ├── r2_upload.py         # Cloudflare R2
-│   ├── Dockerfile
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx
-│   │   └── firebase.js
-│   └── package.json
-├── mobile/
-│   ├── src/
-│   │   ├── app/             # 29 screens (Expo Router)
-│   │   └── services/        # API, auth, payments, notifications
-│   ├── app.json
-│   └── package.json
-└── README.md
+├── backend/                 # FastAPI service on Google Cloud Run
+│   ├── main.py              # Scan upload (charges credits), profile photo, account deletion
+│   ├── payments.py          # Razorpay orders, verification, credit top-ups, Firebase Admin setup
+│   ├── notifications.py     # Expo push notifications
+│   ├── gemini_extractor.py  # Vertex AI Gemini card extraction
+│   ├── r2_upload.py         # Cloudflare R2 profile photos
+│   ├── firestore.rules      # Firestore security rules (deploy from the Firebase console)
+│   ├── tests/               # Backend tests (no real services are called)
+│   └── Dockerfile
+└── mobile/                  # Expo SDK 56 app (Android / iOS)
+    ├── src/app/             # Screens (Expo Router)
+    ├── src/services/        # API, Firebase, scanning, payments, notifications
+    ├── app.json
+    └── eas.json             # Build profiles (development / preview / production)
 ```
 
----
+## How credits work
 
-## How It Works
+- New accounts get 5 free scans (`totalScans: 5`, `usedScans: 0` on `users/{uid}`).
+- The **server** checks and deducts credits on every `/upload`, and refunds them if extraction fails.
+- Credits are only added by the server after a verified Razorpay payment (`/payments/verify` or `/payments/recover`). Each payment can add credits once.
+- `firestore.rules` stop the app from changing credit or payment fields itself.
 
-1. **Upload** — User captures or selects business card images
-2. **Preprocess** — Images are optimized for AI analysis
-3. **Extract** — Vertex AI reads the card and returns structured JSON
-4. **Review** — User reviews extracted contact details
-5. **Export** — Contacts saved to Excel for download
+## Plans (prices + 18% GST)
 
----
+| Plan | Price (INR, before GST) | Credits |
+|------|------|---------|
+| Personal Starter | 99 | 50 |
+| Personal Popular | 499 | 750 |
+| Personal Pro | 999 | 1000 |
+| Business Starter | 2499 | 2775 |
+| Business Pro | 3999 | 5710 |
+| Business Enterprise | 5999 | 10000 |
 
-## Plans
+Prices live in `backend/payments.py` (charged amount) and `mobile/src/constants/plans.ts` (display). Keep them in sync.
 
-| Plan | Price (INR) | Credits | Per Card |
-|------|------------|---------|----------|
-| Personal Starter | 99 | 50 | 2.00 |
-| Personal Popular | 499 | 750 | 1.50 |
-| Personal Pro | 999 | 1000 | 1.00 |
-| Business Starter | 2499 | 2775 | 0.90 |
-| Business Pro | 3999 | 5710 | 0.70 |
-| Business Enterprise | 5999 | 10000 | 0.60 |
-
-*Prices include 18% GST.*
-
----
-
-## Getting Started
-
-### Backend
+## Backend
 
 ```bash
 cd backend
-pip install -r requirements.txt
-cp .env.example .env   # add your keys
+pip install -r requirements-dev.txt
+cp .env.example .env        # fill in keys
 uvicorn main:app --port 8080
+pytest tests                # run tests
 ```
 
-### Mobile
+On Cloud Run, set the variables from `.env.example` as environment variables. Firebase Admin uses the Cloud Run service account when no key file is present.
+
+## Mobile
 
 ```bash
 cd mobile
 npm install
 npx expo start
+npx tsc --noEmit             # type check
+eas build -p android --profile production   # Play Store .aab
 ```
-
-### Web
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
----
-
-## Environment Variables
-
-Backend `.env`:
-
-```
-GEMINI_API_KEY=
-RAZORPAY_KEY_ID=
-RAZORPAY_KEY_SECRET=
-FIREBASE_PROJECT_ID=
-FIREBASE_SERVICE_ACCOUNT_PATH=
-R2_ACCOUNT_ID=
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
-R2_BUCKET_NAME=
-R2_PUBLIC_URL=
-```
-
----
 
 ## License
 

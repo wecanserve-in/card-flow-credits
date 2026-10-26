@@ -24,12 +24,28 @@ import {
   getStringParam,
   PaymentWebViewMessage,
   RazorpayCheckoutOrder,
+  RazorpayPaymentMethod,
 } from "../utils/payment";
 import {
   refreshScanPack,
   recoverPayment,
   verifyPayment,
 } from "../services/paymentService";
+
+const PAYMENT_METHODS: RazorpayPaymentMethod[] = [
+  "auto",
+  "upi",
+  "card",
+  "netbanking",
+  "wallet",
+];
+
+const toPaymentMethod = (
+  value: string
+): RazorpayPaymentMethod =>
+  PAYMENT_METHODS.includes(value as RazorpayPaymentMethod)
+    ? (value as RazorpayPaymentMethod)
+    : "auto";
 
 export default function PaymentScreen() {
   const params = useLocalSearchParams();
@@ -60,9 +76,8 @@ export default function PaymentScreen() {
       userName: getStringParam(params.userName),
       userEmail: getStringParam(params.userEmail),
       userPhone: getStringParam(params.userPhone),
-      paymentMethod: getStringParam(
-        params.paymentMethod,
-        "auto"
+      paymentMethod: toPaymentMethod(
+        getStringParam(params.paymentMethod, "auto")
       ),
     };
   }, [
@@ -129,19 +144,11 @@ export default function PaymentScreen() {
 
   const handlePaymentMessage = useCallback(
     async (message: PaymentWebViewMessage) => {
-      console.log(
-        "[PaymentScreen] Payment message:",
-        message
-      );
-
       if (message.type === "success") {
         if (
           verifyingRef.current ||
           messageHandledRef.current
         ) {
-          console.log(
-            "[PaymentScreen] Duplicate payment callback ignored."
-          );
           return;
         }
 
@@ -158,8 +165,7 @@ export default function PaymentScreen() {
           !signature
         ) {
           console.error(
-            "[PaymentScreen] Incomplete Razorpay response:",
-            message
+            "[PaymentScreen] Incomplete Razorpay response."
           );
 
           Alert.alert(
@@ -212,14 +218,6 @@ export default function PaymentScreen() {
         setVerifying(true);
 
         try {
-          console.log(
-            "[PaymentScreen] Verifying payment on backend:",
-            {
-              orderId: responseOrderId,
-              paymentId,
-            }
-          );
-
           const verificationResult =
             await verifyPayment({
               razorpay_order_id:
@@ -227,11 +225,6 @@ export default function PaymentScreen() {
               razorpay_payment_id: paymentId,
               razorpay_signature: signature,
             });
-
-          console.log(
-            "[PaymentScreen] Verification response:",
-            verificationResult
-          );
 
           /*
            * Critical:
@@ -276,7 +269,7 @@ export default function PaymentScreen() {
         } catch (error) {
           console.error(
             "[PaymentScreen] Verification failed, attempting recovery:",
-            error
+            error instanceof Error ? error.message : "unknown error"
           );
 
           try {
@@ -310,7 +303,9 @@ export default function PaymentScreen() {
           } catch (recoveryError) {
             console.error(
               "[PaymentScreen] Recovery also failed:",
-              recoveryError
+              recoveryError instanceof Error
+                ? recoveryError.message
+                : "unknown error"
             );
           }
 
@@ -325,7 +320,7 @@ export default function PaymentScreen() {
 
           Alert.alert(
             "Verification Failed",
-            `${errorMessage}\n\nYour payment was successful. If credits are not added, restart the app and try again.`,
+            `${errorMessage}\n\nWe couldn't confirm your payment yet. If money was deducted, it will be credited shortly, or contact support with your payment ID: ${paymentId}`,
             [
               {
                 text: "Try Again",
@@ -354,10 +349,6 @@ export default function PaymentScreen() {
       if (message.type === "dismissed") {
         messageHandledRef.current = true;
 
-        console.log(
-          "[PaymentScreen] Checkout dismissed."
-        );
-
         Alert.alert(
           "Payment Cancelled",
           "You closed the payment screen. Your subscription has not been activated.",
@@ -380,28 +371,6 @@ export default function PaymentScreen() {
       }
 
       messageHandledRef.current = true;
-
-      console.log(
-        "[PaymentScreen] Payment failure:",
-        {
-          reason:
-            "reason" in message
-              ? message.reason
-              : undefined,
-          code:
-            "code" in message
-              ? message.code
-              : undefined,
-          description:
-            "description" in message
-              ? message.description
-              : undefined,
-          message:
-            "message" in message
-              ? message.message
-              : undefined,
-        }
-      );
 
       const failureMessage =
         "message" in message && message.message

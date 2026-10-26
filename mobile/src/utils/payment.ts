@@ -211,20 +211,6 @@ export const buildRazorpayCheckoutHtml = (
       selectedPaymentMethod
     );
 
-  console.log(
-    "[PaymentUtils] Building Razorpay checkout:",
-    {
-      mode: IS_RAZORPAY_TEST_MODE
-        ? "test"
-        : "live",
-      selectedPaymentMethod,
-      orderId,
-      amount,
-      currency,
-      planId,
-    }
-  );
-
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -361,10 +347,6 @@ export const buildRazorpayCheckoutHtml = (
             return;
           }
 
-          console.log(
-            "[RazorpayCheckout] React Native bridge unavailable:",
-            serializedPayload
-          );
         } catch (error) {
           console.error(
             "[RazorpayCheckout] Could not send message:",
@@ -497,16 +479,6 @@ export const buildRazorpayCheckoutHtml = (
               return;
             }
 
-            console.log(
-              "[RazorpayCheckout] Payment successful:",
-              {
-                orderId:
-                  response.razorpay_order_id,
-                paymentId:
-                  response.razorpay_payment_id
-              }
-            );
-
             postMessageToApp(
               {
                 type: "success",
@@ -566,18 +538,6 @@ export const buildRazorpayCheckoutHtml = (
                 response && response.error
                   ? response.error
                   : {};
-
-              console.log(
-                "[RazorpayCheckout] Payment failed:",
-                {
-                  reason: error.reason,
-                  code: error.code,
-                  description:
-                    error.description,
-                  source: error.source,
-                  step: error.step
-                }
-              );
 
               postMessageToApp(
                 {

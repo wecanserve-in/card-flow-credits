@@ -89,10 +89,6 @@ async function savePushTokenToUser(
   const user = auth.currentUser;
 
   if (!user) {
-    console.log(
-      "[Push] Token skipped because no user is authenticated."
-    );
-
     return;
   }
 
@@ -105,9 +101,6 @@ async function savePushTokenToUser(
       }
     );
 
-    console.log(
-      "[Push] Expo push token saved to user document."
-    );
   } catch (error) {
     console.error(
       "[Push] Failed to save Expo push token:",
@@ -150,10 +143,6 @@ export async function registerForPushNotificationsAsync() {
   }
 
   if (!Device.isDevice) {
-    console.log(
-      "Push notifications require a physical device."
-    );
-
     return null;
   }
 
@@ -171,10 +160,6 @@ export async function registerForPushNotificationsAsync() {
     }
 
     if (finalStatus !== "granted") {
-      console.log(
-        "Push notification permission was not granted."
-      );
-
       return null;
     }
 
@@ -205,8 +190,6 @@ export async function registerForPushNotificationsAsync() {
       await Notifications.getExpoPushTokenAsync({
         projectId,
       });
-
-    console.log("Expo Push Token:", token.data);
 
     return token.data;
   } catch (error) {

@@ -503,7 +503,7 @@ export default function PlansScreen() {
           </TouchableOpacity>
         </View>
 
-        <BottomNav active="plans" />
+        <BottomNav active="settings" />
       </View>
 
       <Modal

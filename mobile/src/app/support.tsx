@@ -95,7 +95,7 @@ export default function SupportScreen() {
       iconBackground: "#EAF8F0",
       onPress: () =>
         openExternalURL(
-          "https://wa.me/9029005313",
+          "https://wa.me/919029005313",
           "WhatsApp support could not be opened."
         ),
     },

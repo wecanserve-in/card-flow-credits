@@ -23,7 +23,6 @@ import { Ionicons } from "@expo/vector-icons";
 
 import {
   buildRazorpayCheckoutHtml,
-  IS_RAZORPAY_TEST_MODE,
   PaymentWebViewMessage,
   RazorpayCheckoutOrder,
 } from "../utils/payment";
@@ -156,23 +155,6 @@ export default function PaymentWebView({
     useRef(false);
 
   const html = useMemo(() => {
-    console.log(
-      "[PaymentWebView] Building checkout HTML:",
-      {
-        mode: IS_RAZORPAY_TEST_MODE
-          ? "test"
-          : "live",
-
-        orderId: order.orderId,
-
-        amount: order.amount,
-
-        paymentMethod:
-          order.paymentMethod ||
-          "auto",
-      }
-    );
-
     return buildRazorpayCheckoutHtml(
       order
     );
@@ -254,11 +236,6 @@ export default function PaymentWebView({
             }
           }
 
-          console.log(
-            "[PaymentWebView] Opening external payment app:",
-            paymentUrl
-          );
-
           const canOpenUrl =
             await Linking.canOpenURL(
               paymentUrl
@@ -312,11 +289,6 @@ export default function PaymentWebView({
           return false;
         }
 
-        console.log(
-          "[PaymentWebView] Navigation requested:",
-          requestedUrl
-        );
-
         if (
           isPaymentAppUrl(
             requestedUrl
@@ -362,11 +334,6 @@ export default function PaymentWebView({
         const rawMessage =
           event.nativeEvent.data;
 
-        console.log(
-          "[PaymentWebView] Raw message:",
-          rawMessage
-        );
-
         try {
           const parsedMessage =
             JSON.parse(
@@ -385,59 +352,14 @@ export default function PaymentWebView({
             );
           }
 
-          console.log(
-            "[PaymentWebView] Parsed message:",
-            parsedMessage
-          );
-
           if (
             parsedMessage.type ===
             "success"
           ) {
-            console.log(
-              "[PaymentWebView] Payment SUCCESS:",
-              {
-                orderId:
-                  (
-                    parsedMessage as any
-                  )
-                    .razorpay_order_id,
-
-                paymentId:
-                  (
-                    parsedMessage as any
-                  )
-                    .razorpay_payment_id,
-              }
-            );
           } else if (
             parsedMessage.type ===
             "failure"
           ) {
-            console.log(
-              "[PaymentWebView] Payment FAILURE:",
-              {
-                reason:
-                  (
-                    parsedMessage as any
-                  ).reason,
-
-                code:
-                  (
-                    parsedMessage as any
-                  ).code,
-
-                description:
-                  (
-                    parsedMessage as any
-                  ).description,
-
-                message:
-                  (
-                    parsedMessage as any
-                  ).message,
-              }
-            );
           }
 
           sendMessageOnce(

@@ -2580,7 +2580,7 @@ const styles =
 
 
     menuBackdrop: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
     },
 
 

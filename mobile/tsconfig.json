@@ -8,6 +8,13 @@
       ],
       "@/assets/*": [
         "./assets/*"
+      ],
+      // @firebase/auth lists its generic "types" export condition before
+      // "react-native", so TypeScript never picks the RN typings (which
+      // declare getReactNativePersistence). Metro resolves the RN build at
+      // runtime; this mapping only makes the type checker match it.
+      "@firebase/auth": [
+        "./node_modules/@firebase/auth/dist/rn/index.rn.d.ts"
       ]
     }
   },
@@ -16,5 +23,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "src/services/firebase.js"  ]
+  ]
 }

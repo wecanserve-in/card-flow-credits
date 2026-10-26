@@ -2,35 +2,67 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can read their own document
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Fields only the backend (Admin SDK) may change: credits and payments.
+    function protectedFields() {
+      return [
+        'totalScans', 'usedScans', 'remainingScans',
+        'freeScanLimit', 'freeScansUsed',
+        'packId', 'packName',
+        'lastPaymentId', 'lastOrderId',
+        'subscriptionActive', 'subscriptionExpiry', 'subscriptionStartedAt',
+        'planId', 'planName'
+      ];
+    }
+
+    function fieldIs(data, field, value) {
+      return !(field in data) || data[field] == value;
+    }
+
+    // A brand-new account may only start with the free plan.
+    function isValidNewUser(data) {
+      return fieldIs(data, 'totalScans', 5)
+        && fieldIs(data, 'usedScans', 0)
+        && fieldIs(data, 'remainingScans', 5)
+        && fieldIs(data, 'freeScanLimit', 5)
+        && fieldIs(data, 'freeScansUsed', 0)
+        && fieldIs(data, 'packId', 'free')
+        && fieldIs(data, 'subscriptionActive', false)
+        && !('lastPaymentId' in data)
+        && !('lastOrderId' in data)
+        && !('planId' in data);
+    }
+
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidNewUser(request.resource.data);
+      allow update: if isOwner(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(protectedFields());
+      // Account deletion goes through the backend.
+      allow delete: if false;
 
-      // Users can only write non-subscription fields
-      // Subscription fields must be written by the backend (Admin SDK)
-      allow create: if request.auth != null && request.auth.uid == userId;
-
-      allow update: if request.auth != null
-        && request.auth.uid == userId
-        // Only allow writes to non-subscription fields
-        && !request.resource.data.diff(resource.data).affectedKeys()
-            .hasAny([
-              'subscriptionActive',
-              'subscriptionExpiry',
-              'subscriptionStartedAt',
-              'lastPaymentId',
-              'lastOrderId',
-              'planId',
-              'planName'
-            ]);
+      // The user's own data: contacts, folders, in-app notifications.
+      match /contacts/{contactId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /folders/{folderId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /notifications/{notificationId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /events/{eventId} {
+        allow read, write: if isOwner(userId);
+        match /contacts/{contactId} {
+          allow read, write: if isOwner(userId);
+        }
+      }
     }
 
-    // Users can read and manage their own in-app notifications
-    match /users/{userId}/notifications/{notificationId} {
-      allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Default deny all other collections
+    // processedPayments and everything else: backend only.
     match /{document=**} {
       allow read, write: if false;
     }

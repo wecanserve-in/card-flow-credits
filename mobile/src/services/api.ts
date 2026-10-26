@@ -5,14 +5,13 @@ import axios, {
 
 import { auth } from "./firebase";
 
-const FALLBACK_API_URL = "http://192.168.1.132:8000";
+const FALLBACK_API_URL =
+  "https://scanmycard-126413727192.asia-south1.run.app";
 
 const API_URL = (
   process.env.EXPO_PUBLIC_API_URL ||
   FALLBACK_API_URL
 ).replace(/\/+$/, "");
-
-console.log("[API] Using backend URL:", API_URL);
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -24,6 +23,10 @@ export const api = axios.create({
   },
 });
 
+type RetriableRequestConfig = InternalAxiosRequestConfig & {
+  _authRetried?: boolean;
+};
+
 api.interceptors.request.use(
   async (
     config: InternalAxiosRequestConfig
@@ -33,24 +36,19 @@ api.interceptors.request.use(
     if (user) {
       try {
         /*
-         * Use a fresh Firebase ID token for protected
-         * payment requests.
+         * Firebase returns the cached ID token and refreshes it
+         * automatically when it is about to expire. A forced refresh
+         * is only done when the backend answers 401 (see below).
          */
-        const token = await user.getIdToken(true);
+        const token = await user.getIdToken();
 
         config.headers.set(
           "Authorization",
           `Bearer ${token}`
         );
-
-        console.log("[API] Firebase token attached:", {
-          uid: user.uid,
-          url: config.url,
-        });
-      } catch (error) {
+      } catch {
         console.error(
-          "[API] Failed to retrieve Firebase token:",
-          error
+          "[API] Failed to retrieve Firebase token."
         );
       }
     } else {
@@ -59,69 +57,59 @@ api.interceptors.request.use(
       );
     }
 
-    const requestUrl = `${config.baseURL || ""}${
-      config.url || ""
-    }`;
-
-    console.log("[API] Request:", {
-      method: config.method?.toUpperCase(),
-      url: requestUrl,
-      hasAuthorization: Boolean(
-        config.headers.get("Authorization")
-      ),
-    });
-
     return config;
   },
   (error: unknown) => {
-    console.error(
-      "[API] Request interceptor error:",
-      error
-    );
+    console.error("[API] Request interceptor error.");
 
     return Promise.reject(error);
   }
 );
 
 api.interceptors.response.use(
-  (response) => {
-    console.log("[API] Response received:", {
-      status: response.status,
-      url: `${response.config.baseURL || ""}${
-        response.config.url || ""
-      }`,
-    });
+  (response) => response,
 
-    return response;
-  },
+  async (error: AxiosError) => {
+    const config = error.config as
+      | RetriableRequestConfig
+      | undefined;
+    const user = auth.currentUser;
 
-  (error: AxiosError) => {
-    const requestUrl = `${error.config?.baseURL || ""}${
-      error.config?.url || ""
-    }`;
+    /*
+     * The cached token may have been revoked or expired early:
+     * force-refresh it once and retry the request.
+     */
+    if (
+      error.response?.status === 401 &&
+      config &&
+      !config._authRetried &&
+      user
+    ) {
+      config._authRetried = true;
+
+      try {
+        const token = await user.getIdToken(true);
+
+        config.headers.set(
+          "Authorization",
+          `Bearer ${token}`
+        );
+
+        return api.request(config);
+      } catch {
+        // Fall through and reject with the original error.
+      }
+    }
 
     if (!error.response) {
-      console.error("[API] Network Error:", {
-        url: requestUrl,
-        message: error.message,
+      console.error("[API] Network error:", {
+        url: config?.url,
         code: error.code,
       });
-
-      console.error(
-        [
-          "Backend could not be reached.",
-          "Check the following:",
-          "1. FastAPI is running with --host 0.0.0.0",
-          "2. Phone and computer are on the same Wi-Fi",
-          "3. EXPO_PUBLIC_API_URL contains the correct computer IPv4 address",
-          "4. Windows Firewall allows Python/Uvicorn",
-        ].join("\n")
-      );
     } else {
-      console.error("[API] Backend Error:", {
-        url: requestUrl,
+      console.error("[API] Backend error:", {
+        url: config?.url,
         status: error.response.status,
-        data: error.response.data,
       });
     }
 

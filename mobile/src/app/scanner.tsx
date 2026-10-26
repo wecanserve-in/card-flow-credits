@@ -331,8 +331,6 @@ export default function ScannerScreen() {
         }),
       ]);
 
-      const start = Date.now();
-
       const photo =
         await cameraRef.current.takePictureAsync(
           {
@@ -346,12 +344,6 @@ export default function ScannerScreen() {
           }
         );
 
-      console.log(
-        "Capture time:",
-        Date.now() - start,
-        "ms"
-      );
-
       if (
         !photo?.uri ||
         !photo?.width ||
@@ -364,12 +356,6 @@ export default function ScannerScreen() {
         return;
       }
 
-      console.log("Original photo:", {
-        uri: photo.uri,
-        width: photo.width,
-        height: photo.height,
-      });
-
       const cropArea =
         calculateCropArea(
           photo.width,
@@ -378,16 +364,6 @@ export default function ScannerScreen() {
           containerMeasurements.height,
           frameMeasurements
         );
-
-      console.log(
-        "Selected card orientation:",
-        cardOrientation
-      );
-
-      console.log(
-        "Calculated crop area:",
-        cropArea
-      );
 
       const croppedImage =
         await ImageManipulator.manipulateAsync(
@@ -413,15 +389,6 @@ export default function ScannerScreen() {
           "The cropped image was not created."
         );
       }
-
-      console.log(
-        "Cropped card image:",
-        {
-          uri: croppedImage.uri,
-          width: croppedImage.width,
-          height: croppedImage.height,
-        }
-      );
 
       /*
        * Remember the orientation used when this individual card was captured.
@@ -1075,7 +1042,7 @@ const styles = StyleSheet.create({
   },
 
   cameraShade: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor:
       "rgba(0, 0, 0, 0.16)",
   },

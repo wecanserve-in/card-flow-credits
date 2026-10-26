@@ -26,21 +26,14 @@ import {
 } from "firebase/auth";
 
 import {
-  doc,
-  setDoc,
-} from "firebase/firestore";
-
-import {
   AntDesign,
   Ionicons,
 } from "@expo/vector-icons";
 
-import {
-  auth,
-  db,
-} from "../services/firebase";
+import { auth } from "../services/firebase";
 
 import { signInWithGoogle } from "../services/googleAuth";
+import { ensureUserDocument } from "../services/userService";
 
 export default function SignupScreen() {
   const insets = useSafeAreaInsets();
@@ -130,32 +123,10 @@ export default function SignupScreen() {
         }
       );
 
-      await setDoc(
-        doc(
-          db,
-          "users",
-          userCredential.user.uid
-        ),
-        {
-          uid: userCredential.user.uid,
-          name: fullName.trim(),
-          email: email.trim(),
-          photoURL: "",
-          packId: "free",
-          packName: "Free Plan",
-          totalScans: 5,
-          usedScans: 0,
-          remainingScans: 5,
-          exportsGenerated: 0,
-          subscriptionActive: false,
-          subscriptionExpiry: null,
-          exportsGenerated: 0,
-          subscriptionActive: false,
-          subscriptionExpiry: null,
-          authProvider: "email",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        }
+      await ensureUserDocument(
+        userCredential.user,
+        "email",
+        fullName.trim()
       );
 
       router.replace("/home");

@@ -68,7 +68,7 @@
         "EXPO_PUBLIC_FIREBASE_APP_ID": "1:126413727192:android:3164016875b9373a05fead",
         "EXPO_PUBLIC_APP_ENCRYPTION_KEY": "my-super-secret-long-key-123456",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "126413727192-vhri6psu4k7eibnp4a939rpni7d2r1ok.apps.googleusercontent.com",
-        "EXPO_PUBLIC_RAZORPAY_TEST_MODE": "true"
+        "EXPO_PUBLIC_RAZORPAY_TEST_MODE": "false"
       }
     }
   },

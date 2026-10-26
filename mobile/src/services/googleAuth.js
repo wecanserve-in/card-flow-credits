@@ -1,9 +1,10 @@
 import * as WebBrowser from "expo-web-browser";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 
 import { auth, db } from "./firebase";
+import { ensureUserDocument } from "./userService";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -25,54 +26,19 @@ function configureGoogleSignin() {
   isGoogleSigninConfigured = true;
 }
 
-function buildGoogleUserDocument(user) {
-  const displayName = user.displayName || user.email?.split("@")[0] || "User";
-
-  return {
-    uid: user.uid,
-    name: displayName,
-    email: user.email || "",
-    photoURL: user.photoURL || "",
-    packId: "free",
-packName: "Free Plan",
-
-totalScans: 5,
-usedScans: 0,
-remainingScans: 5,
-
-exportsGenerated: 0,
-
-subscriptionActive: false,
-subscriptionExpiry: null,
-    exportsGenerated: 0,
-    subscriptionActive: false,
-    subscriptionExpiry: null,
-    authProvider: "google",
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  };
-}
-
 async function syncGoogleUser(user) {
-  const userRef = doc(db, "users", user.uid);
-  const userSnapshot = await getDoc(userRef);
+  await ensureUserDocument(user, "google");
 
-  if (userSnapshot.exists()) {
-    await setDoc(
-      userRef,
-      {
-        name: user.displayName || user.email?.split("@")[0] || "User",
-        email: user.email || "",
-        photoURL: user.photoURL || "",
-        authProvider: "google",
-        updatedAt: Date.now(),
-      },
-      { merge: true }
-    );
-    return;
-  }
-
-  await setDoc(userRef, buildGoogleUserDocument(user));
+  // Name and photo are left alone so edits made in the app aren't overwritten.
+  await setDoc(
+    doc(db, "users", user.uid),
+    {
+      email: user.email || "",
+      authProvider: "google",
+      updatedAt: Date.now(),
+    },
+    { merge: true }
+  );
 }
 
 export async function signInWithGoogle() {

@@ -19,11 +19,11 @@ import { onAuthStateChanged } from "firebase/auth";
 import {
   doc,
   onSnapshot,
-  setDoc,
 } from "firebase/firestore";
 
 import BottomNav from "../components/BottomNav";
 import { auth, db } from "../services/firebase";
+import { ensureUserDocument } from "../services/userService";
 import { User } from "../types/user";
 
 import {
@@ -146,48 +146,15 @@ export default function HomeScreen() {
                   !snapshot.exists()
                 ) {
                   try {
-                    await setDoc(
-                      userRef,
-                      {
-                        uid:
-                          firebaseUser.uid,
-
-                        name:
-                          firebaseUser.displayName ||
-                          "User",
-
-                        email:
-                          firebaseUser.email ||
-                          "",
-
-                        photoURL:
-                          firebaseUser.photoURL ||
-                          "",
-
-                        planName:
-                          "Free Plan",
-
-                        freeScanLimit: 5,
-
-                        freeScansUsed: 0,
-
-                        exportsGenerated: 0,
-
-                        subscriptionActive:
-                          false,
-
-                        subscriptionExpiry:
-                          null,
-
-                        authProvider:
-                          "email",
-
-                        createdAt:
-                          Date.now(),
-
-                        updatedAt:
-                          Date.now(),
-                      }
+                    await ensureUserDocument(
+                      firebaseUser,
+                      firebaseUser.providerData.some(
+                        (provider) =>
+                          provider.providerId ===
+                          "google.com"
+                      )
+                        ? "google"
+                        : "email"
                     );
                   } catch (error) {
                     console.error(

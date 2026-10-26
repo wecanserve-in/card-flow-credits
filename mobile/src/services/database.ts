@@ -5,7 +5,7 @@ import {
   collection,
   getDocs,
   setDoc,
-  deleteDoc,
+  writeBatch,
   doc,
   addDoc,
   updateDoc,
@@ -53,23 +53,8 @@ export async function saveContacts(
     const uid = auth.currentUser?.uid;
 
     if (!uid) {
-      console.log("❌ No logged-in user");
       return false;
     }
-
-    console.log(
-      "========== SAVE START =========="
-    );
-
-    console.log(
-      "Current UID:",
-      uid
-    );
-
-    console.log(
-      "Contacts to save:",
-      newContacts
-    );
 
     const STORAGE_KEY =
       getStorageKey();
@@ -178,22 +163,6 @@ export async function saveContacts(
       }
     );
 
-    console.log(
-      "Existing contacts for UID:",
-      uid,
-      existingContacts.length
-    );
-
-    console.log(
-      "Existing emails:",
-      Array.from(existingEmails)
-    );
-
-    console.log(
-      "Existing phones:",
-      Array.from(existingPhones)
-    );
-
     /* =================================================
        SAVE NEW CONTACTS
     ================================================= */
@@ -231,11 +200,6 @@ export async function saveContacts(
           ));
 
       if (duplicate) {
-        console.log(
-          "⚠️ Duplicate Contact Skipped:",
-          email || phone
-        );
-
         continue;
       }
 
@@ -278,11 +242,6 @@ export async function saveContacts(
           updatedAt:
             Date.now(),
         }
-      );
-
-      console.log(
-        "✅ Saved Contact:",
-        documentId
       );
 
       /* ===============================================
@@ -338,10 +297,6 @@ export async function saveContacts(
         )
       );
 
-      console.log(
-        "✅ AsyncStorage updated:",
-        STORAGE_KEY
-      );
     } else {
       /* ===============================================
          No new contacts saved.
@@ -356,26 +311,10 @@ export async function saveContacts(
       );
     }
 
-    console.log(
-      "========== SAVE COMPLETE =========="
-    );
-
     return true;
   } catch (error: any) {
-    console.log(
-      "❌ SAVE ERROR"
-    );
-
-    console.log(
-      error
-    );
-
-    console.log(
-      error?.code
-    );
-
-    console.log(
-      error?.message
+    console.error(
+      "[Database] Save contacts error:", error?.code || error?.message
     );
 
     throw error;
@@ -394,15 +333,6 @@ export async function getContacts() {
     if (!uid) {
       return [];
     }
-
-    console.log(
-      "========== GET CONTACTS =========="
-    );
-
-    console.log(
-      "Current UID:",
-      uid
-    );
 
     /* =================================================
        CLEAR OLD USER CACHE
@@ -520,21 +450,11 @@ export async function getContacts() {
       )
     );
 
-    console.log(
-      "✅ Contacts loaded:",
-      contacts.length
-    );
-
-    console.log(
-      "Storage key:",
-      getStorageKey()
-    );
-
     return contacts;
   } catch (error) {
-    console.log(
-      "❌ Read Error:",
-      error
+    console.error(
+      "[Database] Read contacts error:",
+      (error as any)?.code || (error as any)?.message
     );
 
     /* =================================================
@@ -557,82 +477,19 @@ export async function getContacts() {
 }
 
 /* =====================================================
-   CLEAR CONTACTS
-===================================================== */
-
-export async function clearContacts() {
-  try {
-    const uid =
-      auth.currentUser?.uid;
-
-    if (!uid) {
-      return;
-    }
-
-    console.log(
-      "========== CLEAR CONTACTS =========="
-    );
-
-    console.log(
-      "Current UID:",
-      uid
-    );
-
-    const contactsRef =
-      collection(
-        db,
-        "users",
-        uid,
-        "contacts"
-      );
-
-    const snapshot =
-      await getDocs(
-        contactsRef
-      );
-
-    for (
-      const document of snapshot.docs
-    ) {
-      await deleteDoc(
-        document.ref
-      );
-    }
-
-    /* =================================================
-       CLEAR CURRENT IN-MEMORY CACHE
-    ================================================= */
-
-    existingEmails.clear();
-    existingPhones.clear();
-
-    /* =================================================
-       CLEAR CURRENT USER'S LOCAL CACHE
-    ================================================= */
-
-    await AsyncStorage.removeItem(
-      getStorageKey()
-    );
-
-    console.log(
-      "✅ Contacts cleared"
-    );
-  } catch (error) {
-    console.log(
-      "❌ Clear Error:",
-      error
-    );
-  }
-};
-
-
-/* =====================================================
    DELETE CONTACTS
 ===================================================== */
+
+// Firestore allows at most 500 writes per batch.
+const DELETE_BATCH_SIZE = 500;
 
 /**
  * Permanently delete one or more saved contacts
  * for the currently logged-in user.
+ *
+ * Documents are deleted directly by id (no full
+ * collection read). The duplicate-check sets are
+ * rebuilt from the remaining cached contacts.
  */
 export async function deleteContacts(
   contactIds: string[]
@@ -662,103 +519,63 @@ export async function deleteContacts(
       return true;
     }
 
-    const contactsRef =
-      collection(
-        db,
-        "users",
-        uid,
-        "contacts"
-      );
+    for (
+      let start = 0;
+      start < normalizedIds.length;
+      start += DELETE_BATCH_SIZE
+    ) {
+      const batch = writeBatch(db);
 
-    const snapshot =
-      await getDocs(
-        contactsRef
-      );
-
-    const deletedContacts =
-      snapshot.docs.filter(
-        (document) =>
-          normalizedIds.includes(
-            document.id
-          )
-      );
-
-    await Promise.all(
-      deletedContacts.map(
-        (document) =>
-          deleteDoc(
-            document.ref
-          )
-      )
-    );
-
-    deletedContacts.forEach(
-      (document) => {
-        const data =
-          document.data();
-
-        const encrypted =
-          data.encryptedData;
-
-        if (!encrypted) {
-          return;
-        }
-
-        const contact =
-          decryptData(
-            encrypted
+      normalizedIds
+        .slice(
+          start,
+          start + DELETE_BATCH_SIZE
+        )
+        .forEach((contactId) => {
+          batch.delete(
+            doc(
+              db,
+              "users",
+              uid,
+              "contacts",
+              contactId
+            )
           );
+        });
 
-        if (!contact) {
-          return;
-        }
+      await batch.commit();
+    }
 
-        const email =
-          normalizeEmail(
-            contact.email
-          );
+    /* =================================================
+       UPDATE LOCAL CACHE + DUPLICATE SETS
+    ================================================= */
 
-        const phone =
-          normalizePhone(
-            contact.phone
-          );
-
-        if (email) {
-          existingEmails.delete(
-            email
-          );
-        }
-
-        if (phone) {
-          existingPhones.delete(
-            phone
-          );
-        }
-      }
-    );
+    const deletedIds =
+      new Set(normalizedIds);
 
     const storageKey =
       getStorageKey();
 
-    const cached =
-      await AsyncStorage.getItem(
-        storageKey
-      );
+    let remaining: any[] | null =
+      null;
 
-    if (cached) {
-      try {
-        const parsed =
-          JSON.parse(cached);
+    try {
+      const cached =
+        await AsyncStorage.getItem(
+          storageKey
+        );
 
-        const remaining =
-          Array.isArray(parsed)
-            ? parsed.filter(
-                (contact: any) =>
-                  !normalizedIds.includes(
-                    contact?.id
-                  )
-              )
-            : [];
+      const parsed = cached
+        ? JSON.parse(cached)
+        : null;
+
+      if (Array.isArray(parsed)) {
+        remaining = parsed.filter(
+          (contact: any) =>
+            !deletedIds.has(
+              contact?.id
+            )
+        );
 
         await AsyncStorage.setItem(
           storageKey,
@@ -766,21 +583,47 @@ export async function deleteContacts(
             remaining
           )
         );
-      } catch {
-        await getContacts();
       }
+    } catch {
+      remaining = null;
     }
 
-    console.log(
-      "Contacts deleted:",
-      normalizedIds
+    /*
+     * Rebuild the duplicate sets from what is left.
+     * If the cache was unavailable, just reset them:
+     * saveContacts() rebuilds them from Firestore
+     * before every save anyway.
+     */
+    existingEmails.clear();
+    existingPhones.clear();
+
+    remaining?.forEach(
+      (contact: any) => {
+        const email =
+          normalizeEmail(
+            contact?.email
+          );
+
+        const phone =
+          normalizePhone(
+            contact?.phone
+          );
+
+        if (email) {
+          existingEmails.add(email);
+        }
+
+        if (phone) {
+          existingPhones.add(phone);
+        }
+      }
     );
 
     return true;
-  } catch (error) {
-    console.log(
-      "❌ Delete Contacts Error:",
-      error
+  } catch (error: any) {
+    console.error(
+      "[Database] Delete contacts error:",
+      error?.code || error?.message
     );
 
     throw error;
@@ -882,11 +725,6 @@ export async function createFolder(
         }
       );
 
-    console.log(
-      "✅ Folder created:",
-      folderRef.id
-    );
-
     return {
       id: folderRef.id,
 
@@ -896,9 +734,9 @@ export async function createFolder(
       createdAt,
     };
   } catch (error) {
-    console.log(
-      "❌ Create Folder Error:",
-      error
+    console.error(
+      "[Database] Create folder error:",
+      (error as any)?.code || (error as any)?.message
     );
 
     throw error;
@@ -958,9 +796,9 @@ export async function getFolders() {
       })
     );
   } catch (error) {
-    console.log(
-      "❌ Get Folders Error:",
-      error
+    console.error(
+      "[Database] Get folders error:",
+      (error as any)?.code || (error as any)?.message
     );
 
     return [];
@@ -1030,16 +868,11 @@ export async function setContactFolders(
       }
     );
 
-    console.log(
-      "✅ Contact folders updated:",
-      normalizedFolderIds
-    );
-
     return true;
   } catch (error) {
-    console.log(
-      "❌ Set Contact Folders Error:",
-      error
+    console.error(
+      "[Database] Set contact folders error:",
+      (error as any)?.code || (error as any)?.message
     );
 
     throw error;

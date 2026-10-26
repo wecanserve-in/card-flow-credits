@@ -131,54 +131,6 @@ const getApiErrorMessage = (
 
 
 
-
-const getAuthenticatedUserToken =
-async (): Promise<string> => {
-
-
-  const user = auth.currentUser;
-
-
-  if (!user) {
-
-    throw new Error(
-      "Please sign in again before payment."
-    );
-
-  }
-
-
-
-  const idToken =
-    await user.getIdToken(true);
-
-
-
-  if (!idToken) {
-
-    throw new Error(
-      "Invalid authentication token."
-    );
-
-  }
-
-
-
-  console.log(
-    "[PaymentService] UID:",
-    user.uid
-  );
-
-
-
-  return idToken;
-
-};
-
-
-
-
-
 export const createOrder =
 async (
   packId:string
@@ -250,7 +202,7 @@ async (
 
     console.error(
       "[PaymentService] createOrder failed",
-      error
+      getApiErrorMessage(error, "unknown error")
     );
 
 
@@ -267,9 +219,6 @@ async (
 
 
 };
-
-
-
 
 
 
@@ -319,7 +268,7 @@ payload:RazorpayPaymentSuccess
 
     console.error(
       "[PaymentService] verifyPayment failed",
-      error
+      getApiErrorMessage(error, "unknown error")
     );
 
 
@@ -335,9 +284,6 @@ payload:RazorpayPaymentSuccess
 
 
 };
-
-
-
 
 
 
@@ -403,7 +349,7 @@ async ():Promise<ScanPackData | null> => {
         ?
         data.packName
         :
-        "Free Pack",
+        "Free Plan",
 
 
 
@@ -425,12 +371,12 @@ async ():Promise<ScanPackData | null> => {
 
 
 
-      remainingScans:
-        typeof data.remainingScans === "number"
-        ?
-        data.remainingScans
-        :
-        5,
+      // Computed, not read: the stored remainingScans field is not kept up to date.
+      remainingScans: Math.max(
+        (typeof data.totalScans === "number" ? data.totalScans : 5) -
+          (typeof data.usedScans === "number" ? data.usedScans : 0),
+        0
+      ),
 
 
 
@@ -463,17 +409,13 @@ async ():Promise<ScanPackData | null> => {
 
 
 
-
-
-
-
   }
   catch(error){
 
 
     console.error(
       "[PaymentService] refreshScanPack failed:",
-      error
+      getApiErrorMessage(error, "unknown error")
     );
 
 
@@ -523,7 +465,7 @@ async (): Promise<PurchaseRecord[]> => {
   } catch (error) {
     console.error(
       "[PaymentService] getPaymentHistory failed:",
-      error
+      getApiErrorMessage(error, "unknown error")
     );
 
     throw new Error(
@@ -559,7 +501,7 @@ async (
   } catch (error) {
     console.error(
       "[PaymentService] recoverPayment failed",
-      error
+      getApiErrorMessage(error, "unknown error")
     );
 
     throw new Error(

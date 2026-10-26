@@ -19,7 +19,6 @@ from firebase_admin import (
     credentials,
     firestore,
 )
-from firebase_admin.firestore import Increment
 
 from pydantic import BaseModel
 
@@ -54,15 +53,16 @@ def _initialize_firebase_admin():
     if not service_account_file.is_absolute():
         service_account_file = (BASE_DIR / service_account_file).resolve()
 
-    if not service_account_file.exists():
-        raise RuntimeError(f"Firebase JSON missing: {service_account_file}")
+    if service_account_file.exists():
+        firebase_credential = credentials.Certificate(str(service_account_file))
+        project_id = FIREBASE_PROJECT_ID or firebase_credential.project_id
+    else:
+        # On Cloud Run the key file is not shipped; use the service's own identity.
+        print("[Firebase Admin] Key file not found, using Application Default Credentials")
+        firebase_credential = credentials.ApplicationDefault()
+        project_id = FIREBASE_PROJECT_ID or "card-flow-6da93"
 
-    firebase_credential = credentials.Certificate(str(service_account_file))
-
-    firebase_admin.initialize_app(
-        firebase_credential,
-        {"projectId": FIREBASE_PROJECT_ID or firebase_credential.project_id},
-    )
+    firebase_admin.initialize_app(firebase_credential, {"projectId": project_id})
 
     print("[Firebase Admin] Initialized successfully")
 
@@ -146,7 +146,6 @@ def _verify_firebase_token(authorization: Optional[str]):
         if not uid:
             raise Exception("UID missing from Firebase token")
 
-        print("[Firebase Auth] Verified UID:", uid)
         return uid
 
     except HTTPException:
@@ -154,6 +153,15 @@ def _verify_firebase_token(authorization: Optional[str]):
     except Exception as error:
         print("[Firebase Auth Error]", error)
         raise HTTPException(status_code=401, detail="Invalid Firebase token.")
+
+
+def _scan_pack_summary(user_data: dict, fallback_pack_id: str, fallback_pack_name: str):
+    return {
+        "packId": user_data.get("packId", fallback_pack_id),
+        "packName": user_data.get("packName", fallback_pack_name),
+        "totalScans": int(user_data.get("totalScans", 0) or 0),
+        "usedScans": int(user_data.get("usedScans", 0) or 0),
+    }
 
 
 def _add_credits(uid: str, pack_id: str, payment_id: str, order_id: str):
@@ -167,44 +175,34 @@ def _add_credits(uid: str, pack_id: str, payment_id: str, order_id: str):
     if purchased_scans <= 0:
         raise HTTPException(status_code=500, detail="Invalid scan configuration.")
 
-    try:
-        payment_snapshot = payment_ref.get()
-
-        if payment_snapshot.exists:
-            user_snapshot = user_ref.get()
-            user_data = user_snapshot.to_dict() if user_snapshot.exists else {}
-            return {
-                "success": True,
-                "message": "Payment was already processed.",
-                "scanPack": {
-                    "packId": user_data.get("packId", pack_id),
-                    "packName": user_data.get("packName", pack_name),
-                    "totalScans": user_data.get("totalScans", 0),
-                    "usedScans": user_data.get("usedScans", 0),
-                },
-            }
-
-        user_snapshot = user_ref.get()
+    @firestore.transactional
+    def apply(transaction):
+        # Reads first, then writes. The transaction retries if another request
+        # (e.g. /verify and /recover racing) touches these docs, so a payment
+        # can only ever add credits once.
+        payment_snapshot = payment_ref.get(transaction=transaction)
+        user_snapshot = user_ref.get(transaction=transaction)
         user_data = user_snapshot.to_dict() if user_snapshot.exists else {}
 
-        used = int(user_data.get("usedScans", 0) or 0)
-        old_total = int(user_data.get("totalScans", 0) or 0)
+        if payment_snapshot.exists:
+            return False, user_data
+
+        used = int(user_data.get("usedScans", user_data.get("freeScansUsed", 0)) or 0)
+        old_total = int(user_data.get("totalScans", user_data.get("freeScanLimit", 0)) or 0)
         new_total = old_total + purchased_scans
 
-        user_ref.set(
-            {
-                "packId": pack_id,
-                "packName": pack_name,
-                "totalScans": Increment(purchased_scans),
-                "usedScans": used,
-                "lastPaymentId": payment_id,
-                "lastOrderId": order_id,
-                "updatedAt": now,
-            },
-            merge=True,
-        )
-
-        payment_ref.set(
+        updated = {
+            "packId": pack_id,
+            "packName": pack_name,
+            "totalScans": new_total,
+            "usedScans": used,
+            "lastPaymentId": payment_id,
+            "lastOrderId": order_id,
+            "updatedAt": now,
+        }
+        transaction.set(user_ref, updated, merge=True)
+        transaction.set(
+            payment_ref,
             {
                 "uid": uid,
                 "paymentId": payment_id,
@@ -216,21 +214,12 @@ def _add_credits(uid: str, pack_id: str, payment_id: str, order_id: str):
                 "amount": _plan_total_rupees(pack_id) * 100,
                 "currency": "INR",
                 "processedAt": now,
-            }
+            },
         )
+        return True, {**user_data, **updated}
 
-        try:
-            from notifications import send_push_to_user
-
-            send_push_to_user(
-                uid,
-                "Payment successful",
-                f"{purchased_scans} card credits have been added to your account.",
-                "/plans",
-            )
-        except Exception as push_error:
-            print("[Payment] Push notification error:", push_error)
-
+    try:
+        newly_added, user_data = apply(db.transaction())
     except Exception as write_error:
         print("[Payment] Firestore write error:", write_error)
         raise HTTPException(
@@ -238,15 +227,29 @@ def _add_credits(uid: str, pack_id: str, payment_id: str, order_id: str):
             detail="Payment verified but could not save credits. Contact support with your payment ID.",
         )
 
+    if not newly_added:
+        return {
+            "success": True,
+            "message": "Payment was already processed.",
+            "scanPack": _scan_pack_summary(user_data, pack_id, pack_name),
+        }
+
+    try:
+        from notifications import send_push_to_user
+
+        send_push_to_user(
+            uid,
+            "Payment successful",
+            f"{purchased_scans} card credits have been added to your account.",
+            "/plans",
+        )
+    except Exception as push_error:
+        print("[Payment] Push notification error:", push_error)
+
     return {
         "success": True,
         "message": "Payment verified and scan credits added successfully.",
-        "scanPack": {
-            "packId": pack_id,
-            "packName": pack_name,
-            "totalScans": new_total,
-            "usedScans": used,
-        },
+        "scanPack": _scan_pack_summary(user_data, pack_id, pack_name),
     }
 
 
@@ -417,5 +420,19 @@ def recover_payment(
 
     if pack_id not in PLAN_PRICES:
         raise HTTPException(status_code=400, detail="Invalid scan pack.")
+
+    try:
+        payment = client.payment.fetch(data.razorpay_payment_id)
+    except Exception as error:
+        print("[Payment Recover] Payment fetch error:", error)
+        raise HTTPException(status_code=502, detail="Unable to fetch payment details.")
+
+    expected_amount = _plan_total_rupees(pack_id) * 100
+
+    if order.get("amount") != expected_amount or payment.get("amount") != expected_amount:
+        raise HTTPException(status_code=400, detail="Payment amount mismatch.")
+
+    if payment.get("currency") != "INR":
+        raise HTTPException(status_code=400, detail="Invalid currency.")
 
     return _add_credits(uid, pack_id, data.razorpay_payment_id, data.razorpay_order_id)

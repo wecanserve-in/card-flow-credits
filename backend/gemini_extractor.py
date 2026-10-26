@@ -309,9 +309,9 @@ Rules:
 
             except json.JSONDecodeError as json_error:
                 print(
-                    "[Gemini] Invalid JSON returned:"
+                    "[Gemini] Invalid JSON returned "
+                    f"({len(response_text)} chars)"
                 )
-                print(response_text)
 
                 raise ValueError(
                     "Gemini returned incomplete or invalid JSON. "

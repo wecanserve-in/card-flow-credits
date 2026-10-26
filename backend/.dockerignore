@@ -18,3 +18,5 @@ venv/
 
 serviceAccountKey.json
 firestore.rules
+tests/
+requirements-dev.txt

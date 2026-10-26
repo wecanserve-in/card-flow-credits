@@ -31,9 +31,7 @@
           "imageWidth": 180
         }
       ],
-      "expo-sqlite",
       "expo-sharing",
-      "expo-secure-store",
       "expo-web-browser",
       [
         "expo-notifications",
@@ -42,10 +40,6 @@
         }
       ]
     ],
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

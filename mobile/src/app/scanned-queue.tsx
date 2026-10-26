@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
   Modal,
   Animated,
+  ScrollView,
 } from "react-native";
 import {
   SafeAreaView,
@@ -25,13 +26,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
   doc,
-  increment,
   onSnapshot,
-  updateDoc,
 } from "firebase/firestore";
 
 import { User } from "../types/user";
-import { uploadCards } from "../services/scanService";
+import {
+  isInsufficientCredits,
+  uploadCards,
+} from "../services/scanService";
 import {
   auth,
   db,
@@ -445,20 +447,11 @@ const currentUsed =
         return;
       }
 
-      console.log(
-        "Selected Images:",
-        selectedImages
-      );
-
+      // The server checks and deducts credits; the check above is just for a faster message.
       const result =
         await uploadCards(
           selectedImages
         );
-
-      console.log(
-        "API Result:",
-        result
-      );
 
       const extractedCards =
         Array.isArray(result?.cards)
@@ -493,22 +486,21 @@ const currentUsed =
       }
 
       const newUsed =
+        result.credits?.used ??
         currentUsed +
-        extractedCards.length;
+          extractedCards.length;
+
+      const newTotal =
+        result.credits?.total ??
+        totalLimit;
 
       const newRemaining =
+        result.credits?.remaining ??
         Math.max(
-          totalLimit - newUsed,
+          newTotal - newUsed,
           0
         );
 
-      await updateDoc(
-  doc(db, "users", auth.currentUser.uid),
-  {
-    usedScans: increment(extractedCards.length),
-    updatedAt: Date.now(),
-  }
-);
       await createNotification({
         type: "extraction_success",
         title: "Cards extracted",
@@ -535,7 +527,7 @@ const currentUsed =
       await createCreditNotification({
         remaining: newRemaining,
         used: newUsed,
-        total: totalLimit,
+        total: newTotal,
       });
 
       (
@@ -555,11 +547,39 @@ const currentUsed =
       setSelectedCards([]);
 
       router.push("/contacts");
+
+      if (result.partialError) {
+        Alert.alert(
+          "Some Cards Not Scanned",
+          `${extractedCards.length} of ${selectedImages.length} cards were scanned. ${result.partialError.message}`
+        );
+      }
     } catch (error) {
-      console.log(
-        "Extraction Error:",
-        error
+      console.error(
+        "Extraction failed:",
+        error instanceof Error
+          ? error.message
+          : error
       );
+
+      if (isInsufficientCredits(error)) {
+        Alert.alert(
+          "Not Enough Scans",
+          (error as Error).message,
+          [
+            {
+              text: "Upgrade",
+              onPress: () =>
+                router.push("/plans"),
+            },
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+          ]
+        );
+        return;
+      }
 
       await createNotification({
         type: "extraction_failed",
@@ -788,11 +808,13 @@ const currentUsed =
         ) : null}
 
         {queueImages.length > 0 ? (
-          <View
-            style={[
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={[
               styles.masonryContainer,
               { paddingBottom: 150 + insets.bottom },
             ]}
+            showsVerticalScrollIndicator={false}
           >
             {masonryColumns.map((column, columnIndex) => (
               <View
@@ -812,7 +834,7 @@ const currentUsed =
                 ))}
               </View>
             ))}
-          </View>
+          </ScrollView>
         ) : (
           <View style={[styles.emptyListContent, { flex: 1 }]}>
             <View style={styles.emptyState}>
@@ -1328,7 +1350,7 @@ const styles = StyleSheet.create({
   },
 
   imageOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor:
       "rgba(20, 25, 22, 0.12)",
   },
