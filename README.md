@@ -14,7 +14,8 @@ card-flow-credits/
 │   ├── r2_upload.py         # Cloudflare R2 profile photos
 │   ├── firestore.rules      # Firestore security rules (deploy from the Firebase console)
 │   ├── tests/               # Backend tests (no real services are called)
-│   └── Dockerfile
+│   ├── Procfile             # Start command used by Cloud Run (buildpacks)
+│   └── Dockerfile           # Not used by the Cloud Run trigger
 └── mobile/                  # Expo SDK 56 app (Android / iOS)
     ├── src/app/             # Screens (Expo Router)
     ├── src/services/        # API, Firebase, scanning, payments, notifications
@@ -52,7 +53,7 @@ uvicorn main:app --port 8080
 pytest tests                # run tests
 ```
 
-On Cloud Run, set the variables from `.env.example` as environment variables. Firebase Admin uses the Cloud Run service account when no key file is present.
+Deploys happen automatically: every push to `main` triggers Cloud Build, which builds `backend/` with Google buildpacks (using `Procfile`) and deploys the Cloud Run service `scanmycard` (asia-south1). Environment variables and the Firebase key secret are configured on the Cloud Run service.
 
 ## Mobile
 
