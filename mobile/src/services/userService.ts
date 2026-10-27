@@ -14,6 +14,7 @@ export const FREE_SCANS = 10;
 export const REFERRAL_BONUS = 10;
 
 const PENDING_REFERRAL_KEY = "pendingReferralCode";
+const SIGNED_IN_BEFORE_KEY = "hasSignedInOnThisPhone";
 
 type AuthProvider = "email" | "google";
 
@@ -209,5 +210,25 @@ export async function getMyReferralInfo(): Promise<ReferralInfo | null> {
   } catch (error: any) {
     console.warn("[Referral] Could not load code:", error?.message);
     return null;
+  }
+}
+
+/**
+ * The referral screen is shown to logged-out users until someone has signed in
+ * on this phone once. After that, logging out goes straight to sign-in.
+ */
+export async function hasSignedInOnThisPhone(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(SIGNED_IN_BEFORE_KEY)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export async function markSignedInOnThisPhone(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(SIGNED_IN_BEFORE_KEY, "1");
+  } catch {
+    // Worst case the referral screen shows again after logging out.
   }
 }

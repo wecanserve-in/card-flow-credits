@@ -4,6 +4,10 @@ import { onAuthStateChanged } from "firebase/auth";
 
 import { auth } from "../services/firebase";
 import { initializePushNotifications } from "../services/notifications";
+import {
+  hasSignedInOnThisPhone,
+  markSignedInOnThisPhone,
+} from "../services/userService";
 
 export default function RootLayout() {
   useEffect(() => {
@@ -18,12 +22,21 @@ export default function RootLayout() {
         cleanupPush = null;
 
         if (!user) {
+          // First time on this phone: ask for a friend's referral code first.
+          const signedInBefore =
+            await hasSignedInOnThisPhone();
+
           if (isActive) {
-            router.replace("/login");
+            router.replace(
+              // "as any": typed routes don't list new screens until the next dev build.
+              (signedInBefore ? "/login" : "/referral") as any
+            );
           }
 
           return;
         }
+
+        markSignedInOnThisPhone();
 
         if (isActive) {
           initializePushNotifications()
