@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ScanMyCard: AI business card scanner to Excel for Android</title>
+<meta name="description" content="Scan a whole stack of business cards with your phone. AI reads name, company, phone, email and more, then export to Excel. Pay per card, no subscription, 5 free scans.">
+<link rel="canonical" href="https://scanmycard.in/">
+<meta name="theme-color" content="#F5F8F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B1410" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="256x256" href="/assets/images/app-icon-256.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ScanMyCard">
+<meta property="og:locale" content="en_IN">
+<meta property="og:url" content="https://scanmycard.in/">
+<meta property="og:title" content="ScanMyCard: from a stack of cards to a clean Excel sheet in minutes">
+<meta property="og:description" content="AI reads every business card for you. Pay per card, no subscription, 5 free scans. Android.">
+<meta property="og:image" content="https://scanmycard.in/assets/images/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="ScanMyCard: from a stack of cards to a clean Excel sheet in minutes">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ScanMyCard: from a stack of cards to a clean Excel sheet in minutes">
+<meta name="twitter:description" content="AI reads every business card for you. Pay per card, no subscription, 5 free scans.">
+<meta name="twitter:image" content="https://scanmycard.in/assets/images/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&amp;display=swap">
+<link rel="stylesheet" href="/assets/css/site.css?v=1">
+<script>(function(d){d.classList.add('js');try{var t=localStorage.getItem('smc-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t)}catch(e){}})(document.documentElement)</script>
+<!-- Analytics: configured in one place, the ANALYTICS block at the top of /assets/js/site.js -->
+<script src="/assets/js/site.js?v=1" defer></script>
+<script src="/assets/js/home.js?v=1" defer></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ScanMyCard",
+  "alternateName": "ScanMyCard by WeCanServe",
+  "url": "https://scanmycard.in/",
+  "image": "https://scanmycard.in/assets/images/og.png",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Android",
+  "description": "AI business card scanner. Snap a stack of business cards, review the extracted name, company, designation, phone, email, website, country and address, organise contacts into folders and export them to Excel (.xlsx).",
+  "installUrl": "https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard",
+  "downloadUrl": "https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard",
+  "publisher": { "@type": "Organization", "name": "WeCanServe", "email": "wecanserve23@gmail.com", "url": "https://scanmycard.in/" },
+  "offers": [
+    { "@type": "Offer", "name": "Free trial: 5 scans", "price": "0", "priceCurrency": "INR" },
+    { "@type": "Offer", "name": "Starter: 50 card credits", "price": "99", "priceCurrency": "INR", "priceSpecification": { "@type": "UnitPriceSpecification", "price": "99", "priceCurrency": "INR", "valueAddedTaxIncluded": false } },
+    { "@type": "Offer", "name": "Popular: 750 card credits", "price": "499", "priceCurrency": "INR", "priceSpecification": { "@type": "UnitPriceSpecification", "price": "499", "priceCurrency": "INR", "valueAddedTaxIncluded": false } },
+    { "@type": "Offer", "name": "Pro: 1,000 card credits", "price": "999", "priceCurrency": "INR", "priceSpecification": { "@type": "UnitPriceSpecification", "price": "999", "priceCurrency": "INR", "valueAddedTaxIncluded": false } },
+    { "@type": "Offer", "name": "Business Starter: 2,775 card credits", "price": "2499", "priceCurrency": "INR", "priceSpecification": { "@type": "UnitPriceSpecification", "price": "2499", "priceCurrency": "INR", "valueAddedTaxIncluded": false } },
+    { "@type": "Offer", "name": "Business Pro: 5,710 card credits", "price": "3999", "priceCurrency": "INR", "priceSpecification": { "@type": "UnitPriceSpecification", "price": "3999", "priceCurrency": "INR", "valueAddedTaxIncluded": false } },
+    { "@type": "Offer", "name": "Business Enterprise: 10,000 card credits", "price": "5999", "priceCurrency": "INR", "priceSpecification": { "@type": "UnitPriceSpecification", "price": "5999", "priceCurrency": "INR", "valueAddedTaxIncluded": false } }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "How many cards can I scan at once?", "acceptedAnswer": { "@type": "Answer", "text": "As many as you like. Select them in the queue and the app processes them in batches." } },
+    { "@type": "Question", "name": "How accurate is it?", "acceptedAnswer": { "@type": "Answer", "text": "Very accurate on clear, well-lit cards. You can review and fix every field before saving." } },
+    { "@type": "Question", "name": "What if a scan fails?", "acceptedAnswer": { "@type": "Answer", "text": "You don't lose credits. Failed scans are refunded automatically." } },
+    { "@type": "Question", "name": "Do credits expire?", "acceptedAnswer": { "@type": "Answer", "text": "No. Credits never expire." } },
+    { "@type": "Question", "name": "Can I export to Excel?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Export everything, or one folder, as .xlsx and share it anywhere." } },
+    { "@type": "Question", "name": "Is my data private?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Only you can access your contacts. We don't sell data or use your cards for ads." } },
+    { "@type": "Question", "name": "Is there an iPhone app?", "acceptedAnswer": { "@type": "Answer", "text": "Android first; iOS is coming." } },
+    { "@type": "Question", "name": "How do I delete my account?", "acceptedAnswer": { "@type": "Answer", "text": "In the app: Profile tab, tap your profile card, then Delete Account. Or request it at https://scanmycard.in/delete-account." } },
+    { "@type": "Question", "name": "How much does it cost?", "acceptedAnswer": { "@type": "Answer", "text": "You get 5 free scans to start. After that you buy prepaid credit packs from Rs 99 for 50 cards (plus 18% GST). 1 credit = 1 card, no subscription." } },
+    { "@type": "Question", "name": "How do I pay?", "acceptedAnswer": { "@type": "Answer", "text": "Inside the app, through Razorpay: UPI, debit and credit cards, netbanking and wallets." } }
+  ]
+}
+</script>
+</head>
+<body class="page-home has-playbar">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap header__inner">
+    <a class="brand" href="/" aria-label="ScanMyCard home">
+      <img src="/assets/images/mark-128.png" width="32" height="32" alt="">
+      <span class="brand__word">Scan<span>My</span>Card</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="/#how-it-works">How it works</a>
+      <a href="/#features">Features</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/#faq">FAQ</a>
+      <a href="/support">Support</a>
+    </nav>
+    <div class="header__actions">
+      <button class="icon-btn theme-toggle" type="button" aria-label="Toggle dark mode">
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <a class="btn btn--sm header__cta" href="https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard" data-play>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 5 3.5z"/></svg>
+        Get the app
+      </a>
+      <details class="menu">
+        <summary class="icon-btn" aria-label="Menu">
+          <svg class="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          <svg class="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </summary>
+        <nav class="menu__panel" aria-label="Mobile">
+          <a href="/#how-it-works">How it works</a>
+          <a href="/#features">Features</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/#faq">FAQ</a>
+          <a href="/support">Support</a>
+          <hr>
+          <a href="https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard" data-play>Get it on Google Play</a>
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ============ HERO ============ -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap hero__grid">
+    <div class="hero__copy">
+      <p class="pill"><b>NEW</b> AI business card scanner for Android</p>
+      <h1 id="hero-title">From a <span class="stack hl-amber">stack of cards</span> to a <span class="clean">clean Excel sheet</span> in minutes.</h1>
+      <p class="lead">Back from an expo with a pocket full of cards? Snap them all. ScanMyCard's AI types out every name, number and email, you check them, and the Excel sheet is on WhatsApp before your chai gets cold.</p>
+      <div class="hero__ctas">
+        <a class="play-badge" href="https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard" data-play aria-label="Get it on Google Play">
+          <svg class="play-badge__logo" viewBox="0 0 24 26" aria-hidden="true"><path fill="#00D7FE" d="M1.2 1.1C.9 1.4.8 1.9.8 2.5v21c0 .6.1 1.1.4 1.4L12.9 13z"/><path fill="#FFCE00" d="M16.8 16.9 12.9 13l3.9-3.9 4.7 2.7c1.3.8 1.3 2 0 2.8z"/><path fill="#FF3A44" d="M16.8 16.9 12.9 13 1.2 24.9c.4.5 1.2.5 2 .1z"/><path fill="#00F076" d="M16.8 9.1 3.2 1C2.4.6 1.6.6 1.2 1.1L12.9 13z"/></svg>
+          <span class="play-badge__text"><small>Get it on</small><strong>Google Play</strong></span>
+        </a>
+        <a class="btn btn--ghost" href="#try">Try the AI demo</a>
+      </div>
+      <ul class="ticks">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>5 free scans</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>No subscription</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Credits never expire</li>
+      </ul>
+    </div>
+
+    <div class="hero__visual">
+      <div class="hero__cards" aria-hidden="true">
+        <div class="bcard bcard--cream" style="--accent:#EFA300;--r:-14deg;left:2%;top:4%"><b>Priya Sharma</b><i>Export Manager</i><span class="bcard__co">Sharma Handicrafts</span><span class="bcard__meta">+91 98765 43210</span></div>
+        <div class="bcard bcard--dark" style="--accent:#5B8DEF;--r:11deg;right:0;top:0"><b>Lukas Weber</b><i>Head of Sourcing</i><span class="bcard__co">Haus &amp; Hof GmbH</span><span class="bcard__meta">l.weber@hausundhof.de</span></div>
+        <div class="bcard" style="--accent:#0044AC;--r:9deg;left:0;bottom:6%"><b>Rahul Mehta</b><i>Senior Consultant</i><span class="bcard__co">Mehta Realty</span><span class="bcard__meta">+91 98765 11730</span></div>
+        <div class="bcard bcard--top" style="--accent:#09A84E;--r:-8deg;right:2%;bottom:2%"><b>Ananya Iyer</b><i>Area Sales Manager</i><span class="bcard__co">Kaveri Pharma</span></div>
+      </div>
+      <div class="phone" role="img" aria-label="The ScanMyCard app scanning a business card and filling in the contact's name, company, designation, phone and email">
+        <div class="phone__screen" aria-hidden="true">
+          <div class="phone__status"><span>10:24</span><span>5G ▪▪▪</span></div>
+          <div class="phone__bar"><strong>Review scan</strong><span>12 of 147</span></div>
+          <div class="phone__shot">
+            <div class="bcard bcard--cream" style="--accent:#EFA300"><b>Priya Sharma</b><i>Export Manager</i><span class="bcard__co">Sharma Handicrafts</span><span class="bcard__meta">+91 98765 43210 · priya@sharmahandicrafts.in</span></div>
+            <div class="scanframe"><i></i><i></i><i></i><i></i></div>
+            <div class="scanline"></div>
+          </div>
+          <dl class="phone__fields">
+            <div class="pf"><dt>Name</dt><dd style="--d:0s">Priya Sharma</dd></div>
+            <div class="pf"><dt>Company</dt><dd style="--d:.25s">Sharma Handicrafts</dd></div>
+            <div class="pf"><dt>Designation</dt><dd style="--d:.5s">Export Manager</dd></div>
+            <div class="pf"><dt>Phone</dt><dd style="--d:.75s">+91 98765 43210</dd></div>
+            <div class="pf"><dt>Email</dt><dd style="--d:1s">priya@sharmahandicrafts.in</dd></div>
+            <div class="pf"><dt>Country</dt><dd style="--d:1.25s">India</dd></div>
+          </dl>
+          <div class="phone__save">Save contact</div>
+        </div>
+      </div>
+      <div class="chip chip--a" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
+        <span>8 fields read<small>in a few seconds</small></span>
+      </div>
+      <div class="chip chip--b" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8l4 5m0-5l-4 5M14 9h3M14 13h3M8 17h9"/></svg>
+        <span>contacts.xlsx<small>147 rows · shared to WhatsApp</small></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AUDIENCE STRIP ============ -->
+<section class="strip" aria-label="Who uses ScanMyCard">
+  <div class="wrap strip__inner">
+    <p>Made for people who come home with pockets full of cards</p>
+    <ul>
+      <li>Sales &amp; BD teams</li>
+      <li>Exporters &amp; importers</li>
+      <li>Real-estate agents</li>
+      <li>Pharma reps</li>
+      <li>Event organisers</li>
+      <li>Founders &amp; freelancers</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ SIGNATURE: PILE -> SHEET ============ -->
+<section class="sort" id="problem" aria-labelledby="sort-title">
+  <div class="sort__track">
+    <div class="sort__stage">
+      <div class="wrap sort__layout">
+        <div class="sort__copy">
+          <p class="eyebrow">The problem</p>
+          <h2 id="sort-title">
+            <span class="sort__line sort__line--before">After the expo: 147 cards in a rubber band.</span>
+            <span class="sort__line sort__line--after">A few minutes later: one clean sheet.</span>
+          </h2>
+          <p class="lead">Typing cards into Excel takes hours, so it gets skipped. Cards get lost in a drawer and warm leads go cold. ScanMyCard does the typing, so you can follow up the same day.</p>
+          <p class="counter" aria-hidden="true"><strong data-counter>147</strong><span>contacts in your sheet</span></p>
+        </div>
+        <div class="sort__board">
+          <div class="sheet">
+            <div class="sheet__bar"><span class="xl" aria-hidden="true">X</span>IHGF Delhi · Oct 2026.xlsx<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+            <table>
+              <caption class="sr-only">Example of contacts extracted from business cards</caption>
+              <thead><tr><th scope="col">Name</th><th scope="col">Company</th><th scope="col">Phone</th><th scope="col" class="c-email">Email</th><th scope="col" class="c-country">Country</th></tr></thead>
+              <tbody>
+                <tr><td>Priya Sharma</td><td>Sharma Handicrafts</td><td>+91 98765 43210</td><td class="c-email">priya@sharmahandicrafts.in</td><td class="c-country">India</td></tr>
+                <tr><td>Lukas Weber</td><td>Haus &amp; Hof GmbH</td><td>+49 151 0000 4421</td><td class="c-email">l.weber@hausundhof.de</td><td class="c-country">Germany</td></tr>
+                <tr><td>Rahul Mehta</td><td>Mehta Realty</td><td>+91 98765 11730</td><td class="c-email">rahul@mehtarealty.in</td><td class="c-country">India</td></tr>
+                <tr><td>Ananya Iyer</td><td>Kaveri Pharma</td><td>+91 98765 21876</td><td class="c-email">ananya@kaveripharma.in</td><td class="c-country">India</td></tr>
+                <tr><td>Emily Carter</td><td>Oakridge Imports</td><td>+1 415 555 0142</td><td class="c-email">emily@oakridgeimports.com</td><td class="c-country">USA</td></tr>
+                <tr><td>Fatima Khan</td><td>Zaria Textiles</td><td>+91 98765 11904</td><td class="c-email">fatima@zariatextiles.in</td><td class="c-country">India</td></tr>
+                <tr><td>Vikram Singh</td><td>Brightline Events</td><td>+91 98765 76342</td><td class="c-email">vikram@brightline.events</td><td class="c-country">India</td></tr>
+                <tr><td>Sandeep Rao</td><td>Deccan Agro Foods</td><td>+91 98765 33218</td><td class="c-email">sandeep@deccanagro.in</td><td class="c-country">India</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pile" aria-hidden="true">
+            <div class="bcard bcard--cream" style="--accent:#EFA300" data-x=".02" data-y=".04" data-r="-14"><b>Priya Sharma</b><i>Export Manager</i><span class="bcard__co">Sharma Handicrafts</span><span class="bcard__meta">+91 98765 43210</span></div>
+            <div class="bcard bcard--dark" style="--accent:#5B8DEF" data-x=".55" data-y=".02" data-r="9"><b>Lukas Weber</b><i>Head of Sourcing</i><span class="bcard__co">Haus &amp; Hof GmbH</span><span class="bcard__meta">l.weber@hausundhof.de</span></div>
+            <div class="bcard" style="--accent:#0044AC" data-x=".28" data-y=".22" data-r="-4"><b>Rahul Mehta</b><i>Senior Consultant</i><span class="bcard__co">Mehta Realty</span><span class="bcard__meta">+91 98765 11730</span></div>
+            <div class="bcard bcard--top" style="--accent:#09A84E" data-x=".62" data-y=".36" data-r="15"><b>Ananya Iyer</b><i>Area Sales Manager</i><span class="bcard__co">Kaveri Pharma</span></div>
+            <div class="bcard bcard--center" style="--accent:#B4432F" data-x=".04" data-y=".44" data-r="7"><b>Emily Carter</b><i>Buyer</i><span class="bcard__co">Oakridge Imports</span><span class="bcard__meta">+1 415 555 0142</span></div>
+            <div class="bcard bcard--cream" style="--accent:#8E3B8A" data-x=".36" data-y=".54" data-r="-11"><b>Fatima Khan</b><i>Founder</i><span class="bcard__co">Zaria Textiles</span><span class="bcard__meta">fatima@zariatextiles.in</span></div>
+            <div class="bcard bcard--dark" style="--accent:#EFA300" data-x=".6" data-y=".68" data-r="-6"><b>Vikram Singh</b><i>Director</i><span class="bcard__co">Brightline Events</span><span class="bcard__meta">+91 98765 76342</span></div>
+            <div class="bcard" style="--accent:#1D6F42" data-x=".14" data-y=".72" data-r="12"><b>Sandeep Rao</b><i>BD Head</i><span class="bcard__co">Deccan Agro Foods</span><span class="bcard__meta">sandeep@deccanagro.in</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BEFORE / AFTER ============ -->
+<section class="section section--tint" aria-labelledby="ba-title">
+  <div class="wrap">
+    <div class="section__head reveal">
+      <p class="eyebrow">Before and after</p>
+      <h2 class="h2" id="ba-title">Hours of typing, or a few minutes of checking.</h2>
+      <p class="lead">Drag the handle. On the left, Monday morning. On the right, the same cards after ScanMyCard.</p>
+    </div>
+    <div class="ba-grid">
+      <div class="ba reveal" data-ba>
+        <div class="ba__layer ba__before" role="img" aria-label="Before: a messy pile of business cards and a rubber band on a desk">
+          <div class="bcard bcard--cream" style="--accent:#EFA300;--x:4%;--y:8%;--r:-12deg"><b>Priya Sharma</b><i>Export Manager</i><span class="bcard__co">Sharma Handicrafts</span></div>
+          <div class="bcard bcard--dark" style="--accent:#5B8DEF;--x:30%;--y:3%;--r:8deg"><b>Lukas Weber</b><i>Head of Sourcing</i><span class="bcard__co">Haus &amp; Hof</span></div>
+          <div class="bcard" style="--accent:#0044AC;--x:56%;--y:10%;--r:-5deg"><b>Rahul Mehta</b><i>Senior Consultant</i><span class="bcard__co">Mehta Realty</span></div>
+          <div class="bcard bcard--top" style="--accent:#09A84E;--x:74%;--y:2%;--r:14deg"><b>Ananya Iyer</b><i>Area Sales Manager</i><span class="bcard__co">Kaveri Pharma</span></div>
+          <div class="bcard bcard--center" style="--accent:#B4432F;--x:14%;--y:36%;--r:16deg"><b>Emily Carter</b><i>Buyer</i><span class="bcard__co">Oakridge Imports</span></div>
+          <div class="bcard bcard--cream" style="--accent:#8E3B8A;--x:42%;--y:30%;--r:-18deg"><b>Fatima Khan</b><i>Founder</i><span class="bcard__co">Zaria Textiles</span></div>
+          <div class="bcard bcard--dark" style="--accent:#EFA300;--x:68%;--y:34%;--r:6deg"><b>Vikram Singh</b><i>Director</i><span class="bcard__co">Brightline Events</span></div>
+          <div class="bcard" style="--accent:#1D6F42;--x:2%;--y:64%;--r:-7deg"><b>Sandeep Rao</b><i>BD Head</i><span class="bcard__co">Deccan Agro Foods</span></div>
+          <div class="bcard bcard--top" style="--accent:#0A6E8C;--x:30%;--y:62%;--r:10deg"><b>Arjun Nair</b><i>Ops Manager</i><span class="bcard__co">Nair Logistics</span></div>
+          <div class="bcard bcard--cream" style="--accent:#C2410C;--x:56%;--y:66%;--r:-15deg"><b>Meera Kapoor</b><i>Partner</i><span class="bcard__co">Kapoor Brassware</span></div>
+          <div class="bcard bcard--center" style="--accent:#0044AC;--x:78%;--y:60%;--r:20deg"><b>Karan Desai</b><i>Sales Lead</i><span class="bcard__co">Desai Tiles</span></div>
+          <span class="band"></span>
+        </div>
+        <div class="ba__layer ba__after" role="img" aria-label="After: the same contacts as neat rows in an Excel sheet">
+          <div class="xls">
+            <div class="xls__ribbon">contacts.xlsx<span>Exported from ScanMyCard</span></div>
+            <div class="xls__tools"><i></i><i></i><i></i><i></i></div>
+            <table>
+              <thead><tr><th class="rn"></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th></tr></thead>
+              <tbody>
+                <tr><td class="rn">1</td><td>Name</td><td>Company</td><td>Designation</td><td>Phone</td><td>Email</td><td>Website</td><td>Country</td></tr>
+                <tr><td class="rn">2</td><td>Priya Sharma</td><td>Sharma Handicrafts</td><td>Export Manager</td><td>+91 98765 43210</td><td>priya@sharmahandicrafts.in</td><td>sharmahandicrafts.in</td><td>India</td></tr>
+                <tr><td class="rn">3</td><td>Lukas Weber</td><td>Haus &amp; Hof GmbH</td><td>Head of Sourcing</td><td>+49 151 0000 4421</td><td>l.weber@hausundhof.de</td><td>hausundhof.de</td><td>Germany</td></tr>
+                <tr><td class="rn">4</td><td>Rahul Mehta</td><td>Mehta Realty</td><td>Senior Consultant</td><td>+91 98765 11730</td><td>rahul@mehtarealty.in</td><td>mehtarealty.in</td><td>India</td></tr>
+                <tr><td class="rn">5</td><td>Ananya Iyer</td><td>Kaveri Pharma</td><td>Area Sales Manager</td><td>+91 98765 21876</td><td>ananya@kaveripharma.in</td><td>kaveripharma.in</td><td>India</td></tr>
+                <tr><td class="rn">6</td><td>Emily Carter</td><td>Oakridge Imports</td><td>Buyer</td><td>+1 415 555 0142</td><td>emily@oakridgeimports.com</td><td>oakridgeimports.com</td><td>USA</td></tr>
+                <tr><td class="rn">7</td><td>Fatima Khan</td><td>Zaria Textiles</td><td>Founder</td><td>+91 98765 11904</td><td>fatima@zariatextiles.in</td><td>zariatextiles.in</td><td>India</td></tr>
+                <tr><td class="rn">8</td><td>Vikram Singh</td><td>Brightline Events</td><td>Director</td><td>+91 98765 76342</td><td>vikram@brightline.events</td><td>brightline.events</td><td>India</td></tr>
+                <tr><td class="rn">9</td><td>Sandeep Rao</td><td>Deccan Agro Foods</td><td>BD Head</td><td>+91 98765 33218</td><td>sandeep@deccanagro.in</td><td>deccanagro.in</td><td>India</td></tr>
+                <tr><td class="rn">10</td><td>Arjun Nair</td><td>Nair Logistics</td><td>Ops Manager</td><td>+91 98765 50981</td><td>arjun@nairlogistics.in</td><td>nairlogistics.in</td><td>India</td></tr>
+                <tr><td class="rn">11</td><td>Meera Kapoor</td><td>Kapoor Brassware</td><td>Partner</td><td>+91 98765 62210</td><td>meera@kapoorbrass.in</td><td>kapoorbrass.in</td><td>India</td></tr>
+                <tr><td class="rn">12</td><td>Karan Desai</td><td>Desai Tiles</td><td>Sales Lead</td><td>+91 98765 70456</td><td>karan@desaitiles.in</td><td>desaitiles.in</td><td>India</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <span class="ba__tag ba__tag--before">Before</span>
+        <span class="ba__tag ba__tag--after">After</span>
+        <input class="ba__range" type="range" min="0" max="100" value="50" step="1" aria-label="Compare the card pile with the Excel sheet. Move left to see more of the sheet.">
+        <div class="ba__divider" aria-hidden="true"><span class="ba__knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></span></div>
+      </div>
+      <div class="stats">
+        <div class="stat stat--bad reveal"><strong>≈ 3 hours</strong><p>to type 100 cards into Excel by hand</p></div>
+        <div class="stat stat--good reveal" style="--rd:.08s"><strong>≈ 10 minutes</strong><p>to scan the same 100 cards and check the results</p></div>
+        <p class="footnote reveal">Our estimates, not a study: about 2 minutes to type 8 fields per card by hand, against snapping each card and a quick review in the app. Your time will vary with the cards and your connection.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="section" id="how-it-works" aria-labelledby="how-title">
+  <div class="wrap">
+    <div class="section__head reveal">
+      <p class="eyebrow">How it works</p>
+      <h2 class="h2" id="how-title">Snap. Let the AI type. Export.</h2>
+      <p class="lead">Three steps, and the only typing you do is fixing the odd smudged digit.</p>
+    </div>
+    <ol class="steps">
+      <li class="step reveal">
+        <span class="step__num">01</span>
+        <h3>Snap the stack</h3>
+        <p>Photograph cards one after another with your camera, or pick photos from your gallery. Queue up as many as you like.</p>
+        <div class="step__art art-snap" aria-hidden="true">
+          <div class="bcard bcard--cream" style="--accent:#EFA300"><b>Priya Sharma</b><i>Export Manager</i><span class="bcard__co">Sharma Handicrafts</span></div>
+          <div class="bcard" style="--accent:#0044AC"><b>Rahul Mehta</b><i>Consultant</i><span class="bcard__co">Mehta Realty</span></div>
+          <span class="viewfinder"></span>
+          <span class="shutter"></span>
+        </div>
+      </li>
+      <li class="step reveal" style="--rd:.08s">
+        <span class="step__num">02</span>
+        <h3>AI reads every card</h3>
+        <p>Google Gemini AI pulls out 8 fields per card in seconds. Review each one, fix anything, then save the cards you want.</p>
+        <div class="step__art art-ai" aria-hidden="true">
+          <div class="row"><span>Name</span><b class="ok"></b></div>
+          <div class="row"><span>Company</span><b class="ok"></b></div>
+          <div class="row"><span>Phone</span><b style="--w:80%"></b></div>
+          <div class="row"><span>Email</span><b style="--w:45%"></b></div>
+          <div class="row"><span>Website</span><b style="--w:15%"></b></div>
+        </div>
+      </li>
+      <li class="step reveal" style="--rd:.16s">
+        <span class="step__num">03</span>
+        <h3>Export to Excel</h3>
+        <p>Contacts land in folders. Export everything, or one folder, as an .xlsx file and share it on WhatsApp, email or Drive.</p>
+        <div class="step__art art-export" aria-hidden="true">
+          <div class="file"><span class="xl">X</span>Trade fair leads.xlsx</div>
+          <div class="targets"><span>WhatsApp</span><span>Email</span><span>Drive</span></div>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ TRY IT DEMO ============ -->
+<section class="section section--tint" id="try" aria-labelledby="try-title">
+  <div class="wrap">
+    <div class="section__head reveal">
+      <p class="eyebrow">Try it</p>
+      <h2 class="h2" id="try-title">Watch the AI read a card.</h2>
+      <p class="lead">Press scan. This is a scripted preview that runs in your browser, so it doesn't use the real AI. The app does the same thing with your own cards.</p>
+    </div>
+    <div class="demo" data-demo>
+      <div class="demo__stage">
+        <div class="demo__card" data-demo-card>
+          <div class="vcard" style="--vc:#B45309">
+            <div class="vcard__who"><b>Priya Sharma</b><i>Export Manager</i></div>
+            <div class="vcard__logo" aria-hidden="true">SH</div>
+            <div class="vcard__co">Sharma Handicrafts Pvt. Ltd.</div>
+            <div class="vcard__lines">
+              <span>+91 98765 43210</span>
+              <span>priya@sharmahandicrafts.in</span>
+              <span>www.sharmahandicrafts.in</span>
+              <span>India</span>
+              <span class="full">14 Civil Lines, Moradabad, Uttar Pradesh 244001</span>
+            </div>
+          </div>
+          <div class="glare"></div>
+          <div class="scanline"></div>
+        </div>
+        <div class="demo__controls">
+          <button class="btn" type="button" data-demo-scan>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></svg>
+            <span data-demo-label>Scan this card</span>
+          </button>
+          <button class="btn btn--ghost" type="button" data-demo-next>Try another card</button>
+        </div>
+      </div>
+      <div class="result">
+        <div class="result__head">Extracted contact <span class="result__status" data-demo-status>Waiting to scan</span></div>
+        <dl data-demo-fields>
+          <div class="rf"><dt>Name</dt><dd><span class="ph"></span></dd><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="rf"><dt>Company</dt><dd><span class="ph"></span></dd><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="rf"><dt>Designation</dt><dd><span class="ph"></span></dd><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="rf"><dt>Phone</dt><dd><span class="ph"></span></dd><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="rf"><dt>Email</dt><dd><span class="ph"></span></dd><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="rf"><dt>Website</dt><dd><span class="ph"></span></dd><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="rf"><dt>Country</dt><dd><span class="ph"></span></dd><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="rf"><dt>Address</dt><dd><span class="ph"></span></dd><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+        </dl>
+        <p class="sr-only" aria-live="polite" data-demo-live></p>
+        <div class="result__foot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          In the app you can edit any field before you save.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section class="section" id="features" aria-labelledby="features-title">
+  <div class="wrap">
+    <div class="section__head reveal">
+      <p class="eyebrow">Features</p>
+      <h2 class="h2" id="features-title">Everything between the card and the follow-up.</h2>
+    </div>
+    <div class="bento">
+      <article class="feat f-ai reveal">
+        <div class="feat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></div>
+        <h3>AI reads 8 fields from every card</h3>
+        <p>Powered by Google Gemini. Portrait or landscape, plain or busy designs. You review every field and fix anything before it's saved.</p>
+        <ul class="fields" aria-label="Fields extracted">
+          <li>Name</li><li>Company</li><li>Designation</li><li>Phone</li><li>Email</li><li>Website</li><li>Country</li><li>Address</li>
+        </ul>
+      </article>
+      <article class="feat f-multi reveal" style="--rd:.06s">
+        <div class="feat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="14" height="10" rx="2"/><path d="M3 13V6a2 2 0 0 1 2-2h11"/></svg></div>
+        <h3>Scan the whole stack</h3>
+        <p>Capture card after card, or pick photos from your gallery. The app sends them in batches, and each batch is usually back in a few seconds.</p>
+      </article>
+      <article class="feat f-folders reveal">
+        <div class="feat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+        <h3>Folders, search, bulk actions</h3>
+        <p>One folder per fair, city or client. Search, multi-select, bulk move and bulk delete.</p>
+        <div class="mini-folders" aria-hidden="true">
+          <div><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>IHGF Delhi · Oct<span>212</span></div>
+          <div><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Pune site visits<span>48</span></div>
+          <div><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Dealers, West zone<span>96</span></div>
+        </div>
+      </article>
+      <article class="feat f-export reveal" style="--rd:.06s">
+        <div class="feat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8l4 5m0-5l-4 5M14 9h3M14 13h3M8 17h9"/></svg></div>
+        <h3>Excel export in one tap</h3>
+        <p>Export all your contacts, or just one folder, as an .xlsx file. Share it to WhatsApp, email, Google Drive or anywhere your phone can send a file. Ready to paste into your CRM or your team's sheet.</p>
+      </article>
+      <article class="feat f-sync reveal" style="--rd:.12s">
+        <div class="feat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.5 12.5 3.5 3.5 0 0 0 6 19z"/></svg></div>
+        <h3>Google sign-in and cloud sync</h3>
+        <p>Sign in with Google or email. Your contacts live in your account, so they survive a phone change. Notifications tell you when scans finish, credits run low or a payment goes through.</p>
+      </article>
+      <article class="feat f-pay reveal">
+        <div>
+          <div class="feat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg></div>
+          <h3>Pay per card. No subscription.</h3>
+          <p>1 credit = 1 card. Buy a pack when you need it, use it whenever you like. Credits never expire, and a failed scan gives your credit back automatically.</p>
+        </div>
+        <div class="f-pay__nums">
+          <div><strong>5</strong><span>free scans to start</span></div>
+          <div><strong>₹0.60</strong><span>lowest price per card + GST</span></div>
+          <div><strong>0</strong><span>monthly fees</span></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ USE CASES ============ -->
+<section class="section section--tint" id="use-cases" aria-labelledby="cases-title">
+  <div class="wrap">
+    <div class="section__head reveal">
+      <p class="eyebrow">Use cases</p>
+      <h2 class="h2" id="cases-title">Wherever cards pile up.</h2>
+    </div>
+    <div class="cases">
+      <article class="case reveal">
+        <div class="case__top">
+          <span class="case__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6"/></svg></span>
+          <div><h3>Trade fairs</h3><span class="case__who">Exporters &amp; importers</span></div>
+        </div>
+        <p>Day three at the IHGF Delhi Fair and there are 200 buyer cards in a zip-lock bag. Scan them in the hotel room that night into an "IHGF Oct" folder. The Country field tells your German buyers from your American ones, and the sheet reaches your team before breakfast.</p>
+        <div class="case__meta"><span>Folder per fair</span><span>Country field</span><span>Share the .xlsx</span></div>
+      </article>
+      <article class="case reveal" style="--rd:.06s">
+        <div class="case__top">
+          <span class="case__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M14 7h7v7"/></svg></span>
+          <div><h3>Sales teams</h3><span class="case__who">Sales, BD &amp; pharma reps</span></div>
+        </div>
+        <p>A field rep meets 15 dealers, doctors or distributors a week. Scan each card in the car park after the meeting. On Friday, export the week's folder for the review, or paste it into the CRM. No more cards dying in the glovebox.</p>
+        <div class="case__meta"><span>Scan after each meeting</span><span>Weekly export</span></div>
+      </article>
+      <article class="case reveal">
+        <div class="case__top">
+          <span class="case__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>
+          <div><h3>Real estate</h3><span class="case__who">Agents &amp; channel partners</span></div>
+        </div>
+        <p>Property expos, broker meets, site visits: everyone hands you a card. Keep one folder per project, call back the hot ones the same evening, and send the full list to your developer partner as an Excel file.</p>
+        <div class="case__meta"><span>Folder per project</span><span>Same-day callbacks</span></div>
+      </article>
+      <article class="case reveal" style="--rd:.06s">
+        <div class="case__top">
+          <span class="case__emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></span>
+          <div><h3>Events &amp; networking</h3><span class="case__who">Attendees, organisers &amp; founders</span></div>
+        </div>
+        <p>A conference, a startup mixer, a chamber of commerce dinner. Forty conversations, forty cards. Scan them on the cab ride home and send your follow-ups the next morning, while people still remember your face.</p>
+        <div class="case__meta"><span>Scan on the way home</span><span>Next-morning follow-up</span></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRICING ============ -->
+<!-- PRICING: prices are before GST. Edit data-price / data-cards on each .plan; the per-card and GST-inclusive figures are recalculated by site.js. Keep the visible text in sync for no-JS visitors, and update /pricing and the JSON-LD above too. -->
+<section class="section" id="pricing" aria-labelledby="pricing-title">
+  <div class="wrap">
+    <div class="section__head reveal">
+      <p class="eyebrow">Pricing</p>
+      <h2 class="h2" id="pricing-title">Pay for cards, not for months.</h2>
+      <p class="lead">Prepaid credit packs. 1 credit = 1 card. No subscription, and credits never expire.</p>
+    </div>
+    <p class="free-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z"/></svg>Every new account starts with 5 free scans.</p>
+    <div class="plans-wrap" data-plans>
+      <div class="seg" role="group" aria-label="Pack type">
+        <button type="button" aria-pressed="true" data-plan-tab="personal">Personal</button>
+        <button type="button" aria-pressed="false" data-plan-tab="business">Business</button>
+      </div>
+      <div class="plans" data-plan-group="personal">
+        <h3 class="plans__label">Personal packs</h3>
+        <div class="plans__grid">
+          <article class="plan" data-price="99" data-cards="50">
+            <h4 class="plan__name">Starter</h4>
+            <p class="plan__fit">For one busy week of meetings</p>
+            <p class="plan__price"><strong>₹99</strong><span class="gst">+18% GST</span></p>
+            <p class="plan__total" data-total>₹116.82 including GST</p>
+            <ul class="plan__rows">
+              <li><span>Cards</span><b>50</b></li>
+              <li class="plan__per"><span>Per card</span><b data-per>₹1.98</b></li>
+            </ul>
+          </article>
+          <article class="plan plan--feature" data-price="499" data-cards="750">
+            <span class="plan__badge">Most popular</span>
+            <h4 class="plan__name">Popular</h4>
+            <p class="plan__fit">For a season of trade fairs and events</p>
+            <p class="plan__price"><strong>₹499</strong><span class="gst">+18% GST</span></p>
+            <p class="plan__total" data-total>₹588.82 including GST</p>
+            <ul class="plan__rows">
+              <li><span>Cards</span><b>750</b></li>
+              <li class="plan__per"><span>Per card</span><b data-per>₹0.67</b></li>
+            </ul>
+          </article>
+          <article class="plan" data-price="999" data-cards="1000">
+            <h4 class="plan__name">Pro</h4>
+            <p class="plan__fit">For people who network all year</p>
+            <p class="plan__price"><strong>₹999</strong><span class="gst">+18% GST</span></p>
+            <p class="plan__total" data-total>₹1,178.82 including GST</p>
+            <ul class="plan__rows">
+              <li><span>Cards</span><b>1,000</b></li>
+              <li class="plan__per"><span>Per card</span><b data-per>₹1.00</b></li>
+            </ul>
+          </article>
+        </div>
+      </div>
+      <div class="plans" data-plan-group="business">
+        <h3 class="plans__label">Business packs</h3>
+        <div class="plans__grid">
+          <article class="plan" data-price="2499" data-cards="2775">
+            <h4 class="plan__name">Business Starter</h4>
+            <p class="plan__fit">For a small sales team</p>
+            <p class="plan__price"><strong>₹2,499</strong><span class="gst">+18% GST</span></p>
+            <p class="plan__total" data-total>₹2,948.82 including GST</p>
+            <ul class="plan__rows">
+              <li><span>Cards</span><b>2,775</b></li>
+              <li class="plan__per"><span>Per card</span><b data-per>₹0.90</b></li>
+            </ul>
+          </article>
+          <article class="plan" data-price="3999" data-cards="5710">
+            <h4 class="plan__name">Business Pro</h4>
+            <p class="plan__fit">For exhibitors and multi-city teams</p>
+            <p class="plan__price"><strong>₹3,999</strong><span class="gst">+18% GST</span></p>
+            <p class="plan__total" data-total>₹4,718.82 including GST</p>
+            <ul class="plan__rows">
+              <li><span>Cards</span><b>5,710</b></li>
+              <li class="plan__per"><span>Per card</span><b data-per>₹0.70</b></li>
+            </ul>
+          </article>
+          <article class="plan plan--feature" data-price="5999" data-cards="10000">
+            <span class="plan__badge plan__badge--amber">Lowest per-card price</span>
+            <h4 class="plan__name">Business Enterprise</h4>
+            <p class="plan__fit">For large teams and repeat exhibitors</p>
+            <p class="plan__price"><strong>₹5,999</strong><span class="gst">+18% GST</span></p>
+            <p class="plan__total" data-total>₹7,078.82 including GST</p>
+            <ul class="plan__rows">
+              <li><span>Cards</span><b>10,000</b></li>
+              <li class="plan__per"><span>Per card</span><b data-per>₹0.60</b></li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </div>
+    <ul class="price-notes">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Prices in INR, before 18% GST</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Per-card price before GST</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Failed scans refunded automatically</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>UPI, cards, netbanking and wallets via Razorpay</li>
+    </ul>
+    <p style="margin-top:20px"><a href="/pricing">See the full price table and a pack picker →</a></p>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="section section--tint" id="faq" aria-labelledby="faq-title">
+  <div class="wrap faq-grid">
+    <div class="section__head">
+      <p class="eyebrow">FAQ</p>
+      <h2 class="h2" id="faq-title">Questions, answered.</h2>
+      <p class="lead">Still stuck? <a href="/support">Message us</a> on WhatsApp or email.</p>
+    </div>
+    <div class="faq">
+      <details><summary>How many cards can I scan at once?</summary><div class="faq__a"><p>As many as you like. Select them in the queue and the app processes them in batches.</p></div></details>
+      <details><summary>How accurate is it?</summary><div class="faq__a"><p>Very accurate on clear, well-lit cards. You can review and fix every field before saving.</p></div></details>
+      <details><summary>What if a scan fails?</summary><div class="faq__a"><p>You don't lose credits. Failed scans are refunded automatically.</p></div></details>
+      <details><summary>Do credits expire?</summary><div class="faq__a"><p>No. Buy a pack today and use it next year if you like.</p></div></details>
+      <details><summary>Can I export to Excel?</summary><div class="faq__a"><p>Yes. Export everything, or one folder, as .xlsx and share it anywhere: WhatsApp, email, Drive and so on.</p></div></details>
+      <details><summary>Is my data private?</summary><div class="faq__a"><p>Yes. Only you can access your contacts. We don't sell data or use your cards for ads. Card images are processed to read the text and are not stored on our servers afterwards. Details are in our <a href="/privacy">privacy policy</a>.</p></div></details>
+      <details><summary>How much does it cost?</summary><div class="faq__a"><p>You start with 5 free scans. After that, prepaid packs start at ₹99 for 50 cards (+18% GST). 1 credit = 1 card, with no subscription. See <a href="/pricing">pricing</a>.</p></div></details>
+      <details><summary>How do I pay?</summary><div class="faq__a"><p>Inside the app, through Razorpay: UPI, debit and credit cards, netbanking and wallets. We never see your full card or UPI details.</p></div></details>
+      <details><summary>Is there an iPhone app?</summary><div class="faq__a"><p>Android first; iOS is coming.</p></div></details>
+      <details><summary>How do I delete my account?</summary><div class="faq__a"><p>In the app: <strong>Profile</strong> tab → tap your profile card → <strong>Delete Account</strong>. Or request it on our <a href="/delete-account">account deletion page</a>.</p></div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="section" aria-labelledby="cta-title">
+  <div class="wrap">
+    <div class="cta reveal">
+      <div>
+        <h2 id="cta-title">Your next stack of cards deserves better than a rubber band.</h2>
+        <p>Install ScanMyCard, scan your first 5 cards free, and watch your own pile turn into a spreadsheet.</p>
+        <a class="play-badge" href="https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard" data-play aria-label="Get it on Google Play">
+          <svg class="play-badge__logo" viewBox="0 0 24 26" aria-hidden="true"><path fill="#00D7FE" d="M1.2 1.1C.9 1.4.8 1.9.8 2.5v21c0 .6.1 1.1.4 1.4L12.9 13z"/><path fill="#FFCE00" d="M16.8 16.9 12.9 13l3.9-3.9 4.7 2.7c1.3.8 1.3 2 0 2.8z"/><path fill="#FF3A44" d="M16.8 16.9 12.9 13 1.2 24.9c.4.5 1.2.5 2 .1z"/><path fill="#00F076" d="M16.8 9.1 3.2 1C2.4.6 1.6.6 1.2 1.1L12.9 13z"/></svg>
+          <span class="play-badge__text"><small>Get it on</small><strong>Google Play</strong></span>
+        </a>
+        <ul class="ticks">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Android</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>5 free scans</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>No subscription</li>
+        </ul>
+      </div>
+      <div class="cta__art" aria-hidden="true">
+        <div class="bcard bcard--cream" style="--accent:#EFA300;--r:-14deg;left:4%;top:12%"><b>Priya Sharma</b><i>Export Manager</i><span class="bcard__co">Sharma Handicrafts</span></div>
+        <div class="bcard bcard--dark" style="--accent:#5B8DEF;--r:12deg;right:2%;bottom:10%"><b>Lukas Weber</b><i>Head of Sourcing</i><span class="bcard__co">Haus &amp; Hof GmbH</span></div>
+        <img class="cta__icon" src="/assets/images/app-icon-256.png" width="160" height="160" alt="" loading="lazy" decoding="async">
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <a class="brand" href="/" aria-label="ScanMyCard home">
+          <img src="/assets/images/mark-128.png" width="32" height="32" alt="">
+          <span class="brand__word">Scan<span>My</span>Card</span>
+        </a>
+        <p>Turn paper business cards into organised contacts and Excel sheets with AI. Made by WeCanServe.</p>
+      </div>
+      <div>
+        <h2>Product</h2>
+        <ul>
+          <li><a href="/#how-it-works">How it works</a></li>
+          <li><a href="/#features">Features</a></li>
+          <li><a href="/pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Legal</h2>
+        <ul>
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/terms">Terms of Service</a></li>
+          <li><a href="/refund-policy">Refund &amp; Cancellation</a></li>
+          <li><a href="/delete-account">Delete account</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Help</h2>
+        <ul>
+          <li><a href="/support">Support</a></li>
+          <li><a href="mailto:wecanserve23@gmail.com">wecanserve23@gmail.com</a></li>
+          <li><a href="https://wa.me/919029005313" rel="noopener">WhatsApp +91 90290 05313</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© 2026 ScanMyCard by WeCanServe</span>
+      <span><a href="mailto:wecanserve23@gmail.com">wecanserve23@gmail.com</a></span>
+    </div>
+  </div>
+</footer>
+
+<div class="playbar" data-playbar>
+  <img src="/assets/images/app-icon-256.png" width="38" height="38" alt="">
+  <div class="playbar__txt"><strong>ScanMyCard</strong><span>5 free scans · Android</span></div>
+  <a class="play-badge play-badge--sm" href="https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard" data-play aria-label="Get it on Google Play">
+    <svg class="play-badge__logo" viewBox="0 0 24 26" aria-hidden="true"><path fill="#00D7FE" d="M1.2 1.1C.9 1.4.8 1.9.8 2.5v21c0 .6.1 1.1.4 1.4L12.9 13z"/><path fill="#FFCE00" d="M16.8 16.9 12.9 13l3.9-3.9 4.7 2.7c1.3.8 1.3 2 0 2.8z"/><path fill="#FF3A44" d="M16.8 16.9 12.9 13 1.2 24.9c.4.5 1.2.5 2 .1z"/><path fill="#00F076" d="M16.8 9.1 3.2 1C2.4.6 1.6.6 1.2 1.1L12.9 13z"/></svg>
+    <span class="play-badge__text"><small>Get it on</small><strong>Google Play</strong></span>
+  </a>
+</div>
+</body>
+</html>
