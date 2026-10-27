@@ -143,18 +143,7 @@ export default function ProfileScreen() {
 
   const pickImage = async () => {
     try {
-      const permission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (!permission.granted) {
-        Alert.alert(
-          "Permission Required",
-          "Please allow photo access to choose a profile picture."
-        );
-
-        return;
-      }
-
+      // The system photo picker needs no storage permission.
       const result =
         await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ["images"],
