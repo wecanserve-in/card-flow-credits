@@ -233,6 +233,12 @@ async def delete_account(
     except Exception:
         pass
 
+    # Free the user's referral code. The free-scan records (hashed phone/email) are kept on purpose.
+    user_snapshot = db.collection("users").document(uid).get()
+    referral_code = (user_snapshot.to_dict() or {}).get("referralCode") if user_snapshot.exists else None
+    if referral_code:
+        db.collection("referralCodes").document(referral_code).delete()
+
     db.collection("users").document(uid).delete()
 
     from firebase_admin import auth as firebase_auth

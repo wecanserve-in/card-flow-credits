@@ -15,7 +15,8 @@ service cloud.firestore {
         'lastPaymentId', 'lastOrderId',
         'subscriptionActive', 'subscriptionExpiry', 'subscriptionStartedAt',
         'planId', 'planName',
-        'freeScansStatus', 'freeScansGranted'
+        'freeScansStatus', 'freeScansGranted',
+        'referralCode', 'referralCount', 'referralScansEarned', 'referredBy'
       ];
     }
 
@@ -35,6 +36,10 @@ service cloud.firestore {
         && fieldIs(data, 'subscriptionActive', false)
         && fieldIs(data, 'freeScansStatus', 'pending')
         && !('freeScansGranted' in data)
+        && !('referralCode' in data)
+        && !('referralCount' in data)
+        && !('referralScansEarned' in data)
+        && !('referredBy' in data)
         && !('lastPaymentId' in data)
         && !('lastOrderId' in data)
         && !('planId' in data);
@@ -66,7 +71,7 @@ service cloud.firestore {
       }
     }
 
-    // processedPayments and everything else: backend only.
+    // processedPayments, referralCodes, referrals, freeScan* and everything else: backend only.
     match /{document=**} {
       allow read, write: if false;
     }

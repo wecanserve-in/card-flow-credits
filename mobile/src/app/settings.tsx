@@ -32,6 +32,7 @@ import {
   db,
 } from "../services/firebase";
 import BottomNav from "../components/BottomNav";
+import ReferralCard from "../components/ReferralCard";
 import { User } from "../types/user";
 
 type MenuItem = {
@@ -321,6 +322,9 @@ export default function SettingsScreen() {
               />
             </View>
           </TouchableOpacity>
+
+          {/* Invite friends */}
+          <ReferralCard user={userData} />
 
           {/* Settings Section */}
           <View style={styles.sectionHeader}>

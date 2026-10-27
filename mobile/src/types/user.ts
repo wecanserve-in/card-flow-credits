@@ -43,6 +43,16 @@ export interface User {
   freeScansGranted?: number;
 
 
+  // Referrals (written by the server)
+  referralCode?: string;
+
+  referralCount?: number;
+
+  referralScansEarned?: number;
+
+  referredBy?: string;
+
+
   cardLimit?: number;
 
   cardsUsed?: number;

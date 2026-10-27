@@ -1,5 +1,6 @@
 import type { User as FirebaseUser } from "firebase/auth";
 import { doc, runTransaction } from "firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Application from "expo-application";
 import { Platform } from "react-native";
 
@@ -7,7 +8,12 @@ import { api } from "./api";
 import { auth, db } from "./firebase";
 
 // Shown in the app; the server decides the real amount (backend/free_scans.py).
-export const FREE_SCANS = 25;
+export const FREE_SCANS = 10;
+
+// Scans a user earns when a friend joins with their referral code (backend/free_scans.py).
+export const REFERRAL_BONUS = 10;
+
+const PENDING_REFERRAL_KEY = "pendingReferralCode";
 
 type AuthProvider = "email" | "google";
 
@@ -120,13 +126,18 @@ export async function claimFreeScans(): Promise<FreeScansResult> {
       return "error";
     }
 
+    const referralCode = await getPendingReferralCode();
+
     const response = await api.post("/account/claim-free-scans", {
       deviceId,
+      referralCode: referralCode || undefined,
     });
 
     const status = response.data?.status;
 
     if (status === "granted" || status === "already_used") {
+      // The code has been used (or can't be used any more).
+      await setPendingReferralCode(null);
       return status;
     }
 
@@ -138,5 +149,65 @@ export async function claimFreeScans(): Promise<FreeScansResult> {
 
     console.warn("[FreeScans] Claim failed:", error?.message);
     return "error";
+  }
+}
+
+/**
+ * The friend's code typed at signup. Kept on the phone until the free scans are
+ * claimed, which can be later (after the user verifies their email).
+ */
+export async function setPendingReferralCode(code: string | null): Promise<void> {
+  try {
+    if (code) {
+      await AsyncStorage.setItem(PENDING_REFERRAL_KEY, code);
+    } else {
+      await AsyncStorage.removeItem(PENDING_REFERRAL_KEY);
+    }
+  } catch {
+    // Not critical: the user just won't get the referral bonus applied.
+  }
+}
+
+async function getPendingReferralCode(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(PENDING_REFERRAL_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Cleans up what the user typed: upper case, no spaces or dashes. */
+export function cleanReferralCode(code: string): string {
+  return code.replace(/[\s-]/g, "").toUpperCase();
+}
+
+/** Returns true / false, or null if the server couldn't be reached. */
+export async function isValidReferralCode(code: string): Promise<boolean | null> {
+  try {
+    const response = await api.get("/account/referral-check", {
+      params: { code: cleanReferralCode(code) },
+    });
+
+    return Boolean(response.data?.valid);
+  } catch {
+    return null;
+  }
+}
+
+export type ReferralInfo = {
+  code: string;
+  referralCount: number;
+  referralScansEarned: number;
+  bonusPerReferral: number;
+};
+
+/** The user's own referral code (created by the server the first time). */
+export async function getMyReferralInfo(): Promise<ReferralInfo | null> {
+  try {
+    const response = await api.post("/account/referral-code");
+    return response.data as ReferralInfo;
+  } catch (error: any) {
+    console.warn("[Referral] Could not load code:", error?.message);
+    return null;
   }
 }

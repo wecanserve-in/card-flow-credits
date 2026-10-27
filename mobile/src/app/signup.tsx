@@ -35,8 +35,11 @@ import { auth } from "../services/firebase";
 
 import { signInWithGoogle } from "../services/googleAuth";
 import {
+  cleanReferralCode,
   ensureUserDocument,
   FREE_SCANS,
+  isValidReferralCode,
+  setPendingReferralCode,
 } from "../services/userService";
 
 export default function SignupScreen() {
@@ -55,6 +58,9 @@ export default function SignupScreen() {
     confirmPassword,
     setConfirmPassword,
   ] = useState("");
+
+  const [referralCode, setReferralCode] =
+    useState("");
 
   const [
     showPassword,
@@ -75,6 +81,37 @@ export default function SignupScreen() {
 
   const isLoading =
     loadingMethod !== null;
+
+  /**
+   * Checks the optional referral code and keeps it for when the free
+   * scans are claimed. Returns false if the user should fix the code first.
+   */
+  const prepareReferralCode =
+    async (): Promise<boolean> => {
+      const code = cleanReferralCode(
+        referralCode
+      );
+
+      if (!code) {
+        await setPendingReferralCode(null);
+        return true;
+      }
+
+      const valid =
+        await isValidReferralCode(code);
+
+      if (valid === false) {
+        Alert.alert(
+          "Invalid Referral Code",
+          "This referral code doesn't exist. Please check it, or leave the box empty."
+        );
+        return false;
+      }
+
+      // valid, or the server couldn't be reached (it re-checks the code later).
+      await setPendingReferralCode(code);
+      return true;
+    };
 
   const handleSignup = async () => {
     if (
@@ -111,6 +148,10 @@ export default function SignupScreen() {
 
     try {
       setLoadingMethod("email");
+
+      if (!(await prepareReferralCode())) {
+        return;
+      }
 
       const userCredential =
         await createUserWithEmailAndPassword(
@@ -161,6 +202,10 @@ export default function SignupScreen() {
     async () => {
       try {
         setLoadingMethod("google");
+
+        if (!(await prepareReferralCode())) {
+          return;
+        }
 
         const userCredential =
           await signInWithGoogle();
@@ -581,6 +626,43 @@ export default function SignupScreen() {
                   </Text>
                 </View>
               )}
+            </View>
+
+            {/* Referral code (optional) */}
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Referral code (optional)
+              </Text>
+
+              <View
+                style={
+                  styles.inputContainer
+                }
+              >
+                <View
+                  style={styles.inputIcon}
+                >
+                  <Ionicons
+                    name="gift-outline"
+                    size={19}
+                    color="#09A84E"
+                  />
+                </View>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Friend's code, e.g. K7P2QX"
+                  placeholderTextColor="#A0A8A3"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={12}
+                  value={referralCode}
+                  onChangeText={setReferralCode}
+                  editable={!isLoading}
+                  returnKeyType="done"
+                />
+              </View>
             </View>
 
             {/* Create Account */}

@@ -24,6 +24,10 @@ import {
   useCameraPermissions,
 } from "expo-camera";
 import * as ImageManipulator from "expo-image-manipulator";
+import * as ImagePicker from "expo-image-picker";
+
+// How many photos can be picked from the gallery in one go.
+const GALLERY_PICK_LIMIT = 30;
 
 
 
@@ -435,6 +439,109 @@ export default function ScannerScreen() {
     }
   };
 
+  /**
+   * Adds card photos from the gallery. The system photo picker needs no
+   * storage permission. Each photo is resized like a camera capture.
+   */
+  const pickFromGallery = async () => {
+    if (isCapturing) {
+      return;
+    }
+
+    try {
+      const result =
+        await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ["images"],
+          allowsMultipleSelection: true,
+          selectionLimit: GALLERY_PICK_LIMIT,
+          quality: 1,
+        });
+
+      if (result.canceled || !result.assets?.length) {
+        return;
+      }
+
+      setIsCapturing(true);
+
+      const added: string[] = [];
+      const orientations: Record<string, CardOrientation> = {};
+
+      for (const asset of result.assets) {
+        try {
+          const isLandscape =
+            !asset.width ||
+            !asset.height ||
+            asset.width >= asset.height;
+
+          const resized =
+            await ImageManipulator.manipulateAsync(
+              asset.uri,
+              [
+                {
+                  resize: isLandscape
+                    ? { width: Math.min(asset.width || 1200, 1200) }
+                    : { height: Math.min(asset.height || 1200, 1200) },
+                },
+              ],
+              {
+                compress: 0.7,
+                format:
+                  ImageManipulator.SaveFormat.JPEG,
+              }
+            );
+
+          if (resized?.uri) {
+            added.push(resized.uri);
+            orientations[resized.uri] = isLandscape
+              ? "landscape"
+              : "portrait";
+          }
+        } catch (error) {
+          console.warn(
+            "Could not prepare gallery image:",
+            error
+          );
+        }
+      }
+
+      if (added.length === 0) {
+        Alert.alert(
+          "Couldn't Add Photos",
+          "The selected photos could not be opened. Please try other photos."
+        );
+        return;
+      }
+
+      (globalThis as any).scannedCardOrientations = {
+        ...((globalThis as any).scannedCardOrientations || {}),
+        ...orientations,
+      };
+
+      setImages((previousImages) => [
+        ...previousImages,
+        ...added.filter(
+          (uri) => !previousImages.includes(uri)
+        ),
+      ]);
+
+      if (added.length < result.assets.length) {
+        Alert.alert(
+          "Some Photos Skipped",
+          `${result.assets.length - added.length} photo(s) could not be opened and were skipped.`
+        );
+      }
+    } catch (error) {
+      console.error("Gallery pick error:", error);
+
+      Alert.alert(
+        "Gallery Unavailable",
+        "Could not open your photos. Please try again."
+      );
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
   const handleUpload = () => {
     if (images.length === 0) {
       Alert.alert(
@@ -821,7 +928,7 @@ export default function ScannerScreen() {
                   styles.counterSubtitle
                 }
               >
-                You can scan multiple cards
+                Scan or pick from gallery
               </Text>
             </View>
           </View>
@@ -842,31 +949,30 @@ export default function ScannerScreen() {
         </View>
 
         <View style={styles.controlRow}>
-          <View
+          <TouchableOpacity
+            activeOpacity={0.75}
+            disabled={isCapturing}
             style={styles.sidePlaceholder}
+            onPress={pickFromGallery}
+            accessibilityRole="button"
+            accessibilityLabel="Upload card photos from gallery"
           >
-            <Ionicons
-              name={
-                cardOrientation ===
-                "landscape"
-                  ? "card-outline"
-                  : "phone-portrait-outline"
-              }
-              size={22}
-              color="#8A9490"
-            />
+            <View style={styles.galleryIcon}>
+              <Ionicons
+                name="images-outline"
+                size={22}
+                color="#09A84E"
+              />
+            </View>
 
             <Text
               style={
-                styles.sidePlaceholderText
+                styles.galleryText
               }
             >
-              {cardOrientation ===
-              "landscape"
-                ? "Horizontal"
-                : "Vertical"}
+              Gallery
             </Text>
-          </View>
+          </TouchableOpacity>
 
           <TouchableOpacity
             activeOpacity={0.85}
@@ -1329,11 +1435,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  sidePlaceholderText: {
+  galleryIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    backgroundColor: "#EAF8F0",
+    borderWidth: 1,
+    borderColor: "#D6F0E1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  galleryText: {
     marginTop: 5,
-    color: "#8A9490",
-    fontSize: 9.5,
-    fontWeight: "700",
+    color: "#078E42",
+    fontSize: 10.5,
+    fontWeight: "800",
     textAlign: "center",
   },
 
