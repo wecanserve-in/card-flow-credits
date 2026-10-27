@@ -34,6 +34,15 @@ export interface User {
   freeScansUsed?: number;
 
 
+  // Welcome gift: "pending" until the server adds the free scans.
+  freeScansStatus?:
+    | "pending"
+    | "granted"
+    | "already_used";
+
+  freeScansGranted?: number;
+
+
   cardLimit?: number;
 
   cardsUsed?: number;

@@ -129,6 +129,11 @@ router = APIRouter(prefix="/payments", tags=["Payments"])
 
 
 def _verify_firebase_token(authorization: Optional[str]):
+    return _verify_firebase_claims(authorization)["uid"]
+
+
+def _verify_firebase_claims(authorization: Optional[str]) -> dict:
+    """Verifies the Firebase ID token and returns its claims (uid, email, email_verified...)."""
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing Authorization header.")
 
@@ -146,7 +151,7 @@ def _verify_firebase_token(authorization: Optional[str]):
         if not uid:
             raise Exception("UID missing from Firebase token")
 
-        return uid
+        return decoded
 
     except HTTPException:
         raise

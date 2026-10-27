@@ -14,7 +14,8 @@ service cloud.firestore {
         'packId', 'packName',
         'lastPaymentId', 'lastOrderId',
         'subscriptionActive', 'subscriptionExpiry', 'subscriptionStartedAt',
-        'planId', 'planName'
+        'planId', 'planName',
+        'freeScansStatus', 'freeScansGranted'
       ];
     }
 
@@ -22,15 +23,18 @@ service cloud.firestore {
       return !(field in data) || data[field] == value;
     }
 
-    // A brand-new account may only start with the free plan.
+    // A brand-new account starts with 0 scans. The backend adds the free scans
+    // (/account/claim-free-scans) once the email is verified, once per phone.
     function isValidNewUser(data) {
-      return fieldIs(data, 'totalScans', 5)
+      return fieldIs(data, 'totalScans', 0)
         && fieldIs(data, 'usedScans', 0)
-        && fieldIs(data, 'remainingScans', 5)
-        && fieldIs(data, 'freeScanLimit', 5)
+        && fieldIs(data, 'remainingScans', 0)
+        && fieldIs(data, 'freeScanLimit', 0)
         && fieldIs(data, 'freeScansUsed', 0)
         && fieldIs(data, 'packId', 'free')
         && fieldIs(data, 'subscriptionActive', false)
+        && fieldIs(data, 'freeScansStatus', 'pending')
+        && !('freeScansGranted' in data)
         && !('lastPaymentId' in data)
         && !('lastOrderId' in data)
         && !('planId' in data);

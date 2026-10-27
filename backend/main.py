@@ -9,6 +9,7 @@ from firebase_admin import firestore
 from gemini_extractor import extract_multiple_with_gemini
 from payments import router as payment_router, _verify_firebase_token, _get_firestore
 from notifications import router as notification_router
+from free_scans import router as free_scans_router
 from r2_upload import upload_profile_photo, delete_profile_photo
 
 MAX_CARDS_PER_REQUEST = 25
@@ -18,6 +19,7 @@ app = FastAPI()
 
 app.include_router(payment_router)
 app.include_router(notification_router)
+app.include_router(free_scans_router)
 
 app.add_middleware(
     CORSMiddleware,

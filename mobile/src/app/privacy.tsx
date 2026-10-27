@@ -29,7 +29,7 @@ const sections: PrivacySection[] = [
   {
     title: "Information We Collect",
     body:
-      "When you use ScanMyCard, we may collect information such as your name, email address, scanned business cards, contact details extracted using OCR, and basic device information required for improving app performance.",
+      "When you use ScanMyCard, we may collect information such as your name, email address, scanned business cards, contact details extracted using OCR, and basic device information required for improving app performance. To stop misuse of the free scans, we keep a one-way scrambled (hashed) copy of your device ID and email address; it can't be turned back into the original and is kept even after account deletion, only for this purpose.",
     icon: "document-text-outline",
     iconColor: "#09A84E",
     iconBackground: "#EAF8F0",

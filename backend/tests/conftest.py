@@ -27,6 +27,7 @@ import firebase_admin.firestore as admin_firestore  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 import main  # noqa: E402
+import free_scans  # noqa: E402
 import notifications  # noqa: E402
 import payments  # noqa: E402
 
@@ -137,6 +138,7 @@ def db(monkeypatch):
     fake_db = FakeDB()
     monkeypatch.setattr(payments, "_get_firestore", lambda: fake_db)
     monkeypatch.setattr(main, "_get_firestore", lambda: fake_db)
+    monkeypatch.setattr(free_scans, "_get_firestore", lambda: fake_db)
     # The transactional decorator just calls the function with our fake transaction.
     monkeypatch.setattr(admin_firestore, "transactional", lambda func: func)
     monkeypatch.setattr(admin_firestore, "Increment", FakeIncrement)
@@ -161,15 +163,22 @@ def pushes(monkeypatch):
 
 @pytest.fixture
 def client(monkeypatch, db, razorpay, pushes):
-    # Any bearer token "uid-<x>" is accepted as user "uid-<x>".
+    # Bearer token "uid-<x>" or "uid-<x>|<email>" is accepted as user "uid-<x>".
+    # Users whose uid ends in "-unverified" have an unverified email.
     def verify_id_token(token, **kwargs):
         if not token.startswith("uid-"):
             raise ValueError("invalid token")
-        return {"uid": token}
+        uid, _, email = token.partition("|")
+        return {
+            "uid": uid,
+            "email": email or f"{uid}@example.com",
+            "email_verified": not uid.endswith("-unverified"),
+        }
 
     monkeypatch.setattr(payments.firebase_auth, "verify_id_token", verify_id_token)
     return TestClient(main.app)
 
 
-def auth(uid="uid-alice"):
-    return {"Authorization": f"Bearer {uid}"}
+def auth(uid="uid-alice", email=None):
+    token = f"{uid}|{email}" if email else uid
+    return {"Authorization": f"Bearer {token}"}

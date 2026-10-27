@@ -22,6 +22,7 @@ import { router } from "expo-router";
 
 import {
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   updateProfile,
 } from "firebase/auth";
 
@@ -33,7 +34,10 @@ import {
 import { auth } from "../services/firebase";
 
 import { signInWithGoogle } from "../services/googleAuth";
-import { ensureUserDocument } from "../services/userService";
+import {
+  ensureUserDocument,
+  FREE_SCANS,
+} from "../services/userService";
 
 export default function SignupScreen() {
   const insets = useSafeAreaInsets();
@@ -128,6 +132,18 @@ export default function SignupScreen() {
         "email",
         fullName.trim()
       );
+
+      // Free scans unlock once the email is verified (see home screen).
+      try {
+        await sendEmailVerification(
+          userCredential.user
+        );
+      } catch (error) {
+        console.warn(
+          "Could not send verification email:",
+          error
+        );
+      }
 
       router.replace("/home");
     } catch (error: any) {
@@ -744,9 +760,9 @@ export default function SignupScreen() {
               </Text>
 
               <Text style={styles.planText}>
-                Create your account and get
-                5 free business card scans
-                to start.
+                Create your account and get{" "}
+                {FREE_SCANS} free business card
+                scans to start.
               </Text>
             </View>
 

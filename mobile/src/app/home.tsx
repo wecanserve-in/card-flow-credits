@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   useWindowDimensions,
+  Alert,
 } from "react-native";
 import {
   SafeAreaView,
@@ -22,6 +23,7 @@ import {
 } from "firebase/firestore";
 
 import BottomNav from "../components/BottomNav";
+import FreeScansBanner from "../components/FreeScansBanner";
 import { auth, db } from "../services/firebase";
 import { ensureUserDocument } from "../services/userService";
 import { User } from "../types/user";
@@ -238,7 +240,7 @@ const planName =
 const totalScans =
   userData?.totalScans ??
   userData?.freeScanLimit ??
-  5;
+  0;
 
 const usedScans =
   userData?.usedScans ??
@@ -269,6 +271,17 @@ const usedPercent =
   const handleScanPress = () => {
   if (remainingScans > 0) {
     router.push("/scanner");
+    return;
+  }
+
+  if (
+    userData?.freeScansStatus ===
+    "pending"
+  ) {
+    Alert.alert(
+      "Get your free scans first",
+      "Verify your email using the link we sent you, then tap \"I've verified\" on the home screen."
+    );
     return;
   }
 
@@ -402,6 +415,17 @@ const usedPercent =
             )}
           </TouchableOpacity>
         </View>
+
+        {/* Welcome free scans */}
+
+        <FreeScansBanner
+          user={userData}
+          remainingScans={remainingScans}
+          style={{
+            marginHorizontal:
+              horizontalPadding,
+          }}
+        />
 
         {/* Plan Card */}
 

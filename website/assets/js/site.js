@@ -163,7 +163,7 @@
       var n = Math.round(parseFloat(input.value));
       if (!n || n < 1) { out.innerHTML = '<strong>Enter a number of cards</strong><p>We\'ll work out the cheapest mix of packs.</p>'; return; }
       if (n > 200000) n = 200000;
-      if (n <= 5) { out.innerHTML = '<strong>Free</strong><p>Your 5 free scans cover it.</p>'; return; }
+      if (n <= 5) { out.innerHTML = '<strong>Free</strong><p>Your 25 free scans cover it.</p>'; return; }
       var r = cheapest(n);
       var parts = Object.keys(r.counts).map(function (name) { return r.counts[name] + ' × ' + name; });
       out.innerHTML = '<strong>' + parts.join(' + ') + '</strong>' +

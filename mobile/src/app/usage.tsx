@@ -66,7 +66,7 @@ export default function UsageScreen() {
 const totalScans =
   userData?.totalScans ??
   userData?.freeScanLimit ??
-  5;
+ 0;
 
 const usedScans =
   userData?.usedScans ??
