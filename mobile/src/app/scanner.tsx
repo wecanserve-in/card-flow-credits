@@ -11,7 +11,7 @@ import {
   Alert,
   ActivityIndicator,
   useWindowDimensions,
-  
+  Platform,
 } from "react-native";
 import {
   SafeAreaView,
@@ -25,6 +25,7 @@ import {
 } from "expo-camera";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
+import { Accelerometer } from "expo-sensors";
 
 // How many photos can be picked from the gallery in one go.
 const GALLERY_PICK_LIMIT = 30;
@@ -42,6 +43,46 @@ type MeasuredRectangle = {
   height: number;
 };
 
+/*
+ * Android saves camera photos rotated to match how the phone is physically held,
+ * even though this screen is locked upright. Holding the phone almost flat over a
+ * card on a table often makes Android think it is sideways, so the photo comes out
+ * rotated and the crop below would cut the wrong part. We track the phone's tilt
+ * exactly the way the camera does (Android's OrientationEventListener math, which
+ * keeps the last confident reading while the phone lies flat) and rotate the photo
+ * back upright before cropping.
+ */
+type QuarterTurn = 0 | 90 | 180 | 270;
+
+/** Same formula as Android's OrientationEventListener; null = phone too flat to tell. */
+function orientationFromAccelerometer(x: number, y: number, z: number): number | null {
+  const X = -x;
+  const Y = -y;
+  const Z = -z;
+
+  if ((X * X + Y * Y) * 4 < Z * Z) {
+    return null;
+  }
+
+  let orientation = 90 - Math.round((Math.atan2(-Y, X) * 180) / Math.PI);
+
+  while (orientation >= 360) orientation -= 360;
+  while (orientation < 0) orientation += 360;
+
+  return orientation;
+}
+
+/**
+ * Clockwise degrees that turn the saved photo back to match the upright screen
+ * (expo-camera maps 45-135 to ROTATION_270, 135-225 to 180, 225-315 to ROTATION_90).
+ */
+function correctionForOrientation(orientation: number): QuarterTurn {
+  if (orientation >= 45 && orientation < 135) return 270;
+  if (orientation >= 135 && orientation < 225) return 180;
+  if (orientation >= 225 && orientation < 315) return 90;
+  return 0;
+}
+
 export default function ScannerScreen() {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } =
@@ -55,6 +96,37 @@ export default function ScannerScreen() {
   const cameraRef = useRef<any>(null);
   const containerRef = useRef<View>(null);
   const scanFrameRef = useRef<View>(null);
+
+  // Rotation the camera is currently applying to photos (see the note above).
+  const photoCorrectionRef = useRef<QuarterTurn>(0);
+  const lastSidewaysCorrectionRef = useRef<QuarterTurn>(90);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== "android") {
+        return undefined;
+      }
+
+      Accelerometer.setUpdateInterval(100);
+
+      const subscription = Accelerometer.addListener(({ x, y, z }) => {
+        const orientation = orientationFromAccelerometer(x, y, z);
+
+        if (orientation === null) {
+          return; // Too flat: the camera keeps its last rotation, so do we.
+        }
+
+        const correction = correctionForOrientation(orientation);
+        photoCorrectionRef.current = correction;
+
+        if (correction === 90 || correction === 270) {
+          lastSidewaysCorrectionRef.current = correction;
+        }
+      });
+
+      return () => subscription.remove();
+    }, [])
+  );
 
   const [images, setImages] =
     useState<string[]>([]);
@@ -360,28 +432,69 @@ export default function ScannerScreen() {
         return;
       }
 
+      /*
+       * Turn the photo back upright (to match the screen) before cropping.
+       * The photo's shape double-checks the tilt reading: a portrait screen with a
+       * landscape-shaped photo always means it was saved sideways.
+       */
+      const screenIsPortrait =
+        containerMeasurements.height >= containerMeasurements.width;
+      const photoIsLandscape = photo.width > photo.height;
+      const photoIsSideways = screenIsPortrait === photoIsLandscape;
+
+      let correction: QuarterTurn = 0;
+
+      if (Platform.OS === "android") {
+        const tracked = photoCorrectionRef.current;
+        const trackedSideways = tracked === 90 || tracked === 270;
+
+        if (photoIsSideways) {
+          correction = trackedSideways
+            ? tracked
+            : lastSidewaysCorrectionRef.current;
+        } else {
+          correction = tracked === 180 ? 180 : 0;
+        }
+      }
+
+      const turnedWidth =
+        correction === 90 || correction === 270
+          ? photo.height
+          : photo.width;
+      const turnedHeight =
+        correction === 90 || correction === 270
+          ? photo.width
+          : photo.height;
+
       const cropArea =
         calculateCropArea(
-          photo.width,
-          photo.height,
+          turnedWidth,
+          turnedHeight,
           containerMeasurements.width,
           containerMeasurements.height,
           frameMeasurements
         );
 
+      // Keep the longest side at 1600px: sharp enough for small print on cards.
+      const resize =
+        cropArea.width >= cropArea.height
+          ? { width: Math.min(cropArea.width, 1600) }
+          : { height: Math.min(cropArea.height, 1600) };
+
       const croppedImage =
         await ImageManipulator.manipulateAsync(
           photo.uri,
           [
+            ...(correction ? [{ rotate: correction }] : []),
             {
               crop: cropArea,
             },
             {
-              resize: { width: 1200 },
+              resize,
             },
           ],
           {
-            compress: 0.7,
+            compress: 0.8,
             format:
               ImageManipulator.SaveFormat
                 .JPEG,
