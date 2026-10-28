@@ -1,4 +1,5 @@
 import asyncio
+import secrets
 import time
 from typing import Optional
 
@@ -102,13 +103,10 @@ async def upload_cards(
     uid = _verify_firebase_token(authorization)
 
     if not files:
-        raise HTTPException(status_code=400, detail="No images were uploaded.")
+        raise _scan_error(400, "NO_IMAGES", "No images were uploaded.")
 
     if len(files) > MAX_CARDS_PER_REQUEST:
-        raise HTTPException(
-            status_code=400,
-            detail=f"You can scan up to {MAX_CARDS_PER_REQUEST} cards at a time.",
-        )
+        raise _scan_error(400, "TOO_MANY_CARDS", f"You can scan up to {MAX_CARDS_PER_REQUEST} cards at a time.")
 
     image_cards = []
 
@@ -117,10 +115,10 @@ async def upload_cards(
         await file.close()
 
         if not image_bytes:
-            raise HTTPException(status_code=400, detail=f"Image {index} is empty.")
+            raise _scan_error(400, "IMAGE_EMPTY", f"Card {index}'s photo couldn't be opened. Please retake it.", card=index)
 
         if len(image_bytes) > MAX_CARD_IMAGE_BYTES:
-            raise HTTPException(status_code=400, detail=f"Image {index} is larger than 10MB.")
+            raise _scan_error(400, "IMAGE_TOO_LARGE", f"Card {index}'s photo is too large. Please retake it.", card=index)
 
         image_cards.append({
             "card_no": index,
@@ -136,26 +134,73 @@ async def upload_cards(
         results = await asyncio.to_thread(extract_multiple_with_gemini, image_cards)
     except Exception as e:
         await asyncio.to_thread(_refund_credits, uid, len(image_cards))
-        print("[Upload] Extraction failed:", e)
-        raise HTTPException(
-            status_code=500,
-            detail="Could not read the cards. No credits were used. Please try again.",
+
+        if _is_ai_busy(e):
+            print("[Upload] AI busy:", e)
+            raise _scan_error(503, "AI_BUSY", "Our AI is busy right now. No scans were used. Please try again in a minute.")
+
+        ref = _error_ref()
+        print(f"[Upload] Extraction failed ref={ref} uid={uid}:", e)
+        raise _scan_error(
+            500,
+            "SERVER_ERROR",
+            f"Something went wrong on our side. No scans were used. If it keeps happening, contact support@scanmycard.in with code {ref}.",
+            ref=ref,
         )
     finally:
         for item in image_cards:
             item["bytes"] = None
 
     filenames = {item["card_no"]: item["filename"] for item in image_cards}
+    unreadable = 0
 
     for card in results:
         card["source"] = "gemini"
         card["filename"] = filenames.get(card["card_no"])
+        card["unreadable"] = _is_unreadable(card)
+        unreadable += card["unreadable"]
+
+    # Cards the AI couldn't read anything from are not charged.
+    if unreadable:
+        await asyncio.to_thread(_refund_credits, uid, unreadable)
+        credits = {
+            "total": credits["total"],
+            "used": credits["used"] - unreadable,
+            "remaining": credits["remaining"] + unreadable,
+        }
 
     return {
         "total_cards": len(results),
         "cards": results,
+        "unreadable": unreadable,
         "credits": credits,
     }
+
+
+def _scan_error(status: int, code: str, message: str, **extra) -> HTTPException:
+    """Errors the app shows to the user: a stable `code` plus a friendly `message`."""
+    return HTTPException(status_code=status, detail={"code": code, "message": message, **extra})
+
+
+def _error_ref() -> str:
+    """Short code the user can quote to support; it is also printed in the server log."""
+    return "SMC-" + secrets.token_hex(2).upper()
+
+
+def _is_ai_busy(error: Exception) -> bool:
+    text = str(error).upper()
+    return any(marker in text for marker in ("503", "UNAVAILABLE", "RESOURCE_EXHAUSTED", "429", "DEADLINE"))
+
+
+_EMPTY_VALUES = {"", "NOT AVAILABLE", "N/A", "NA", "NONE", "NULL", "-", "UNKNOWN"}
+
+
+def _is_unreadable(card: dict) -> bool:
+    """True when the AI found no name, phone or email: blurry, dark, cut off or not a card."""
+    def empty(field):
+        return str(card.get(field) or "").strip().upper() in _EMPTY_VALUES
+
+    return empty("name") and empty("phone") and empty("email")
 
 
 @app.post("/upload/profile-photo")

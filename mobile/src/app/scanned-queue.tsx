@@ -31,9 +31,13 @@ import {
 
 import { User } from "../types/user";
 import {
+  describeScanError,
   isInsufficientCredits,
   uploadCards,
 } from "../services/scanService";
+
+const RETAKE_TIP =
+  "Retake them in good light, hold the phone steady and fit all 4 corners inside the frame.";
 import {
   auth,
   db,
@@ -453,33 +457,48 @@ const currentUsed =
           selectedImages
         );
 
-      const extractedCards =
+      const allCards: any[] =
         Array.isArray(result?.cards)
           ? result.cards
           : [];
 
+      // Cards the AI couldn't read were not charged; they stay in the queue to retake.
+      const extractedCards = allCards.filter(
+        (card) => !card.unreadable
+      );
+
+      const unreadableUris: string[] = allCards
+        .filter((card) => card.unreadable && card.sourceUri)
+        .map((card) => card.sourceUri);
+
+      const keepInQueue = [
+        ...unreadableUris,
+        ...(result.failedImages || []),
+      ];
+
       if (
         extractedCards.length === 0
       ) {
+        const message = `${allCards.length === 1 ? "This card" : `These ${allCards.length} cards`} couldn't be read, so no scans were used. ${RETAKE_TIP}`;
+
         await createNotification({
           type: "extraction_failed",
-          title: "No card details found",
-          message:
-            "No readable business card details could be extracted. Please scan the cards again.",
+          title: "Couldn't read your cards",
+          message,
           actionRoute: "/scanner",
           eventKey:
             `extraction-empty-${Date.now()}`,
         });
 
         sendPushNotification(
-          "No card details found",
-          "No readable business card details could be extracted. Please scan the cards again.",
+          "Couldn't read your cards",
+          message,
           "/scanner"
         );
 
         Alert.alert(
-          "No Details Found",
-          "No readable card details were found. Please scan the cards again."
+          "Couldn't Read These Cards",
+          message
         );
 
         return;
@@ -535,23 +554,53 @@ const currentUsed =
       ).extractedCards =
         extractedCards;
 
-      (
-        globalThis as any
-      ).scannedImages = [];
+      // Keep only the cards that still need attention in the queue.
+      const orientations =
+        (globalThis as any).scannedCardOrientations || {};
 
       (
         globalThis as any
-      ).scannedCardOrientations = {};
+      ).scannedImages = keepInQueue;
 
-      setQueueImages([]);
-      setSelectedCards([]);
+      (
+        globalThis as any
+      ).scannedCardOrientations = Object.fromEntries(
+        keepInQueue
+          .filter((uri) => orientations[uri])
+          .map((uri) => [uri, orientations[uri]])
+      );
+
+      setQueueImages(keepInQueue);
+      setSelectedCards(
+        keepInQueue.map((_, index) => index)
+      );
 
       router.push("/contacts");
 
-      if (result.partialError) {
+      if (keepInQueue.length > 0) {
+        const parts = [
+          `${extractedCards.length} of ${selectedImages.length} cards were read.`,
+        ];
+
+        if (unreadableUris.length > 0) {
+          parts.push(
+            `${unreadableUris.length} couldn't be read and ${unreadableUris.length === 1 ? "wasn't" : "weren't"} charged.`
+          );
+        }
+
+        if (result.partialError) {
+          parts.push(
+            describeScanError(result.partialError).message
+          );
+        }
+
+        parts.push(
+          `They're still in your Scanned Cards queue. ${RETAKE_TIP}`
+        );
+
         Alert.alert(
-          "Some Cards Not Scanned",
-          `${extractedCards.length} of ${selectedImages.length} cards were scanned. ${result.partialError.message}`
+          "Some Cards Not Read",
+          parts.join(" ")
         );
       }
     } catch (error) {
@@ -581,25 +630,27 @@ const currentUsed =
         return;
       }
 
+      const reason =
+        describeScanError(error);
+
       await createNotification({
         type: "extraction_failed",
-        title: "Extraction failed",
-        message:
-          "We could not extract the selected business cards. Please try again.",
+        title: reason.title,
+        message: reason.message,
         actionRoute: "/scanner",
         eventKey:
           `extraction-failed-${Date.now()}`,
       });
 
       sendPushNotification(
-        "Extraction failed",
-        "We could not extract the selected business cards. Please try again.",
+        reason.title,
+        reason.message,
         "/scanner"
       );
 
       Alert.alert(
-        "Extraction Failed",
-        "Failed to extract card details. Please try again."
+        reason.title,
+        reason.message
       );
     } finally {
       setLoading(false);

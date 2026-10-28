@@ -74,8 +74,62 @@ def test_gemini_failure_refunds_credits(client, db, monkeypatch):
     response = client.post("/upload", files=images(3), headers=auth())
 
     assert response.status_code == 500
-    assert "No credits were used" in response.json()["detail"]
+    detail = response.json()["detail"]
+    assert detail["code"] == "SERVER_ERROR"
+    assert detail["ref"].startswith("SMC-") and detail["ref"] in detail["message"]
+    assert "No scans were used" in detail["message"]
     assert db.docs["users/uid-alice"]["usedScans"] == 2
+
+
+def test_gemini_busy_says_try_again(client, db, monkeypatch):
+    set_user(db, totalScans=10, usedScans=2)
+
+    def busy(cards):
+        raise RuntimeError("Failed after 3 attempt(s): 429 RESOURCE_EXHAUSTED")
+
+    monkeypatch.setattr(main, "extract_multiple_with_gemini", busy)
+
+    response = client.post("/upload", files=images(3), headers=auth())
+
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "AI_BUSY"
+    assert db.docs["users/uid-alice"]["usedScans"] == 2
+
+
+def test_unreadable_cards_are_flagged_and_not_charged(client, db, monkeypatch):
+    set_user(db, totalScans=10, usedScans=0)
+
+    def mixed(cards):
+        out = []
+        for card in cards:
+            if card["card_no"] == 2:
+                out.append({"card_no": 2, "name": "Not available", "phone": "Not available", "email": "Not available", "company": "Blurry Co"})
+            else:
+                out.append({"card_no": card["card_no"], "name": f"Person {card['card_no']}", "phone": "Not available", "email": "Not available"})
+        return out
+
+    monkeypatch.setattr(main, "extract_multiple_with_gemini", mixed)
+
+    response = client.post("/upload", files=images(3), headers=auth())
+
+    body = response.json()
+    assert response.status_code == 200
+    assert [card["unreadable"] for card in body["cards"]] == [False, True, False]
+    assert body["unreadable"] == 1
+    assert body["credits"] == {"total": 10, "used": 2, "remaining": 8}
+    assert db.docs["users/uid-alice"]["usedScans"] == 2
+
+
+def test_card_with_only_a_phone_number_counts_as_read(client, db, monkeypatch):
+    set_user(db, totalScans=10, usedScans=0)
+    monkeypatch.setattr(main, "extract_multiple_with_gemini", lambda cards: [
+        {"card_no": 1, "name": "", "phone": "+91 98200 12345", "email": "Not available"}
+    ])
+
+    body = client.post("/upload", files=images(1), headers=auth()).json()
+
+    assert body["cards"][0]["unreadable"] is False
+    assert body["credits"]["used"] == 1
 
 
 def test_old_accounts_with_free_scan_fields_still_work(client, db, monkeypatch):
