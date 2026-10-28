@@ -33,7 +33,7 @@ from payments import _get_firestore, _verify_firebase_claims, _verify_firebase_t
 
 FREE_SCANS = 10
 REFERRAL_BONUS = 10          # for the friend who shared the code
-REFERRAL_WELCOME_BONUS = 10  # extra for the new user who used a code
+REFERRAL_WELCOME_BONUS = 5   # extra for the new user who used a code
 HASH_SALT = os.getenv("FREE_SCANS_HASH_SALT", "scanmycard-free-scans-v1")
 
 # No 0/O or 1/I/L, so codes are easy to read out and type.

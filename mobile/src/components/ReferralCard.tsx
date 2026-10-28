@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   getMyReferralInfo,
   REFERRAL_BONUS,
+  REFERRAL_WELCOME_BONUS,
 } from "../services/userService";
 import { User } from "../types/user";
 
@@ -80,7 +81,7 @@ export default function ReferralCard({ user }: Props) {
       await Share.share({
         message:
           `I use ScanMyCard to turn business cards into contacts and Excel sheets in seconds. ` +
-          `Download it and enter my referral code ${code} when you sign up, and we both get ${REFERRAL_BONUS} free scans:\n${PLAY_STORE_URL}`,
+          `Download it and enter my referral code ${code} when you sign up to get ${REFERRAL_WELCOME_BONUS} extra free scans:\n${PLAY_STORE_URL}`,
       });
     } catch {
       Alert.alert(
@@ -110,8 +111,9 @@ export default function ReferralCard({ user }: Props) {
           </Text>
 
           <Text style={styles.subtitle}>
-            When a friend signs up with your code, you
-            both get {REFERRAL_BONUS} free scans.
+            You get {REFERRAL_BONUS} free scans for every
+            friend who signs up with your code. They get{" "}
+            {REFERRAL_WELCOME_BONUS} extra too.
           </Text>
         </View>
       </View>

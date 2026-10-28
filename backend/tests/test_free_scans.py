@@ -153,8 +153,8 @@ def test_friend_signup_gives_referrer_10(client, db, pushes):
 
     assert response.json()["status"] == "granted"
     assert response.json()["referralApplied"] is True
-    assert response.json()["granted"] == 20
-    assert db.docs["users/uid-friend"]["totalScans"] == 20
+    assert response.json()["granted"] == 15
+    assert db.docs["users/uid-friend"]["totalScans"] == 15
     assert db.docs["users/uid-friend"]["referredBy"] == "uid-alice"
     alice = db.docs["users/uid-alice"]
     assert alice["totalScans"] == 15

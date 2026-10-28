@@ -19,6 +19,7 @@ import {
   cleanReferralCode,
   isValidReferralCode,
   REFERRAL_BONUS,
+  REFERRAL_WELCOME_BONUS,
   setPendingReferralCode,
 } from "../services/userService";
 
@@ -92,8 +93,9 @@ export default function ReferralScreen() {
         </Text>
 
         <Text style={styles.subtitle}>
-          Enter your friend&apos;s code and you both get{" "}
-          {REFERRAL_BONUS} extra free scans.
+          Enter your friend&apos;s code to get{" "}
+          {REFERRAL_WELCOME_BONUS} extra free scans. Your friend gets{" "}
+          {REFERRAL_BONUS} too.
         </Text>
 
         <TextInput

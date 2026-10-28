@@ -13,6 +13,9 @@ export const FREE_SCANS = 10;
 // Scans a user earns when a friend joins with their referral code (backend/free_scans.py).
 export const REFERRAL_BONUS = 10;
 
+// Extra scans for the new user who signs up with a friend's code.
+export const REFERRAL_WELCOME_BONUS = 5;
+
 const PENDING_REFERRAL_KEY = "pendingReferralCode";
 const SIGNED_IN_BEFORE_KEY = "hasSignedInOnThisPhone";
 
@@ -92,7 +95,7 @@ async function getDeviceId(): Promise<string | null> {
   return null;
 }
 
-/** Scans added by the last successful claim (10, or 20 with a friend's code). */
+/** Scans added by the last successful claim (10, or 15 with a friend's code). */
 export let lastGrantedScans = FREE_SCANS;
 
 export type FreeScansResult =
