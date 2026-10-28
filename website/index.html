@@ -6,8 +6,7 @@
 <title>ScanMyCard: AI business card scanner to Excel for Android</title>
 <meta name="description" content="Scan a whole stack of business cards with your phone. AI reads name, company, phone, email and more, then export to Excel. Pay per card, no subscription, 10 free scans.">
 <link rel="canonical" href="https://scanmycard.in/">
-<meta name="theme-color" content="#F5F8F6" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0B1410" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F5F8F6">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="256x256" href="/assets/images/app-icon-256.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -28,10 +27,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&amp;display=swap">
-<link rel="stylesheet" href="/assets/css/site.css?v=4">
-<script>(function(d){d.classList.add('js');try{var t=localStorage.getItem('smc-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t)}catch(e){}})(document.documentElement)</script>
+<link rel="stylesheet" href="/assets/css/site.css?v=5">
+<script>document.documentElement.classList.add('js')</script>
 <!-- Analytics: configured in one place, the ANALYTICS block at the top of /assets/js/site.js -->
-<script src="/assets/js/site.js?v=4" defer></script>
+<script src="/assets/js/site.js?v=5" defer></script>
 <script src="/assets/js/home.js?v=1" defer></script>
 <script type="application/ld+json">
 {
@@ -94,10 +93,6 @@
       <a href="/support">Support</a>
     </nav>
     <div class="header__actions">
-      <button class="icon-btn theme-toggle" type="button" aria-label="Toggle dark mode">
-        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-      </button>
       <a class="btn btn--sm header__cta" href="https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard" data-play>
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 5 3.5z"/></svg>
         Get the app
@@ -127,7 +122,7 @@
 <section class="hero" aria-labelledby="hero-title">
   <div class="wrap hero__grid">
     <div class="hero__copy">
-      <p class="pill"><b>NEW</b> AI business card scanner for Android</p>
+      <p class="pill"><b>NEW</b> AI business card scanner</p>
       <h1 id="hero-title">From a <span class="stack hl-amber">stack of cards</span> to a <span class="clean">clean Excel sheet</span> in minutes.</h1>
       <p class="lead">Back from an expo with a pocket full of cards? Snap them all. ScanMyCard's AI types out every name, number and email, you check them, and the Excel sheet is on WhatsApp before your chai gets cold.</p>
       <div class="hero__ctas">
@@ -139,7 +134,6 @@
       </div>
       <ul class="ticks">
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>10 free scans</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>No subscription</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Credits never expire</li>
       </ul>
     </div>
@@ -194,6 +188,7 @@
       <li>Pharma reps</li>
       <li>Event organisers</li>
       <li>Founders &amp; freelancers</li>
+      <li>&amp; many more</li>
     </ul>
   </div>
 </section>
@@ -520,14 +515,21 @@
     </div>
     <p class="free-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z"/></svg>Every new account starts with 10 free scans.</p>
     <div class="plans-wrap" data-plans>
-      <div class="seg" role="group" aria-label="Pack type">
-        <button type="button" aria-pressed="true" data-plan-tab="personal">Personal</button>
-        <button type="button" aria-pressed="false" data-plan-tab="business">Business</button>
+      <p class="seg-label" id="pack-type-label">Who are you buying for? Tap to switch:</p>
+      <div class="seg" role="group" aria-labelledby="pack-type-label">
+        <button type="button" aria-pressed="true" data-plan-tab="personal">
+          <span class="seg__title">For myself</span>
+          <span class="seg__sub">Personal packs · 50 to 1,000 cards</span>
+        </button>
+        <button type="button" aria-pressed="false" data-plan-tab="business">
+          <span class="seg__title">For my business</span>
+          <span class="seg__sub">Business packs · 2,775 to 10,000 cards</span>
+        </button>
       </div>
       <div class="plans" data-plan-group="personal">
         <h3 class="plans__label">Personal packs</h3>
         <div class="plans__grid">
-          <article class="plan" data-price="99" data-cards="50">
+          <article class="plan" data-pack="Starter" data-price="99" data-cards="50">
             <h4 class="plan__name">Starter</h4>
             <p class="plan__fit">For one busy week of meetings</p>
             <p class="plan__price"><strong>₹99</strong><span class="gst">+18% GST</span></p>
@@ -537,7 +539,7 @@
               <li class="plan__per"><span>Per card</span><b data-per>₹1.98</b></li>
             </ul>
           </article>
-          <article class="plan plan--feature" data-price="499" data-cards="750">
+          <article class="plan plan--feature" data-pack="Popular" data-price="499" data-cards="750">
             <span class="plan__badge">Most popular</span>
             <h4 class="plan__name">Popular</h4>
             <p class="plan__fit">For a season of trade fairs and events</p>
@@ -548,7 +550,7 @@
               <li class="plan__per"><span>Per card</span><b data-per>₹0.67</b></li>
             </ul>
           </article>
-          <article class="plan" data-price="999" data-cards="1000">
+          <article class="plan" data-pack="Pro" data-price="999" data-cards="1000">
             <h4 class="plan__name">Pro</h4>
             <p class="plan__fit">For people who network all year</p>
             <p class="plan__price"><strong>₹999</strong><span class="gst">+18% GST</span></p>
@@ -563,7 +565,7 @@
       <div class="plans" data-plan-group="business">
         <h3 class="plans__label">Business packs</h3>
         <div class="plans__grid">
-          <article class="plan" data-price="2499" data-cards="2775">
+          <article class="plan" data-pack="Business Starter" data-price="2499" data-cards="2775">
             <h4 class="plan__name">Business Starter</h4>
             <p class="plan__fit">For a small sales team</p>
             <p class="plan__price"><strong>₹2,499</strong><span class="gst">+18% GST</span></p>
@@ -573,7 +575,7 @@
               <li class="plan__per"><span>Per card</span><b data-per>₹0.90</b></li>
             </ul>
           </article>
-          <article class="plan" data-price="3999" data-cards="5710">
+          <article class="plan" data-pack="Business Pro" data-price="3999" data-cards="5710">
             <h4 class="plan__name">Business Pro</h4>
             <p class="plan__fit">For exhibitors and multi-city teams</p>
             <p class="plan__price"><strong>₹3,999</strong><span class="gst">+18% GST</span></p>
@@ -583,7 +585,7 @@
               <li class="plan__per"><span>Per card</span><b data-per>₹0.70</b></li>
             </ul>
           </article>
-          <article class="plan plan--feature" data-price="5999" data-cards="10000">
+          <article class="plan plan--feature" data-pack="Business Enterprise" data-price="5999" data-cards="10000">
             <span class="plan__badge plan__badge--amber">Lowest per-card price</span>
             <h4 class="plan__name">Business Enterprise</h4>
             <p class="plan__fit">For large teams and repeat exhibitors</p>
@@ -603,7 +605,24 @@
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Failed scans refunded automatically</li>
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>UPI, cards, netbanking and wallets via Razorpay</li>
     </ul>
-    <p style="margin-top:20px"><a href="/pricing">See the full price table and a pack picker →</a></p>
+    <p style="margin-top:20px"><a href="/pricing">See the full price table →</a></p>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="picker-title">
+  <div class="wrap">
+    <div class="picker" data-picker>
+      <div>
+        <p class="eyebrow">Pack picker</p>
+        <h2 class="h2" id="picker-title" style="font-size:clamp(1.6rem,3vw,2.2rem)">How many cards do you have?</h2>
+        <label for="cards-n">Number of cards to scan</label>
+        <div class="picker__input"><input class="input" id="cards-n" type="number" inputmode="numeric" min="1" max="200000" step="1" value="300"></div>
+      </div>
+      <div class="picker__out" aria-live="polite" data-picker-out>
+        <strong>1 × Popular</strong>
+        <p>₹499 + GST covers up to 750 cards. Turn on JavaScript to try other numbers.</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -637,7 +656,7 @@
     <div class="cta reveal">
       <div>
         <h2 id="cta-title">Your next stack of cards deserves better than a rubber band.</h2>
-        <p>Install ScanMyCard, scan your first 5 cards free, and watch your own pile turn into a spreadsheet.</p>
+        <p>Install ScanMyCard, scan your first 10 cards free, and watch your own pile turn into a spreadsheet.</p>
         <a class="play-badge" href="https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard" data-play aria-label="Get it on Google Play">
           <svg class="play-badge__logo" viewBox="0 0 24 26" aria-hidden="true"><path fill="#00D7FE" d="M1.2 1.1C.9 1.4.8 1.9.8 2.5v21c0 .6.1 1.1.4 1.4L12.9 13z"/><path fill="#FFCE00" d="M16.8 16.9 12.9 13l3.9-3.9 4.7 2.7c1.3.8 1.3 2 0 2.8z"/><path fill="#FF3A44" d="M16.8 16.9 12.9 13 1.2 24.9c.4.5 1.2.5 2 .1z"/><path fill="#00F076" d="M16.8 9.1 3.2 1C2.4.6 1.6.6 1.2 1.1L12.9 13z"/></svg>
           <span class="play-badge__text"><small>Get it on</small><strong>Google Play</strong></span>
@@ -667,7 +686,7 @@
           <img src="/assets/images/mark-128.png" width="32" height="32" alt="">
           <span class="brand__word">Scan<span>My</span>Card</span>
         </a>
-        <p>Turn paper business cards into organised contacts and Excel sheets with AI. Made by WeCanServe.</p>
+        <p>Turn paper business cards into organised contacts and Excel sheets with AI. Made by <a href="https://wecanserve.in" target="_blank" rel="noopener">WeCanServe</a>.</p>
       </div>
       <div>
         <h2>Product</h2>
@@ -697,7 +716,7 @@
       </div>
     </div>
     <div class="footer__bottom">
-      <span>© 2026 ScanMyCard by WeCanServe</span>
+      <span>© 2026 ScanMyCard by <a href="https://wecanserve.in" target="_blank" rel="noopener">WeCanServe</a></span>
       <span><a href="mailto:support@scanmycard.in">support@scanmycard.in</a></span>
     </div>
   </div>

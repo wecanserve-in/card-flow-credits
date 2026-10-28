@@ -60,28 +60,21 @@
     doc.addEventListener('click', function (e) { if (menu.hasAttribute('open') && !menu.contains(e.target)) menu.removeAttribute('open'); });
   }
 
-  /* ---- Theme toggle (follows the system until the visitor picks one) ---- */
-  var toggle = doc.querySelector('.theme-toggle');
-  function currentTheme() {
-    var t = root.getAttribute('data-theme');
-    if (t) return t;
-    try { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; } catch (e) { return 'light'; }
-  }
-  function syncToggle() {
-    if (!toggle) return;
-    var dark = currentTheme() === 'dark';
-    toggle.setAttribute('aria-pressed', dark ? 'true' : 'false');
-    toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
-  }
-  if (toggle) {
-    syncToggle();
-    toggle.addEventListener('click', function () {
-      var next = currentTheme() === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', next);
-      try { localStorage.setItem('smc-theme', next); } catch (e) { /* storage blocked */ }
-      syncToggle();
-    });
-  }
+  /* ---- Back to top (appears after scrolling down) ---- */
+  var toTop = doc.createElement('button');
+  toTop.type = 'button';
+  toTop.className = 'to-top';
+  toTop.setAttribute('aria-label', 'Back to top');
+  toTop.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+  doc.body.appendChild(toTop);
+  function syncToTop() { toTop.classList.toggle('is-shown', (window.scrollY || doc.documentElement.scrollTop) > 700); }
+  window.addEventListener('scroll', syncToTop, { passive: true });
+  syncToTop();
+  toTop.addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    var target = doc.querySelector('main, h1');
+    if (target) { if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1'); target.focus({ preventScroll: true }); }
+  });
 
   /* ---- Scroll reveals ---- */
   var reveals = $all('.reveal');
@@ -129,10 +122,17 @@
     });
   });
 
-  /* ---- Pack picker (pricing page): cheapest mix of packs for N cards ---- */
+  /* ---- Pack picker (home and pricing pages): cheapest mix of packs for N cards ---- */
   var picker = doc.querySelector('[data-picker]');
   if (picker) {
-    var packs = $all('[data-pack]', doc).map(function (el) {
+    // The pricing page has one row per pack in its table; the home page tags its plan cards.
+    var seen = {};
+    var packs = $all('[data-pack]', doc).filter(function (el) {
+      var key = el.getAttribute('data-pack');
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    }).map(function (el) {
       return { name: el.getAttribute('data-pack'), price: parseFloat(el.getAttribute('data-price')), cards: parseFloat(el.getAttribute('data-cards')) };
     }).filter(function (p) { return p.price && p.cards; });
     var input = picker.querySelector('input');
@@ -163,7 +163,7 @@
       var n = Math.round(parseFloat(input.value));
       if (!n || n < 1) { out.innerHTML = '<strong>Enter a number of cards</strong><p>We\'ll work out the cheapest mix of packs.</p>'; return; }
       if (n > 200000) n = 200000;
-      if (n <= 5) { out.innerHTML = '<strong>Free</strong><p>Your 10 free scans cover it.</p>'; return; }
+      if (n <= 10) { out.innerHTML = '<strong>Free</strong><p>Your 10 free scans cover it.</p>'; return; }
       var r = cheapest(n);
       var parts = Object.keys(r.counts).map(function (name) { return r.counts[name] + ' × ' + name; });
       out.innerHTML = '<strong>' + parts.join(' + ') + '</strong>' +
