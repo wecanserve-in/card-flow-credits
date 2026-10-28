@@ -28,6 +28,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 import main  # noqa: E402
 import free_scans  # noqa: E402
+import verification_email  # noqa: E402
 import notifications  # noqa: E402
 import payments  # noqa: E402
 
@@ -139,6 +140,7 @@ def db(monkeypatch):
     monkeypatch.setattr(payments, "_get_firestore", lambda: fake_db)
     monkeypatch.setattr(main, "_get_firestore", lambda: fake_db)
     monkeypatch.setattr(free_scans, "_get_firestore", lambda: fake_db)
+    monkeypatch.setattr(verification_email, "_get_firestore", lambda: fake_db)
     # The transactional decorator just calls the function with our fake transaction.
     monkeypatch.setattr(admin_firestore, "transactional", lambda func: func)
     monkeypatch.setattr(admin_firestore, "Increment", FakeIncrement)

@@ -22,7 +22,6 @@ import { router } from "expo-router";
 
 import {
   createUserWithEmailAndPassword,
-  sendEmailVerification,
   updateProfile,
 } from "firebase/auth";
 
@@ -37,6 +36,7 @@ import { signInWithGoogle } from "../services/googleAuth";
 import {
   ensureUserDocument,
   FREE_SCANS,
+  sendVerificationEmail,
 } from "../services/userService";
 
 export default function SignupScreen() {
@@ -134,16 +134,8 @@ export default function SignupScreen() {
       );
 
       // Free scans unlock once the email is verified (see home screen).
-      try {
-        await sendEmailVerification(
-          userCredential.user
-        );
-      } catch (error) {
-        console.warn(
-          "Could not send verification email:",
-          error
-        );
-      }
+      // A failed send is not an error here: the home screen offers "Resend email".
+      await sendVerificationEmail();
 
       router.replace("/home");
     } catch (error: any) {

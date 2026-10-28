@@ -11,11 +11,11 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { sendEmailVerification } from "firebase/auth";
 
 import { auth } from "../services/firebase";
 import {
   claimFreeScans,
+  sendVerificationEmail,
   FREE_SCANS,
   FreeScansResult,
 } from "../services/userService";
@@ -89,18 +89,18 @@ export default function FreeScansBanner({
       return;
     }
 
-    try {
-      await sendEmailVerification(firebaseUser);
+    const result = await sendVerificationEmail();
 
+    if (result === "sent") {
       Alert.alert(
         "Email sent",
-        `We sent a verification link to ${firebaseUser.email}.`
+        `We sent a verification link to ${firebaseUser.email}. Check your inbox (and spam folder).`
       );
-    } catch (error: any) {
+    } else {
       Alert.alert(
         "Please wait",
-        error?.code === "auth/too-many-requests"
-          ? "An email was sent recently. Please wait a few minutes before asking again."
+        result === "too_soon"
+          ? "An email was sent recently. Please wait a minute before asking again."
           : "Could not send the email. Please try again."
       );
     }

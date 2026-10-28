@@ -1,4 +1,4 @@
-import type { User as FirebaseUser } from "firebase/auth";
+import { sendEmailVerification, type User as FirebaseUser } from "firebase/auth";
 import { doc, runTransaction } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Application from "expo-application";
@@ -230,5 +230,35 @@ export async function markSignedInOnThisPhone(): Promise<void> {
     await AsyncStorage.setItem(SIGNED_IN_BEFORE_KEY, "1");
   } catch {
     // Worst case the referral screen shows again after logging out.
+  }
+}
+
+export type VerificationEmailResult = "sent" | "too_soon" | "error";
+
+/**
+ * Sends the branded ScanMyCard verification email (from noreply@scanmycard.in).
+ * If our server can't send it, falls back to Firebase's plain verification email.
+ */
+export async function sendVerificationEmail(): Promise<VerificationEmailResult> {
+  const user = auth.currentUser;
+
+  if (!user) {
+    return "error";
+  }
+
+  try {
+    await api.post("/account/send-verification-email");
+    return "sent";
+  } catch (error: any) {
+    if (error?.response?.status === 429) {
+      return "too_soon";
+    }
+  }
+
+  try {
+    await sendEmailVerification(user);
+    return "sent";
+  } catch (error: any) {
+    return error?.code === "auth/too-many-requests" ? "too_soon" : "error";
   }
 }
