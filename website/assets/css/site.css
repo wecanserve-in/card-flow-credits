@@ -800,3 +800,20 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .to-top:hover { background: var(--btn-hover); }
 .to-top.is-shown { opacity: 1; transform: none; pointer-events: auto; }
 @media (max-width: 899px) { .has-playbar .to-top { bottom: 92px; } }
+
+/* ---------- Tutorial video ---------- */
+.header__tutorial { display: inline-flex; gap: 6px; }
+.header__tutorial svg { width: 18px; height: 18px; flex: none; }
+.page-legal .header__tutorial { display: inline-flex; }
+.tut-dialog {
+  padding: 0; border: 0; border-radius: 22px; background: #000; overflow: hidden;
+  width: min(92vw, calc(88vh * 9 / 16)); max-width: 460px; box-shadow: var(--shadow-lg);
+}
+.tut-dialog::backdrop { background: rgba(8, 18, 12, .78); }
+.tut-dialog video { display: block; width: 100%; aspect-ratio: 9 / 16; height: auto; background: #000; }
+.tut-close {
+  position: absolute; top: 10px; right: 10px; z-index: 2; width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center; border: 0; cursor: pointer; background: rgba(0, 0, 0, .6); color: #fff;
+}
+.tut-close svg { width: 20px; height: 20px; }
+.tut-close:hover { background: rgba(0, 0, 0, .8); }

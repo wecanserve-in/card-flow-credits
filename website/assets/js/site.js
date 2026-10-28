@@ -60,6 +60,33 @@
     doc.addEventListener('click', function (e) { if (menu.hasAttribute('open') && !menu.contains(e.target)) menu.removeAttribute('open'); });
   }
 
+  /* ---- Tutorial video in a pop-up (the link opens the video file if dialogs aren't supported) ---- */
+  var tutLinks = $all('[data-tutorial]');
+  if (tutLinks.length && typeof HTMLDialogElement === 'function') {
+    var tut = doc.createElement('dialog');
+    tut.className = 'tut-dialog';
+    tut.setAttribute('aria-label', 'ScanMyCard tutorial video');
+    tut.innerHTML =
+      '<button type="button" class="tut-close" aria-label="Close video">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' +
+      '<video controls playsinline preload="none" poster="/assets/video/scanmycard-tutorial-poster.jpg"></video>';
+    doc.body.appendChild(tut);
+    var tutVideo = tut.querySelector('video');
+    var closeTut = function () { tutVideo.pause(); if (tut.open) tut.close(); };
+    tutLinks.forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (!tutVideo.getAttribute('src')) tutVideo.src = link.getAttribute('href');
+        tut.showModal();
+        var playing = tutVideo.play();
+        if (playing && playing.catch) playing.catch(function () { /* autoplay blocked: controls stay visible */ });
+      });
+    });
+    tut.querySelector('.tut-close').addEventListener('click', closeTut);
+    tut.addEventListener('click', function (e) { if (e.target === tut) closeTut(); });
+    tut.addEventListener('close', function () { tutVideo.pause(); });
+  }
+
   /* ---- Back to top (appears after scrolling down) ---- */
   var toTop = doc.createElement('button');
   toTop.type = 'button';
