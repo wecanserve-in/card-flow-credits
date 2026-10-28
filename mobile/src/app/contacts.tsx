@@ -21,7 +21,7 @@ import BottomNav from "@/components/BottomNav";
 import {
   saveContacts,
   getFolders,
-  getContacts,
+  findDuplicates,
   setContactFolders,
   FolderItem,
 } from "../services/database";
@@ -53,16 +53,29 @@ export default function ContactsScreen() {
   const [selectedContactIndices, setSelectedContactIndices] = useState<number[]>([]);
   const [showFolderPicker, setShowFolderPicker] = useState(false);
   const [pendingFolderId, setPendingFolderId] = useState<string | null>(null);
+  // Parallel to `contacts`: true when that card is already in My Cards.
+  const [duplicateFlags, setDuplicateFlags] = useState<boolean[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       const extractedCards = (globalThis as any).extractedCards;
+      const cards = Array.isArray(extractedCards) ? [...extractedCards] : [];
 
-      setContacts(
-        Array.isArray(extractedCards)
-          ? [...extractedCards]
-          : []
-      );
+      setContacts(cards);
+
+      let active = true;
+
+      findDuplicates(cards)
+        .then((matches) => {
+          if (active) setDuplicateFlags(matches.map(Boolean));
+        })
+        .catch(() => {
+          // The save step checks again, so a failed check here is harmless.
+        });
+
+      return () => {
+        active = false;
+      };
     }, [])
   );
 
@@ -115,12 +128,6 @@ export default function ContactsScreen() {
     }
   };
 
-  const normalizeEmail = (email?: string) =>
-    email?.trim().toLowerCase() || "";
-
-  const normalizePhone = (phone?: string) =>
-    (phone || "").replace(/\D/g, "").slice(-10);
-
   const toggleContactSelection = (index: number) => {
     setSelectedContactIndices((previous) =>
       previous.includes(index)
@@ -147,6 +154,26 @@ export default function ContactsScreen() {
     setShowFolderPicker(true);
   };
 
+  /** Asks what to do when some selected cards are already in My Cards. */
+  const askAboutDuplicates = (
+    duplicateNames: string[]
+  ): Promise<"skip" | "update" | null> =>
+    new Promise((resolve) => {
+      const count = duplicateNames.length;
+      const names = duplicateNames.slice(0, 3).join(", ") + (count > 3 ? ` and ${count - 3} more` : "");
+
+      Alert.alert(
+        count === 1 ? "Already Saved" : `${count} Already Saved`,
+        `${names} ${count === 1 ? "is" : "are"} already in My Cards (same phone or email).`,
+        [
+          { text: "Cancel", style: "cancel", onPress: () => resolve(null) },
+          { text: "Skip", onPress: () => resolve("skip") },
+          { text: "Update", onPress: () => resolve("update") },
+        ],
+        { cancelable: true, onDismiss: () => resolve(null) }
+      );
+    });
+
   const handleSaveSelectedToFolder = async (folderId: string | null) => {
     if (selectedContactIndices.length === 0 || saving) return;
 
@@ -155,34 +182,51 @@ export default function ContactsScreen() {
       const selectedSet = new Set(selectedContactIndices);
       const selectedContacts = contacts.filter((_, index) => selectedSet.has(index));
 
-      await saveContacts(selectedContacts);
+      const matches = await findDuplicates(selectedContacts);
+      const duplicateNames = selectedContacts
+        .filter((_, index) => matches[index])
+        .map((contact) => contact.name || "Unnamed contact");
+
+      let replaceDuplicates = false;
+
+      if (duplicateNames.length > 0) {
+        const choice = await askAboutDuplicates(duplicateNames);
+
+        if (choice === null) {
+          return;
+        }
+
+        replaceDuplicates = choice === "update";
+      }
+
+      const result = await saveContacts(selectedContacts, { replaceDuplicates });
 
       if (folderId) {
-        const savedContacts = await getContacts();
-        for (const contact of selectedContacts) {
-          const email = normalizeEmail(contact.email);
-          const phone = normalizePhone(contact.phone);
-          const matchedContact = savedContacts.find((saved: any) => {
-            const savedEmail = normalizeEmail(saved.email);
-            const savedPhone = normalizePhone(saved.phone);
-            if (email && savedEmail) return email === savedEmail;
-            if (phone && savedPhone) return phone === savedPhone;
-            return false;
-          });
-          if (matchedContact?.id) {
-            await setContactFolders(matchedContact.id, [folderId]);
-          }
+        for (const entry of result.written) {
+          await setContactFolders(
+            entry.id,
+            Array.from(new Set([...entry.folderIds, folderId]))
+          );
         }
       }
 
       const remainingContacts = contacts.filter((_, index) => !selectedSet.has(index));
       setContacts(remainingContacts);
       (globalThis as any).extractedCards = remainingContacts;
+      setDuplicateFlags(remainingContacts.map(() => false));
       setSelectedContactIndices([]);
       setSelectionMode(false);
       setShowFolderPicker(false);
       setPendingFolderId(null);
       setSearch("");
+
+      if (result.skipped > 0 || result.updated > 0) {
+        const parts = [];
+        if (result.saved > 0) parts.push(`${result.saved} saved`);
+        if (result.updated > 0) parts.push(`${result.updated} updated`);
+        if (result.skipped > 0) parts.push(`${result.skipped} skipped (already saved)`);
+        Alert.alert("Contacts Saved", parts.join(", ") + ".");
+      }
 
       if (remainingContacts.length === 0) {
         router.replace("/home");
@@ -260,6 +304,19 @@ export default function ContactsScreen() {
           >
             {item.name || "Unknown Contact"}
           </Text>
+
+          {duplicateFlags[contacts.indexOf(item)] && (
+            <View style={styles.duplicateBadge}>
+              <Ionicons
+                name="copy-outline"
+                size={12}
+                color="#7A5200"
+              />
+              <Text style={styles.duplicateBadgeText}>
+                Already in My Cards
+              </Text>
+            </View>
+          )}
 
           <Text
             numberOfLines={1}
@@ -848,6 +905,24 @@ const styles = StyleSheet.create({
   name: {
     color: "#20262C",
     fontSize: 16,
+    fontWeight: "800",
+  },
+
+  duplicateBadge: {
+    alignSelf: "flex-start",
+    marginTop: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: "#FFF3D1",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+
+  duplicateBadgeText: {
+    color: "#7A5200",
+    fontSize: 11,
     fontWeight: "800",
   },
 

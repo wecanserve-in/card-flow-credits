@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,15 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+
+import { auth } from "../services/firebase";
+import {
+  chooseNumbers,
+  openWhatsApp,
+  saveToPhoneContacts,
+  splitPhones,
+} from "../utils/contactActions";
 
 import {
   getFolders,
@@ -34,6 +42,8 @@ type ContactData = {
   website?: string;
   address?: string;
   country?: string;
+  notes?: string;
+  tags?: string[];
 };
 
 type DetailItemProps = {
@@ -56,8 +66,16 @@ const isAvailable = (value?: string) => {
 export default function ContactDetailsScreen() {
   const insets = useSafeAreaInsets();
 
-  const contact: ContactData =
-    (globalThis as any).selectedContact || {};
+  const [contact, setContact] = useState<ContactData>(
+    (globalThis as any).selectedContact || {}
+  );
+
+  // Pick up edits made on the Edit screen.
+  useFocusEffect(
+    useCallback(() => {
+      setContact((globalThis as any).selectedContact || {});
+    }, [])
+  );
 
   const [folders, setFolders] = useState<
     FolderItem[]
@@ -138,6 +156,7 @@ export default function ContactDetailsScreen() {
 
       (globalThis as any).selectedContact =
         updatedContact;
+      setContact(updatedContact);
 
       setShowMoveModal(false);
 
@@ -214,7 +233,7 @@ export default function ContactDetailsScreen() {
     }
   };
 
-  const openPhone = () => {
+  const openPhone = async () => {
     if (!isAvailable(contact.phone)) {
       Alert.alert(
         "Phone Unavailable",
@@ -223,10 +242,18 @@ export default function ContactDetailsScreen() {
       return;
     }
 
-    const phone = contact.phone!.replace(/\s+/g, "");
+    const chosen = await chooseNumbers(
+      splitPhones(contact.phone),
+      "Which number to call?",
+      false
+    );
+
+    if (!chosen || chosen.length === 0) {
+      return;
+    }
 
     openLink(
-      `tel:${phone}`,
+      `tel:${chosen[0].replace(/[^\d+]/g, "")}`,
       "The phone dialer could not be opened."
     );
   };
@@ -347,6 +374,17 @@ export default function ContactDetailsScreen() {
       onPress: openPhone,
     },
     {
+      title: "WhatsApp",
+      subtitle: "Chat",
+      icon: "logo-whatsapp" as const,
+      available: isAvailable(contact.phone),
+      onPress: () =>
+        openWhatsApp(
+          contact,
+          auth.currentUser?.displayName || undefined
+        ),
+    },
+    {
       title: "Email",
       subtitle: "Message",
       icon: "mail" as const,
@@ -399,8 +437,27 @@ export default function ContactDetailsScreen() {
 
             <TouchableOpacity
               activeOpacity={0.75}
+              style={[styles.headerMoveButton, styles.headerEditButton]}
+              onPress={() =>
+                router.push({
+                  pathname: "/edit-contact",
+                  params: { mode: "saved" },
+                })
+              }
+              accessibilityLabel="Edit contact"
+            >
+              <Ionicons
+                name="create-outline"
+                size={22}
+                color="#09A84E"
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.75}
               style={styles.headerMoveButton}
               onPress={handleOpenMoveModal}
+              accessibilityLabel="Add to folders"
             >
               <View style={styles.folderMoveIcon}>
                 <Ionicons
@@ -524,6 +581,65 @@ export default function ContactDetailsScreen() {
               </TouchableOpacity>
             ))}
           </View>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.savePhoneButton}
+            onPress={() => saveToPhoneContacts(contact)}
+          >
+            <Ionicons
+              name="person-add-outline"
+              size={20}
+              color="#FFFFFF"
+            />
+            <Text style={styles.savePhoneText}>
+              Save to phone contacts
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Notes & Tags
+            </Text>
+
+            <Text style={styles.sectionSubtitle}>
+              Private to you. Tap Edit to change them.
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.notesCard}
+            onPress={() =>
+              router.push({
+                pathname: "/edit-contact",
+                params: { mode: "saved" },
+              })
+            }
+          >
+            {(contact.tags || []).length > 0 && (
+              <View style={styles.tagRow}>
+                {(contact.tags || []).map((tag) => (
+                  <View key={tag} style={styles.tagChip}>
+                    <Text style={styles.tagText}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <Text
+              style={
+                contact.notes
+                  ? styles.notesText
+                  : styles.notesPlaceholder
+              }
+            >
+              {contact.notes ||
+                ((contact.tags || []).length > 0
+                  ? "No notes yet. Tap to add one."
+                  : "Add a note or tags, e.g. \"Met at IHGF, wants samples\"")}
+            </Text>
+          </TouchableOpacity>
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
@@ -931,6 +1047,69 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
+  headerEditButton: {
+    marginRight: 8,
+  },
+
+  savePhoneButton: {
+    marginTop: 14,
+    minHeight: 54,
+    borderRadius: 17,
+    backgroundColor: "#09A84E",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+
+  savePhoneText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+
+  notesCard: {
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E7ECE9",
+  },
+
+  tagRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 10,
+  },
+
+  tagChip: {
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: "#EAF8F0",
+  },
+
+  tagText: {
+    color: "#067A3A",
+    fontSize: 12.5,
+    fontWeight: "800",
+  },
+
+  notesText: {
+    color: "#20262C",
+    fontSize: 14,
+    lineHeight: 21,
+    fontWeight: "600",
+  },
+
+  notesPlaceholder: {
+    color: "#4F5A54",
+    fontSize: 13.5,
+    lineHeight: 20,
+    fontWeight: "600",
+  },
+
   headerMoveButton: {
     width: 44,
     height: 44,
@@ -1080,7 +1259,7 @@ const styles = StyleSheet.create({
   },
 
   actionButton: {
-    width: "31.5%",
+    width: "23.5%",
     minHeight: 118,
     paddingHorizontal: 7,
     paddingVertical: 14,

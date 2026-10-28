@@ -92,6 +92,9 @@ async function getDeviceId(): Promise<string | null> {
   return null;
 }
 
+/** Scans added by the last successful claim (10, or 20 with a friend's code). */
+export let lastGrantedScans = FREE_SCANS;
+
 export type FreeScansResult =
   | "granted"
   | "already_used"
@@ -135,6 +138,10 @@ export async function claimFreeScans(): Promise<FreeScansResult> {
     });
 
     const status = response.data?.status;
+
+    if (status === "granted") {
+      lastGrantedScans = Number(response.data?.granted) || FREE_SCANS;
+    }
 
     if (status === "granted" || status === "already_used") {
       // The code has been used (or can't be used any more).

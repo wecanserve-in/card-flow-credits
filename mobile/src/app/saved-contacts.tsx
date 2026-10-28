@@ -59,6 +59,8 @@ type ContactItem = {
   website?: string;
   address?: string;
   country?: string;
+  notes?: string;
+  tags?: string[];
   updatedAt?: number;
   createdAt?: number;
 };
@@ -254,6 +256,8 @@ export default function SavedContactsScreen() {
           item.website,
           item.address,
           item.country,
+          item.notes,
+          ...(Array.isArray(item.tags) ? item.tags : []),
         ]
           .filter(Boolean)
           .join(" ")

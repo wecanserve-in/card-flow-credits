@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { auth } from "../services/firebase";
 import {
   claimFreeScans,
+  lastGrantedScans,
   sendVerificationEmail,
   FREE_SCANS,
   FreeScansResult,
@@ -57,7 +58,7 @@ export default function FreeScansBanner({
     if (outcome === "granted") {
       Alert.alert(
         "Free scans added 🎉",
-        `${FREE_SCANS} free scans have been added to your account.`
+        `${lastGrantedScans} free scans have been added to your account.`
       );
     } else if (
       fromButton &&

@@ -97,6 +97,8 @@ function calculateColumnWidths(
     32, // Address
     18, // Country
     28, // LinkedIn
+    30, // Notes
+    20, // Tags
   ];
 
   const maximumWidths = [
@@ -110,6 +112,8 @@ function calculateColumnWidths(
     60, // Address
     25, // Country
     55, // LinkedIn
+    70, // Notes
+    40, // Tags
   ];
 
   return Array.from(
@@ -169,6 +173,8 @@ export async function exportContactsToExcel(
       "Address",
       "Country",
       "LinkedIn",
+      "Notes",
+      "Tags",
     ];
 
     const contactRows: Array<Array<string | number>> =
@@ -183,6 +189,12 @@ export async function exportContactsToExcel(
         normalizeText(contact.address),
         normalizeText(contact.country),
         normalizeText(contact.linkedin),
+        normalizeText((contact as any).notes),
+        normalizeText(
+          Array.isArray((contact as any).tags)
+            ? (contact as any).tags.join(", ")
+            : ""
+        ),
       ]);
 
     const worksheetData: Array<

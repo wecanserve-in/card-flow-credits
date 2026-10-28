@@ -8,7 +8,8 @@ only if:
 
 Referrals: every user has a permanent referral code (/account/referral-code). A new
 user can send a friend's code with their claim. When the new user's welcome gift is
-granted, the friend who owns the code gets REFERRAL_BONUS scans. Because the reward is
+granted, the friend who owns the code gets REFERRAL_BONUS scans and the new user
+gets REFERRAL_WELCOME_BONUS extra scans. Because the reward is
 tied to the welcome gift, a second account on the same phone (or with the same email)
 earns nobody anything.
 
@@ -31,7 +32,8 @@ from pydantic import BaseModel
 from payments import _get_firestore, _verify_firebase_claims, _verify_firebase_token
 
 FREE_SCANS = 10
-REFERRAL_BONUS = 10
+REFERRAL_BONUS = 10          # for the friend who shared the code
+REFERRAL_WELCOME_BONUS = 10  # extra for the new user who used a code
 HASH_SALT = os.getenv("FREE_SCANS_HASH_SALT", "scanmycard-free-scans-v1")
 
 # No 0/O or 1/I/L, so codes are easy to read out and type.
@@ -200,16 +202,20 @@ def _grant_free_scans(uid: str, device_key: str, email_key: Optional[str], refer
             transaction.set(email_ref, record)
 
         credits = _credits(data)
-        new_total = credits["total"] + FREE_SCANS
+        referral_ok = (
+            referrer_snapshot is not None and referrer_snapshot.exists
+        )
+        granted = FREE_SCANS + (REFERRAL_WELCOME_BONUS if referral_ok else 0)
+        new_total = credits["total"] + granted
         user_update = {
             "totalScans": new_total,
             "freeScansStatus": "granted",
-            "freeScansGranted": FREE_SCANS,
+            "freeScansGranted": granted,
             "updatedAt": now,
         }
 
         rewarded_referrer = None
-        if referrer_snapshot is not None and referrer_snapshot.exists:
+        if referral_ok:
             referrer = referrer_snapshot.to_dict() or {}
             referrer_credits = _credits(referrer)
             transaction.set(
@@ -232,6 +238,7 @@ def _grant_free_scans(uid: str, device_key: str, email_key: Optional[str], refer
         transaction.set(user_ref, user_update, merge=True)
         return {
             "status": "granted",
+            "granted": granted,
             "credits": {
                 "total": new_total,
                 "used": credits["used"],

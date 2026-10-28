@@ -92,8 +92,8 @@ export default function ReferralScreen() {
         </Text>
 
         <Text style={styles.subtitle}>
-          Enter your friend&apos;s code and they get{" "}
-          {REFERRAL_BONUS} free scans when you join.
+          Enter your friend&apos;s code and you both get{" "}
+          {REFERRAL_BONUS} extra free scans.
         </Text>
 
         <TextInput

@@ -18,6 +18,8 @@ import {
 } from "react-native-safe-area-context";
 
 import { Ionicons } from "@expo/vector-icons";
+
+import { updateContact } from "../services/database";
 import {
   router,
   useLocalSearchParams,
@@ -32,6 +34,9 @@ type ContactForm = {
   website: string;
   address: string;
   country: string;
+  notes: string;
+  // Comma-separated in the form; stored as a list.
+  tags: string;
 };
 
 type InputConfig = {
@@ -46,14 +51,18 @@ type InputConfig = {
 
 export default function EditContact() {
   const insets = useSafeAreaInsets();
-  const { index } = useLocalSearchParams();
+  const { index, mode } = useLocalSearchParams();
+
+  // "saved": editing a contact already in My Cards. Otherwise a freshly extracted card.
+  const isSaved = mode === "saved";
 
   const contactIndex = Number(index);
 
-  const contact =
-    (globalThis as any).extractedCards?.[
-      contactIndex
-    ] || {};
+  const contact = isSaved
+    ? (globalThis as any).selectedContact || {}
+    : (globalThis as any).extractedCards?.[contactIndex] || {};
+
+  const [saving, setSaving] = useState(false);
 
   const [form, setForm] =
     useState<ContactForm>({
@@ -66,6 +75,10 @@ export default function EditContact() {
       website: contact.website || "",
       address: contact.address || "",
       country: contact.country || "",
+      notes: contact.notes || "",
+      tags: Array.isArray(contact.tags)
+        ? contact.tags.join(", ")
+        : "",
     });
 
   const handleChange = (
@@ -78,12 +91,54 @@ export default function EditContact() {
     }));
   };
 
-  const saveChanges = () => {
+  const saveChanges = async () => {
+    if (saving) {
+      return;
+    }
+
     if (!form.name.trim()) {
       Alert.alert(
         "Name Required",
         "Please enter the contact's name."
       );
+      return;
+    }
+
+    // Up to 10 short, unique tags.
+    const tags = Array.from(
+      new Set(
+        form.tags
+          .split(",")
+          .map((tag) => tag.trim().slice(0, 30))
+          .filter(Boolean)
+      )
+    ).slice(0, 10);
+
+    const fields = {
+      ...form,
+      name: form.name.trim(),
+      notes: form.notes.trim(),
+      tags,
+    };
+
+    if (isSaved) {
+      try {
+        setSaving(true);
+        const updated = await updateContact({
+          ...contact,
+          ...fields,
+        });
+        (globalThis as any).selectedContact = updated;
+        router.back();
+      } catch (error: any) {
+        Alert.alert(
+          "Update Failed",
+          error?.message ||
+            "Unable to save your changes. Please try again."
+        );
+      } finally {
+        setSaving(false);
+      }
       return;
     }
 
@@ -94,8 +149,7 @@ export default function EditContact() {
 
     cards[contactIndex] = {
       ...cards[contactIndex],
-      ...form,
-      name: form.name.trim(),
+      ...fields,
     };
 
     (globalThis as any).extractedCards =
@@ -163,6 +217,21 @@ export default function EditContact() {
       key: "country",
       placeholder: "Enter country",
       icon: "flag-outline",
+      autoCapitalize: "words",
+    },
+    {
+      label: "Notes",
+      key: "notes",
+      placeholder: "e.g. Met at IHGF Delhi, wants samples",
+      icon: "document-text-outline",
+      autoCapitalize: "sentences",
+      multiline: true,
+    },
+    {
+      label: "Tags (separate with commas)",
+      key: "tags",
+      placeholder: "e.g. Hot lead, Supplier, Follow up",
+      icon: "pricetags-outline",
       autoCapitalize: "words",
     },
   ];
@@ -288,8 +357,9 @@ export default function EditContact() {
                   styles.headerSubtitle
                 }
               >
-                Update extracted card
-                details
+                {isSaved
+                  ? "Update saved contact details"
+                  : "Update extracted card details"}
               </Text>
             </View>
 
@@ -397,7 +467,7 @@ export default function EditContact() {
                       styles.extractedBadgeText
                     }
                   >
-                    AI extracted
+                    {isSaved ? "Saved contact" : "AI extracted"}
                   </Text>
                 </View>
               </View>
@@ -519,7 +589,45 @@ export default function EditContact() {
 
             <View style={styles.formCard}>
               {inputConfigs
-                .slice(6)
+                .slice(6, 8)
+                .map(renderInput)}
+            </View>
+
+            <View style={styles.sectionHeader}>
+              <View
+                style={
+                  styles.sectionIcon
+                }
+              >
+                <Ionicons
+                  name="pricetags-outline"
+                  size={18}
+                  color="#09A84E"
+                />
+              </View>
+
+              <View>
+                <Text
+                  style={
+                    styles.sectionTitle
+                  }
+                >
+                  Notes & tags
+                </Text>
+
+                <Text
+                  style={
+                    styles.sectionSubtitle
+                  }
+                >
+                  Private to you, searchable
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.formCard}>
+              {inputConfigs
+                .slice(8)
                 .map(renderInput)}
             </View>
 
@@ -582,8 +690,11 @@ export default function EditContact() {
                     styles.saveSubtitle
                   }
                 >
-                  Update this extracted
-                  contact
+                  {saving
+                    ? "Saving..."
+                    : isSaved
+                      ? "Update this saved contact"
+                      : "Update this extracted contact"}
                 </Text>
               </View>
 

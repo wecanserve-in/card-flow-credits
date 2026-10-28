@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 
 import { encryptData, decryptData } from "./crypto";
+import { hasValue, splitPhones } from "../utils/contactActions";
 
 /* =====================================================
    DUPLICATE HELPERS
@@ -22,11 +23,22 @@ import { encryptData, decryptData } from "./crypto";
 let existingEmails = new Set<string>();
 let existingPhones = new Set<string>();
 
+// "Not available" etc. must never count as an email or phone, or every card
+// without an email would look like a duplicate of every other one.
 const normalizeEmail = (email?: string) =>
-  email?.trim().toLowerCase() || "";
+  hasValue(email) ? email.trim().toLowerCase() : "";
 
-const normalizePhone = (phone?: string) =>
-  (phone || "").replace(/\D/g, "").slice(-10);
+const normalizePhone = (phone?: string) => {
+  const digits = (phone || "").replace(/\D/g, "");
+  return digits.length >= 7 ? digits.slice(-10) : "";
+};
+
+/** Every phone number on the card (cards often print two). */
+const normalizePhones = (phone?: string) =>
+  splitPhones(phone).map(normalizePhone).filter(Boolean);
+
+/** Fields the user adds after saving; kept when a card is re-saved. */
+const USER_FIELDS = ["notes", "tags"];
 
 /* =====================================================
    STORAGE
@@ -46,279 +58,181 @@ const getStorageKey = () => {
    CONTACTS
 ===================================================== */
 
-export async function saveContacts(
-  newContacts: any[]
-) {
-  try {
-    const uid = auth.currentUser?.uid;
+export type SaveResult = {
+  saved: number;
+  updated: number;
+  skipped: number;
+  // Contacts written (new or updated), with the folders they already had.
+  written: { id: string; folderIds: string[] }[];
+};
 
-    if (!uid) {
-      return false;
+/** Index of saved contacts by email and by every phone number. */
+function buildDuplicateIndex(existingContacts: any[]) {
+  const byKey = new Map<string, any>();
+
+  existingEmails.clear();
+  existingPhones.clear();
+
+  for (const contact of existingContacts) {
+    const email = normalizeEmail(contact.email);
+
+    if (email) {
+      existingEmails.add(email);
+      byKey.set(`e:${email}`, contact);
     }
 
-    const STORAGE_KEY =
-      getStorageKey();
+    for (const phone of normalizePhones(contact.phone)) {
+      existingPhones.add(phone);
+      byKey.set(`p:${phone}`, contact);
+    }
+  }
 
-    /* =================================================
-       IMPORTANT:
-       Rebuild duplicate cache ONLY
-       for the CURRENT Firebase user
-    ================================================= */
+  return byKey;
+}
 
-    const contactsRef =
-      collection(
-        db,
-        "users",
-        uid,
-        "contacts"
-      );
+function findMatch(byKey: Map<string, any>, contact: any) {
+  const email = normalizeEmail(contact.email);
 
-    const snapshot =
-      await getDocs(contactsRef);
+  if (email && byKey.has(`e:${email}`)) {
+    return byKey.get(`e:${email}`);
+  }
 
-    /* =================================================
-       CLEAR PREVIOUS USER CACHE
+  for (const phone of normalizePhones(contact.phone)) {
+    if (byKey.has(`p:${phone}`)) {
+      return byKey.get(`p:${phone}`);
+    }
+  }
 
-       This is the important fix.
-       If User A logs out and User B logs in,
-       User A's email/phone values will not remain.
-    ================================================= */
+  return null;
+}
 
-    existingEmails.clear();
-    existingPhones.clear();
+/** The decrypted fields only (no id / folderIds / updatedAt). */
+function contactFields(contact: any) {
+  const { id, folderIds, updatedAt, folderId, sourceUri, unreadable, ...fields } =
+    contact || {};
+  return fields;
+}
 
-    const existingContacts: any[] = [];
+/**
+ * For each new contact: the already-saved contact it duplicates (same email or
+ * any same phone number), or null.
+ */
+export async function findDuplicates(newContacts: any[]): Promise<(any | null)[]> {
+  const existing = await getContacts();
+  const byKey = buildDuplicateIndex(existing);
+  return newContacts.map((contact) => findMatch(byKey, contact));
+}
 
-    snapshot.docs.forEach(
-      (document) => {
-        const data =
-          document.data();
+/**
+ * Saves new contacts. Duplicates of saved contacts (same email or phone) are
+ * skipped, or with `replaceDuplicates` the saved contact is updated with the new
+ * card's details (keeping its notes, tags and folders).
+ */
+export async function saveContacts(
+  newContacts: any[],
+  options: { replaceDuplicates?: boolean } = {}
+): Promise<SaveResult> {
+  const uid = auth.currentUser?.uid;
 
-        const encrypted =
-          data.encryptedData;
+  if (!uid) {
+    throw new Error("Please sign in again.");
+  }
 
-        if (!encrypted) {
-          return;
-        }
+  const result: SaveResult = { saved: 0, updated: 0, skipped: 0, written: [] };
 
-        const contact =
-          decryptData(encrypted);
+  try {
+    const existingContacts = await getContacts();
+    const byKey = buildDuplicateIndex(existingContacts);
+    const now = Date.now();
 
-        if (!contact) {
-          return;
-        }
+    for (const contact of newContacts) {
+      const fields = contactFields(contact);
+      const match = findMatch(byKey, fields);
 
-        const legacyFolderId =
-          data.folderId || null;
-
-        const folderIds =
-          Array.isArray(
-            data.folderIds
-          )
-            ? data.folderIds
-            : legacyFolderId
-              ? [legacyFolderId]
-              : [];
-
-        const existingContact = {
-          id: document.id,
-
-          updatedAt:
-            data.updatedAt || 0,
-
-          folderIds,
-
-          ...contact,
-        };
-
-        existingContacts.push(
-          existingContact
-        );
-
-        /* =============================================
-           Build duplicate cache for THIS UID ONLY
-        ============================================= */
-
-        const email =
-          normalizeEmail(
-            contact.email
-          );
-
-        const phone =
-          normalizePhone(
-            contact.phone
-          );
-
-        if (email) {
-          existingEmails.add(
-            email
-          );
-        }
-
-        if (phone) {
-          existingPhones.add(
-            phone
-          );
-        }
-      }
-    );
-
-    /* =================================================
-       SAVE NEW CONTACTS
-    ================================================= */
-
-    const contactsToSave: any[] = [];
-
-    for (
-      const contact of newContacts
-    ) {
-      const email =
-        normalizeEmail(
-          contact.email
-        );
-
-      const phone =
-        normalizePhone(
-          contact.phone
-        );
-
-      /* ===============================================
-         DUPLICATE CHECK
-
-         This now checks ONLY contacts belonging
-         to the currently logged-in Firebase user.
-      =============================================== */
-
-      const duplicate =
-        (email &&
-          existingEmails.has(
-            email
-          )) ||
-        (phone &&
-          existingPhones.has(
-            phone
-          ));
-
-      if (duplicate) {
+      if (match && !options.replaceDuplicates) {
+        result.skipped += 1;
         continue;
       }
 
-      /* ===============================================
-         ENCRYPT CONTACT
-      =============================================== */
+      let documentId: string;
+      let toStore: any;
 
-      const encrypted =
-        encryptData(contact);
+      if (match) {
+        documentId = match.id;
 
-      /* ===============================================
-         DOCUMENT ID
-
-         Email → phone → random ID
-      =============================================== */
-
-      const documentId =
-        email ||
-        phone ||
-        `contact_${Date.now()}_${Math.random()
-          .toString(36)
-          .substring(2, 8)}`;
-
-      /* ===============================================
-         SAVE TO FIRESTORE
-      =============================================== */
-
-      await setDoc(
-        doc(
-          db,
-          "users",
-          uid,
-          "contacts",
-          documentId
-        ),
-        {
-          encryptedData:
-            encrypted,
-
-          updatedAt:
-            Date.now(),
+        const kept: any = {};
+        for (const key of USER_FIELDS) {
+          if (match[key] !== undefined) {
+            kept[key] = match[key];
+          }
         }
-      );
 
-      /* ===============================================
-         UPDATE CACHE IMMEDIATELY
-
-         Prevents duplicates inside the SAME
-         scanning batch.
-      =============================================== */
-
-      if (email) {
-        existingEmails.add(
-          email
-        );
+        toStore = { ...contactFields(match), ...fields, ...kept };
+        result.updated += 1;
+      } else {
+        documentId = `contact_${now}_${Math.random().toString(36).substring(2, 10)}`;
+        toStore = fields;
+        result.saved += 1;
       }
 
-      if (phone) {
-        existingPhones.add(
-          phone
-        );
-      }
-
-      contactsToSave.push({
-        id: documentId,
-
-        ...contact,
-
-        updatedAt:
-          Date.now(),
-
-        folderIds: [],
-      });
-    }
-
-    /* =================================================
-       UPDATE ASYNC STORAGE
-
-       IMPORTANT:
-       Storage key contains Firebase UID.
-    ================================================= */
-
-    if (
-      contactsToSave.length > 0
-    ) {
-      const updatedContacts = [
-        ...contactsToSave,
-        ...existingContacts,
-      ];
-
-      await AsyncStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(
-          updatedContacts
-        )
+      // merge: keeps the contact's folders when an existing one is updated.
+      await setDoc(
+        doc(db, "users", uid, "contacts", documentId),
+        { encryptedData: encryptData(toStore), updatedAt: now },
+        { merge: true }
       );
 
-    } else {
-      /* ===============================================
-         No new contacts saved.
-         Still refresh local cache.
-      =============================================== */
+      result.written.push({ id: documentId, folderIds: match?.folderIds || [] });
 
-      await AsyncStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(
-          existingContacts
-        )
-      );
+      // Later cards in the same batch are checked against this one too.
+      const stored = { id: documentId, folderIds: match?.folderIds || [], ...toStore };
+      const email = normalizeEmail(stored.email);
+      if (email) byKey.set(`e:${email}`, stored);
+      for (const phone of normalizePhones(stored.phone)) byKey.set(`p:${phone}`, stored);
     }
 
-    return true;
+    // Refresh the local cache from the server copy.
+    await getContacts();
+
+    return result;
   } catch (error: any) {
-    console.error(
-      "[Database] Save contacts error:", error?.code || error?.message
-    );
-
+    console.error("[Database] Save contacts error:", error?.code || error?.message);
     throw error;
   }
+}
+
+/** Saves edits to one saved contact (details, notes, tags). Folders are untouched. */
+export async function updateContact(contact: any) {
+  const uid = auth.currentUser?.uid;
+
+  if (!uid || !contact?.id) {
+    throw new Error("This contact can't be updated.");
+  }
+
+  const fields = contactFields(contact);
+  const now = Date.now();
+
+  await setDoc(
+    doc(db, "users", uid, "contacts", contact.id),
+    { encryptedData: encryptData(fields), updatedAt: now },
+    { merge: true }
+  );
+
+  // Keep the offline cache in step.
+  try {
+    const key = getStorageKey();
+    const cached = JSON.parse((await AsyncStorage.getItem(key)) || "[]");
+    const updated = Array.isArray(cached)
+      ? cached.map((item: any) =>
+          item?.id === contact.id ? { ...item, ...fields, updatedAt: now } : item
+        )
+      : [];
+    await AsyncStorage.setItem(key, JSON.stringify(updated));
+  } catch {
+    // The cache refreshes on the next load anyway.
+  }
+
+  return { ...contact, ...fields, updatedAt: now };
 }
 
 /* =====================================================

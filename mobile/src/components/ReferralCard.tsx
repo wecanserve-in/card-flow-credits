@@ -80,7 +80,7 @@ export default function ReferralCard({ user }: Props) {
       await Share.share({
         message:
           `I use ScanMyCard to turn business cards into contacts and Excel sheets in seconds. ` +
-          `Download it and enter my referral code ${code} when you sign up:\n${PLAY_STORE_URL}`,
+          `Download it and enter my referral code ${code} when you sign up, and we both get ${REFERRAL_BONUS} free scans:\n${PLAY_STORE_URL}`,
       });
     } catch {
       Alert.alert(
@@ -111,7 +111,7 @@ export default function ReferralCard({ user }: Props) {
 
           <Text style={styles.subtitle}>
             When a friend signs up with your code, you
-            get {REFERRAL_BONUS} scans.
+            both get {REFERRAL_BONUS} free scans.
           </Text>
         </View>
       </View>
