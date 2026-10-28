@@ -39,7 +39,7 @@ Payments are handled by Razorpay (UPI, cards, netbanking, wallets).
 
 **Company and contact**
 - Brand: ScanMyCard, by WeCanServe
-- Support email: wecanserve23@gmail.com
+- Support email: support@scanmycard.in
 - WhatsApp support: +91 90290 05313 (link: https://wa.me/919029005313)
 - Android package: `com.wecanserve.scanmycard`
 - Play Store link: `https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard` (put it in one constant; the listing goes live after launch)
@@ -85,7 +85,7 @@ Footer on every page: links to Privacy, Terms, Delete account and Support; "© S
 ### `/delete-account`
 Google requires a web page where users can request account and data deletion without reinstalling the app. Include:
 - **In-app steps:** "Open ScanMyCard → tap **Profile** in the bottom bar → tap your profile card at the top → **Delete Account** → confirm. This permanently deletes your account, saved contacts, folders, notifications, profile photo and purchase records."
-- **Without the app:** a short form (name, account email, reason) that opens a pre-filled email to wecanserve23@gmail.com with subject "Account deletion request". State: "We'll delete your account and data within 30 days and confirm by email."
+- **Without the app:** a short form (name, account email, reason) that opens a pre-filled email to support@scanmycard.in with subject "Account deletion request". State: "We'll delete your account and data within 30 days and confirm by email."
 - What gets deleted: the account, contacts, folders, events, notifications and profile photo.
 - What may be kept: payment records that the payment processor (Razorpay) and Indian tax law require us to keep, held only as long as legally required.
 
@@ -98,7 +98,7 @@ Write a clear, plain-English privacy policy, more complete than the current in-a
 - **Security:** encrypted connections (HTTPS), with each user's data accessible only to that user.
 - **Data retention, the user's rights, and deletion** (link to `/delete-account`).
 - **Children:** the service isn't directed at anyone under 13 (or 18 for purchases).
-- **Contact:** wecanserve23@gmail.com. Add a "Last updated" date.
+- **Contact:** support@scanmycard.in. Add a "Last updated" date.
 - Add an HTML comment at the top: `<!-- Have this reviewed before launch; not legal advice. -->`
 
 ### `/terms`

@@ -24,7 +24,7 @@ SMTP_HOST = os.getenv("SMTP_HOST", "smtp.hostinger.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USER = os.getenv("SMTP_USER", "noreply@scanmycard.in")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "wecanserve23@gmail.com")
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "support@scanmycard.in")
 LOGO_URL = "https://scanmycard.in/assets/images/app-icon-256.png"
 FREE_SCANS = 10
 

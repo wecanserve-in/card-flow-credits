@@ -4,7 +4,7 @@
 
   /* ---- Site constants: edit here ---- */
   var PLAY_URL = 'https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard';
-  var SUPPORT_EMAIL = 'wecanserve23@gmail.com';
+  var SUPPORT_EMAIL = 'support@scanmycard.in';
   var GST_RATE = 0.18;
 
   /* ---- Analytics: the single place to add tracking later ----

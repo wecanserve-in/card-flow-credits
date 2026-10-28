@@ -295,7 +295,7 @@ export default function PrivacyPolicyScreen() {
               style={styles.contactRow}
               onPress={() =>
                 openLink(
-                  "mailto:wecanserve23@gmail.com?subject=Privacy Policy Question",
+                  "mailto:support@scanmycard.in?subject=Privacy Policy Question",
                   "Your email application could not be opened."
                 )
               }
@@ -319,7 +319,7 @@ export default function PrivacyPolicyScreen() {
                 </Text>
 
                 <Text style={styles.contactValue}>
-wecanserve23@gmail.com                </Text>
+support@scanmycard.in                </Text>
               </View>
 
               <Ionicons

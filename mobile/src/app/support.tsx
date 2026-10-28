@@ -107,7 +107,7 @@ export default function SupportScreen() {
       iconBackground: "#FFF5DE",
       onPress: () =>
         openExternalURL(
-          "mailto:wecanserve23@gmail.com?subject=ScanMyCard Support",
+          "mailto:support@scanmycard.in?subject=ScanMyCard Support",
           "Your email application could not be opened."
         ),
     },
@@ -330,7 +330,7 @@ export default function SupportScreen() {
               style={styles.infoRow}
               onPress={() =>
                 openExternalURL(
-                  "mailto:wecanserve23@gmail.com",
+                  "mailto:support@scanmycard.in",
                   "Your email application could not be opened."
                 )
               }
@@ -354,7 +354,7 @@ export default function SupportScreen() {
                 </Text>
 
                 <Text style={styles.infoValue}>
-                  wecanserve23@gmail.com
+                  support@scanmycard.in
                 </Text>
               </View>
 

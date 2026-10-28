@@ -294,7 +294,7 @@ export default function TermsScreen() {
               style={styles.contactRow}
               onPress={() =>
                 openLink(
-                  "mailto:wecanserve23@gmail.com?subject=Terms and Conditions Question",
+                  "mailto:support@scanmycard.in?subject=Terms and Conditions Question",
                   "Your email application could not be opened."
                 )
               }
@@ -318,7 +318,7 @@ export default function TermsScreen() {
                 </Text>
 
                 <Text style={styles.contactValue}>
-                 wecanserve23@gmail.com
+                 support@scanmycard.in
                 </Text>
               </View>
 
