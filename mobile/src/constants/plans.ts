@@ -5,9 +5,13 @@ export interface Plan {
   name: string;
   price: number;
   cards: number;
+  /** Price of one card before GST (price ÷ cards), rounded to paise. */
   perCard: number;
   category: PlanCategory;
 }
+
+const perCard = (price: number, cards: number): number =>
+  Math.round((price / cards) * 100) / 100;
 
 export const GST_RATE = 0.18;
 
@@ -17,15 +21,15 @@ export const PLANS: Plan[] = [
     name: "Starter",
     price: 99,
     cards: 50,
-    perCard: 2,
+    perCard: perCard(99, 50),
     category: "personal",
   },
   {
     id: "personal_popular",
     name: "Popular",
     price: 499,
-    cards: 750,
-    perCard: 1.5,
+    cards: 330,
+    perCard: perCard(499, 330),
     category: "personal",
   },
   {
@@ -33,7 +37,7 @@ export const PLANS: Plan[] = [
     name: "Pro",
     price: 999,
     cards: 1000,
-    perCard: 1,
+    perCard: perCard(999, 1000),
     category: "personal",
   },
   {
@@ -41,7 +45,7 @@ export const PLANS: Plan[] = [
     name: "Business Starter",
     price: 2499,
     cards: 2775,
-    perCard: 0.9,
+    perCard: perCard(2499, 2775),
     category: "business",
   },
   {
@@ -49,7 +53,7 @@ export const PLANS: Plan[] = [
     name: "Business Pro",
     price: 3999,
     cards: 5710,
-    perCard: 0.7,
+    perCard: perCard(3999, 5710),
     category: "business",
   },
   {
@@ -57,7 +61,7 @@ export const PLANS: Plan[] = [
     name: "Business Enterprise",
     price: 5999,
     cards: 10000,
-    perCard: 0.6,
+    perCard: perCard(5999, 10000),
     category: "business",
   },
 ];

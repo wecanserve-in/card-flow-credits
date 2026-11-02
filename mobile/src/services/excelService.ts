@@ -226,7 +226,7 @@ export async function exportContactsToExcel(
      * including the Country column.
      */
     worksheet["!autofilter"] = {
-      ref: `A1:J${contactRows.length + 1}`,
+      ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: contactRows.length, c: totalColumns - 1 } }),
     };
 
     // Style table header.
