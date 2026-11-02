@@ -35,7 +35,7 @@ card-flow-credits/
 | Plan | Price (INR, before GST) | Credits |
 |------|------|---------|
 | Personal Starter | 99 | 50 |
-| Personal Popular | 499 | 750 |
+| Personal Popular | 499 | 330 |
 | Personal Pro | 999 | 1000 |
 | Business Starter | 2499 | 2775 |
 | Business Pro | 3999 | 5710 |

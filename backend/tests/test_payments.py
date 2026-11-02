@@ -50,16 +50,16 @@ def test_verify_adds_credits_once(client, db, razorpay, pushes):
     recovered = client.post("/payments/recover", json=payload, headers=auth())
 
     assert first.status_code == 200
-    assert first.json()["scanPack"]["totalScans"] == 755
+    assert first.json()["scanPack"]["totalScans"] == 335
     assert second.status_code == 200
     assert second.json()["message"] == "Payment was already processed."
     assert recovered.status_code == 200
 
     user = db.docs["users/uid-alice"]
-    assert user["totalScans"] == 755
+    assert user["totalScans"] == 335
     assert user["usedScans"] == 3
     assert user["packId"] == PACK
-    assert db.docs["processedPayments/pay_1"]["creditsAdded"] == 750
+    assert db.docs["processedPayments/pay_1"]["creditsAdded"] == 330
     assert len(pushes) == 1
 
 
@@ -121,5 +121,5 @@ def test_purchase_on_old_free_account(client, db, razorpay):
 
     assert response.status_code == 200
     user = db.docs["users/uid-alice"]
-    assert user["totalScans"] == 755
+    assert user["totalScans"] == 335
     assert user["usedScans"] == 5

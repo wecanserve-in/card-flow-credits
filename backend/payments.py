@@ -85,7 +85,7 @@ PLAN_PRICES = {
 
 PLAN_SCAN_LIMITS = {
     "personal_starter": 50,
-    "personal_popular": 750,
+    "personal_popular": 330,
     "personal_pro": 1000,
     "business_starter": 2775,
     "business_pro": 5710,
