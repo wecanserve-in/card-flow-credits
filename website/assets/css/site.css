@@ -504,7 +504,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* ---------- Features (bento) ---------- */
 .bento { display: grid; gap: 16px; }
 @media (min-width: 700px) { .bento { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 1024px) { .bento { grid-template-columns: repeat(6, 1fr); } .f-ai { grid-column: span 4; } .f-multi { grid-column: span 2; } .f-folders, .f-export, .f-sync { grid-column: span 2; } .f-pay { grid-column: span 6; } }
+@media (min-width: 1024px) { .bento { grid-template-columns: repeat(6, 1fr); } .f-ai { grid-column: span 4; } .f-multi { grid-column: span 2; } .f-folders, .f-export, .f-sync, .f-phone, .f-notes, .f-refer { grid-column: span 2; } .f-pay { grid-column: span 6; } }
+@media (min-width: 700px) and (max-width: 1023px) { .f-pay { grid-column: 1 / -1; } }
 .feat { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 28px; overflow: hidden; }
 .feat__icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand-ink); margin-bottom: 18px; }
 .feat__icon svg { width: 22px; height: 22px; }
@@ -817,3 +818,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .tut-close svg { width: 20px; height: 20px; }
 .tut-close:hover { background: rgba(0, 0, 0, .8); }
+
+/* ---------- Guide / landing pages ---------- */
+.crumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .875rem; font-weight: 600; color: var(--ink-2); margin-bottom: 18px; }
+.crumbs a { color: var(--ink-2); text-decoration: none; }
+.crumbs a:hover { color: var(--brand-ink); text-decoration: underline; }
+.page-guide .page-hero .lead { margin-bottom: 28px; }
+.guide { padding-top: clamp(56px, 8vw, 96px); }
+.prose .table-wrap { overflow-x: auto; }

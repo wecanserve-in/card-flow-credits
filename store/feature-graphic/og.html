@@ -1,0 +1,40 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body { font-family: "Plus Jakarta Sans", sans-serif; background: linear-gradient(160deg, #063496 0%, #0a3fa8 55%, #1452be 100%); position: relative; color: #fff; }
+  .glow { position: absolute; right: -60px; top: -80px; width: 560px; height: 560px; border-radius: 50%;
+          background: radial-gradient(circle, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 65%); }
+  .left { position: absolute; left: 64px; top: 72px; width: 640px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand img { width: 66px; height: 66px; border-radius: 14px; box-shadow: 0 6px 16px rgba(0,0,0,.25); }
+  .brand span { font-size: 34px; font-weight: 800; letter-spacing: -.5px; }
+  .brand b { color: #6BD14A; font-weight: 800; }
+  h1 { margin-top: 40px; font-size: 60px; line-height: 1.06; font-weight: 800; letter-spacing: -1.2px; }
+  h1 em { font-style: normal; color: #FFCC00; display: block; }
+  p { margin-top: 20px; font-size: 22px; font-weight: 500; color: #DCE6FF; }
+  .chips { margin-top: 28px; display: flex; gap: 8px; }
+  .chip { padding: 10px 15px; border-radius: 999px; background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.28); font-size: 16px; font-weight: 700; white-space: nowrap; }
+  .chip.y { background: #FFCC00; color: #062a7a; border-color: #FFCC00; }
+  .phone { position: absolute; filter: drop-shadow(0 18px 30px rgba(0,0,0,.35)); }
+  .p1 { width: 262px; left: 712px; top: 138px; transform: rotate(-6deg); z-index: 1; }
+  .p2 { width: 280px; left: 886px; top: 70px; transform: rotate(5deg); z-index: 2; }
+</style></head>
+<body>
+  <div class="glow"></div>
+  <div class="left">
+    <div class="brand"><img src="icon.png" alt=""><span>Scan<b>My</b>Card</span></div>
+    <h1>Visiting cards to<em>Contacts &amp; Excel</em></h1>
+    <p>AI reads every card in seconds. You just check and save.</p>
+    <div class="chips">
+      <span class="chip y">10 free scans</span>
+      <span class="chip">Save to phone</span>
+      <span class="chip">WhatsApp</span>
+      <span class="chip">Excel export</span>
+    </div>
+  </div>
+  <img class="phone p1" src="phone1.png" alt="">
+  <img class="phone p2" src="phone2.png" alt="">
+</body></html>

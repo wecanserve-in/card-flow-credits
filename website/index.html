@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ScanMyCard: AI business card scanner to Excel for Android</title>
-<meta name="description" content="Scan a whole stack of business cards with your phone. AI reads name, company, phone, email and more, then export to Excel. Pay per card, credits never expire, 10 free scans.">
+<title>Visiting Card Scanner App to Excel &amp; Contacts | ScanMyCard</title>
+<meta name="description" content="Scan visiting cards and business cards with AI. Save them to your phone contacts, chat on WhatsApp and export to Excel in seconds. Start with 10 free scans.">
 <link rel="canonical" href="https://scanmycard.in/">
 <meta name="theme-color" content="#F5F8F6">
 <link rel="icon" href="/favicon.ico" sizes="any">
@@ -14,65 +14,320 @@
 <meta property="og:site_name" content="ScanMyCard">
 <meta property="og:locale" content="en_IN">
 <meta property="og:url" content="https://scanmycard.in/">
-<meta property="og:title" content="ScanMyCard: from a stack of cards to a clean Excel sheet in minutes">
-<meta property="og:description" content="AI reads every business card for you. Pay per card, credits never expire, 10 free scans. Android.">
-<meta property="og:image" content="https://scanmycard.in/assets/images/og.png">
+<meta property="og:title" content="ScanMyCard: visiting cards to Excel and phone contacts in minutes">
+<meta property="og:description" content="AI reads every visiting card for you. Save to contacts, WhatsApp, Excel export. 10 free scans, credits never expire.">
+<meta property="og:image" content="https://scanmycard.in/assets/images/og-v2.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="ScanMyCard: from a stack of cards to a clean Excel sheet in minutes">
+<meta property="og:image:alt" content="ScanMyCard: visiting cards to contacts and Excel with AI">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="ScanMyCard: from a stack of cards to a clean Excel sheet in minutes">
-<meta name="twitter:description" content="AI reads every business card for you. Pay per card, credits never expire, 10 free scans.">
-<meta name="twitter:image" content="https://scanmycard.in/assets/images/og.png">
+<meta name="twitter:title" content="ScanMyCard: visiting cards to Excel and phone contacts in minutes">
+<meta name="twitter:description" content="AI reads every visiting card for you. Save to contacts, WhatsApp, Excel export. 10 free scans, credits never expire.">
+<meta name="twitter:image" content="https://scanmycard.in/assets/images/og-v2.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&amp;display=swap">
-<link rel="stylesheet" href="/assets/css/site.css?v=7">
+<link rel="stylesheet" href="/assets/css/site.css?v=8">
 <script>document.documentElement.classList.add('js')</script>
 <!-- Analytics: configured in one place, the ANALYTICS block at the top of /assets/js/site.js -->
-<script src="/assets/js/site.js?v=7" defer></script>
+<script src="/assets/js/site.js?v=8" defer></script>
 <script src="/assets/js/home.js?v=1" defer></script>
 <script type="application/ld+json">
 {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "ScanMyCard",
-  "alternateName": "ScanMyCard by WeCanServe",
-  "url": "https://scanmycard.in/",
-  "image": "https://scanmycard.in/assets/images/og.png",
-  "applicationCategory": "BusinessApplication",
-  "operatingSystem": "Android",
-  "description": "AI business card scanner. Snap a stack of business cards, review the extracted name, company, designation, phone, email, website, country and address, organise contacts into folders and export them to Excel (.xlsx).",
-  "installUrl": "https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard",
-  "downloadUrl": "https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard",
-  "publisher": { "@type": "Organization", "name": "WeCanServe", "email": "support@scanmycard.in", "url": "https://scanmycard.in/" },
-  "offers": [
-    { "@type": "Offer", "name": "Free trial: 5 scans", "price": "0", "priceCurrency": "INR" },
-    { "@type": "Offer", "name": "Starter: 50 card credits", "price": "99", "priceCurrency": "INR", "priceSpecification": { "@type": "UnitPriceSpecification", "price": "99", "priceCurrency": "INR", "valueAddedTaxIncluded": false } },
-    { "@type": "Offer", "name": "Popular: 750 card credits", "price": "499", "priceCurrency": "INR", "priceSpecification": { "@type": "UnitPriceSpecification", "price": "499", "priceCurrency": "INR", "valueAddedTaxIncluded": false } },
-    { "@type": "Offer", "name": "Pro: 1,000 card credits", "price": "999", "priceCurrency": "INR", "priceSpecification": { "@type": "UnitPriceSpecification", "price": "999", "priceCurrency": "INR", "valueAddedTaxIncluded": false } },
-    { "@type": "Offer", "name": "Business Starter: 2,775 card credits", "price": "2499", "priceCurrency": "INR", "priceSpecification": { "@type": "UnitPriceSpecification", "price": "2499", "priceCurrency": "INR", "valueAddedTaxIncluded": false } },
-    { "@type": "Offer", "name": "Business Pro: 5,710 card credits", "price": "3999", "priceCurrency": "INR", "priceSpecification": { "@type": "UnitPriceSpecification", "price": "3999", "priceCurrency": "INR", "valueAddedTaxIncluded": false } },
-    { "@type": "Offer", "name": "Business Enterprise: 10,000 card credits", "price": "5999", "priceCurrency": "INR", "priceSpecification": { "@type": "UnitPriceSpecification", "price": "5999", "priceCurrency": "INR", "valueAddedTaxIncluded": false } }
-  ]
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://scanmycard.in/#org",
+   "name": "WeCanServe",
+   "alternateName": "ScanMyCard",
+   "url": "https://scanmycard.in/",
+   "logo": "https://scanmycard.in/assets/images/app-icon-256.png",
+   "email": "support@scanmycard.in",
+   "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "customer support",
+    "email": "support@scanmycard.in",
+    "telephone": "+91-90290-05313",
+    "areaServed": "IN",
+    "availableLanguage": "en"
+   },
+   "sameAs": [
+    "https://wecanserve.in",
+    "https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard",
+    "https://www.youtube.com/@wecanserve"
+   ]
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://scanmycard.in/#website",
+   "url": "https://scanmycard.in/",
+   "name": "ScanMyCard",
+   "inLanguage": "en-IN",
+   "publisher": {
+    "@id": "https://scanmycard.in/#org"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://scanmycard.in/#app",
+   "name": "ScanMyCard",
+   "alternateName": [
+    "ScanMyCard - Card Scanner",
+    "ScanMyCard visiting card scanner"
+   ],
+   "url": "https://scanmycard.in/",
+   "image": "https://scanmycard.in/assets/images/og-v2.jpg",
+   "applicationCategory": "BusinessApplication",
+   "applicationSubCategory": "Business card scanner",
+   "operatingSystem": "Android",
+   "description": "AI visiting card and business card scanner. Scan a stack of cards, review the name, company, designation, phone, email, website, country and address, save contacts to your phone, open WhatsApp, organise them into folders with notes and tags, and export to Excel (.xlsx).",
+   "featureList": [
+    "AI reads 8 fields from every visiting card",
+    "Scan many cards in one go, from camera or gallery",
+    "Save contacts to phone contacts",
+    "Open WhatsApp chat in one tap",
+    "Folders, notes, tags and search",
+    "Duplicate contact check",
+    "Export to Excel (.xlsx) and share",
+    "Google or email sign-in with cloud sync",
+    "10 free scans, credits never expire"
+   ],
+   "installUrl": "https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard",
+   "downloadUrl": "https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard",
+   "inLanguage": "en-IN",
+   "countriesSupported": "IN",
+   "publisher": {
+    "@id": "https://scanmycard.in/#org"
+   },
+   "video": {
+    "@id": "https://scanmycard.in/#video"
+   },
+   "offers": [
+    {
+     "@type": "Offer",
+     "name": "Free: 10 scans on sign-up",
+     "price": "0",
+     "priceCurrency": "INR"
+    },
+    {
+     "@type": "Offer",
+     "name": "Starter: 50 card credits",
+     "price": "99",
+     "priceCurrency": "INR",
+     "url": "https://scanmycard.in/pricing",
+     "priceSpecification": {
+      "@type": "UnitPriceSpecification",
+      "price": "99",
+      "priceCurrency": "INR",
+      "valueAddedTaxIncluded": false
+     }
+    },
+    {
+     "@type": "Offer",
+     "name": "Popular: 750 card credits",
+     "price": "499",
+     "priceCurrency": "INR",
+     "url": "https://scanmycard.in/pricing",
+     "priceSpecification": {
+      "@type": "UnitPriceSpecification",
+      "price": "499",
+      "priceCurrency": "INR",
+      "valueAddedTaxIncluded": false
+     }
+    },
+    {
+     "@type": "Offer",
+     "name": "Pro: 1,000 card credits",
+     "price": "999",
+     "priceCurrency": "INR",
+     "url": "https://scanmycard.in/pricing",
+     "priceSpecification": {
+      "@type": "UnitPriceSpecification",
+      "price": "999",
+      "priceCurrency": "INR",
+      "valueAddedTaxIncluded": false
+     }
+    },
+    {
+     "@type": "Offer",
+     "name": "Business Starter: 2,775 card credits",
+     "price": "2499",
+     "priceCurrency": "INR",
+     "url": "https://scanmycard.in/pricing",
+     "priceSpecification": {
+      "@type": "UnitPriceSpecification",
+      "price": "2499",
+      "priceCurrency": "INR",
+      "valueAddedTaxIncluded": false
+     }
+    },
+    {
+     "@type": "Offer",
+     "name": "Business Pro: 5,710 card credits",
+     "price": "3999",
+     "priceCurrency": "INR",
+     "url": "https://scanmycard.in/pricing",
+     "priceSpecification": {
+      "@type": "UnitPriceSpecification",
+      "price": "3999",
+      "priceCurrency": "INR",
+      "valueAddedTaxIncluded": false
+     }
+    },
+    {
+     "@type": "Offer",
+     "name": "Business Enterprise: 10,000 card credits",
+     "price": "5999",
+     "priceCurrency": "INR",
+     "url": "https://scanmycard.in/pricing",
+     "priceSpecification": {
+      "@type": "UnitPriceSpecification",
+      "price": "5999",
+      "priceCurrency": "INR",
+      "valueAddedTaxIncluded": false
+     }
+    }
+   ]
+  },
+  {
+   "@type": "VideoObject",
+   "@id": "https://scanmycard.in/#video",
+   "name": "How to Use ScanMyCard: Scan Visiting Cards to Contacts & Excel in Seconds (Full Tutorial)",
+   "description": "Full tutorial of the ScanMyCard app: scan visiting cards with AI, review the details, save them to your phone contacts, organise them in folders and export to Excel.",
+   "thumbnailUrl": [
+    "https://i.ytimg.com/vi/PeK-24ttKYU/maxresdefault.jpg",
+    "https://scanmycard.in/assets/video/scanmycard-tutorial-v5-poster.jpg"
+   ],
+   "uploadDate": "2026-11-01T23:23:48-08:00",
+   "duration": "PT2M20S",
+   "contentUrl": "https://scanmycard.in/assets/video/scanmycard-tutorial-v5.mp4",
+   "embedUrl": "https://www.youtube.com/embed/PeK-24ttKYU",
+   "publisher": {
+    "@id": "https://scanmycard.in/#org"
+   }
+  }
+ ]
 }
 </script>
-<script type="application/ld+json">
+<script type="application/ld+json" data-faq-schema>
 {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    { "@type": "Question", "name": "How many cards can I scan at once?", "acceptedAnswer": { "@type": "Answer", "text": "As many as you like. Select them in the queue and the app processes them in batches." } },
-    { "@type": "Question", "name": "How accurate is it?", "acceptedAnswer": { "@type": "Answer", "text": "Very accurate on clear, well-lit cards. You can review and fix every field before saving." } },
-    { "@type": "Question", "name": "What if a scan fails?", "acceptedAnswer": { "@type": "Answer", "text": "You don't lose credits. Failed scans are refunded automatically." } },
-    { "@type": "Question", "name": "Do credits expire?", "acceptedAnswer": { "@type": "Answer", "text": "No. Credits never expire." } },
-    { "@type": "Question", "name": "Can I export to Excel?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Export everything, or one folder, as .xlsx and share it anywhere." } },
-    { "@type": "Question", "name": "Is my data private?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Only you can access your contacts. We don't sell data or use your cards for ads." } },
-    { "@type": "Question", "name": "Is there an iPhone app?", "acceptedAnswer": { "@type": "Answer", "text": "Android first; iOS is coming." } },
-    { "@type": "Question", "name": "How do I delete my account?", "acceptedAnswer": { "@type": "Answer", "text": "In the app: Profile tab, tap your profile card, then Delete Account. Or request it at https://scanmycard.in/delete-account." } },
-    { "@type": "Question", "name": "How much does it cost?", "acceptedAnswer": { "@type": "Answer", "text": "You get 10 free scans to start. After that you buy prepaid credit packs from Rs 99 for 50 cards (plus 18% GST). 1 credit = 1 card, and credits never expire." } },
-    { "@type": "Question", "name": "How do I pay?", "acceptedAnswer": { "@type": "Answer", "text": "Inside the app, through Razorpay: UPI, debit and credit cards, netbanking and wallets." } }
-  ]
+ "@context": "https://schema.org",
+ "@type": "FAQPage",
+ "mainEntity": [
+  {
+   "@type": "Question",
+   "name": "How many cards can I scan at once?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "As many as you like. Select them in the queue and the app processes them in batches."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How accurate is it?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Very accurate on clear, well-lit cards. You can review and fix every field before saving."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "What if a scan fails?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "You don't lose credits. Failed scans are refunded automatically."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Do credits expire?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "No. Buy a pack today and use it next year if you like."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can I export to Excel?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes. Export everything, or one folder, as .xlsx and share it anywhere: WhatsApp, email, Drive and so on."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Is my data private?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes. Only you can access your contacts. We don't sell data or use your cards for ads. Card images are processed to read the text and are not stored on our servers afterwards. Details are in our privacy policy."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How much does it cost?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "You start with 10 free scans. After that, prepaid packs start at ₹99 for 50 cards (+18% GST). 1 credit = 1 card, and credits never expire. See pricing."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can I earn free scans?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes. Your referral code is in the app under Profile. When a friend signs up with it and verifies their email, you get 10 free scans and they get 5 extra."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How do I pay?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Inside the app, through Razorpay: UPI, debit and credit cards, netbanking and wallets. We never see your full card or UPI details."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can I save visiting cards to my phone contacts?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes. Open a scanned contact and tap Save to phone contacts. If the card has two numbers, choose one or save both. You can also open a WhatsApp chat, call or email from the same screen."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can I scan cards from photos in my gallery?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes. Tap Gallery on the scanner and pick many photos at once, for example cards a colleague sent you on WhatsApp."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "What happens if I scan the same card twice?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "The app spots contacts that are already saved and marks them, so you can skip the duplicate or update the old contact with the new details."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Is there an iPhone app?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Android first; iOS is coming."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How do I delete my account?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "In the app: Profile tab → tap your profile card → Delete Account. Or request it on our account deletion page."
+   }
+  }
+ ]
 }
 </script>
 </head>
@@ -126,9 +381,9 @@
 <section class="hero" aria-labelledby="hero-title">
   <div class="wrap hero__grid">
     <div class="hero__copy">
-      <p class="pill"><b>NEW</b> AI business card scanner</p>
+      <p class="pill"><b>NEW</b> AI visiting card &amp; business card scanner</p>
       <h1 id="hero-title">From a <span class="stack hl-amber">stack of cards</span> to a <span class="clean">clean Excel sheet</span> in minutes.</h1>
-      <p class="lead">Back from an expo with a pocket full of cards? Snap them all. ScanMyCard's AI types out every name, number and email, you check them, and the Excel sheet is on WhatsApp before your chai gets cold.</p>
+      <p class="lead">Back from an expo with a pocket full of visiting cards? Snap them all. ScanMyCard's AI types out every name, number and email, you check them, save them to your phone, and the Excel sheet is on WhatsApp before your chai gets cold.</p>
       <div class="hero__ctas">
         <a class="play-badge" href="https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard" data-play aria-label="Get it on Google Play">
           <svg class="play-badge__logo" viewBox="0 0 24 26" aria-hidden="true"><path fill="#00D7FE" d="M1.2 1.1C.9 1.4.8 1.9.8 2.5v21c0 .6.1 1.1.4 1.4L12.9 13z"/><path fill="#FFCE00" d="M16.8 16.9 12.9 13l3.9-3.9 4.7 2.7c1.3.8 1.3 2 0 2.8z"/><path fill="#FF3A44" d="M16.8 16.9 12.9 13 1.2 24.9c.4.5 1.2.5 2 .1z"/><path fill="#00F076" d="M16.8 9.1 3.2 1C2.4.6 1.6.6 1.2 1.1L12.9 13z"/></svg>
@@ -448,6 +703,21 @@
         <h3>Google sign-in and cloud sync</h3>
         <p>Sign in with Google or email. Your contacts live in your account, so they survive a phone change. Notifications tell you when scans finish, credits run low or a payment goes through.</p>
       </article>
+      <article class="feat f-phone reveal">
+        <div class="feat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/><circle cx="12" cy="9.5" r="2.2"/><path d="M8.8 14.5c.6-1.3 1.8-2 3.2-2s2.6.7 3.2 2"/></svg></div>
+        <h3>Save to phone contacts and WhatsApp</h3>
+        <p>Save any scanned card straight to your phone's contacts. If a card has two numbers, pick one or save both. Open a WhatsApp chat, call or email in one tap.</p>
+      </article>
+      <article class="feat f-notes reveal" style="--rd:.06s">
+        <div class="feat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></div>
+        <h3>Notes, tags and duplicate check</h3>
+        <p>Note where you met and what to follow up, add tags, and search by them later. Scan a card you already have and the app offers to skip it or update the old one.</p>
+      </article>
+      <article class="feat f-refer reveal" style="--rd:.12s">
+        <div class="feat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8M12 8S10.5 3.5 8 4.2 8.5 8 12 8zm0 0s1.5-4.5 4-3.8S15.5 8 12 8z"/></svg></div>
+        <h3>Invite friends, earn free scans</h3>
+        <p>Share your referral code from the Profile tab. You get 10 free scans for every friend who joins, and your friend gets 5 extra.</p>
+      </article>
       <article class="feat f-pay reveal">
         <div>
           <div class="feat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg></div>
@@ -647,6 +917,9 @@
       <details><summary>How much does it cost?</summary><div class="faq__a"><p>You start with 10 free scans. After that, prepaid packs start at ₹99 for 50 cards (+18% GST). 1 credit = 1 card, and credits never expire. See <a href="/pricing">pricing</a>.</p></div></details>
       <details><summary>Can I earn free scans?</summary><div class="faq__a"><p>Yes. Your referral code is in the app under Profile. When a friend signs up with it and verifies their email, you get 10 free scans and they get 5 extra.</p></div></details>
       <details><summary>How do I pay?</summary><div class="faq__a"><p>Inside the app, through Razorpay: UPI, debit and credit cards, netbanking and wallets. We never see your full card or UPI details.</p></div></details>
+      <details><summary>Can I save visiting cards to my phone contacts?</summary><div class="faq__a"><p>Yes. Open a scanned contact and tap <strong>Save to phone contacts</strong>. If the card has two numbers, choose one or save both. You can also open a WhatsApp chat, call or email from the same screen.</p></div></details>
+      <details><summary>Can I scan cards from photos in my gallery?</summary><div class="faq__a"><p>Yes. Tap <strong>Gallery</strong> on the scanner and pick many photos at once, for example cards a colleague sent you on WhatsApp.</p></div></details>
+      <details><summary>What happens if I scan the same card twice?</summary><div class="faq__a"><p>The app spots contacts that are already saved and marks them, so you can skip the duplicate or update the old contact with the new details.</p></div></details>
       <details><summary>Is there an iPhone app?</summary><div class="faq__a"><p>Android first; iOS is coming.</p></div></details>
       <details><summary>How do I delete my account?</summary><div class="faq__a"><p>In the app: <strong>Profile</strong> tab → tap your profile card → <strong>Delete Account</strong>. Or request it on our <a href="/delete-account">account deletion page</a>.</p></div></details>
     </div>
@@ -698,6 +971,8 @@
           <li><a href="/#features">Features</a></li>
           <li><a href="/pricing">Pricing</a></li>
           <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/visiting-card-scanner">Visiting card scanner</a></li>
+          <li><a href="/business-card-to-excel">Business card to Excel</a></li>
         </ul>
       </div>
       <div>
