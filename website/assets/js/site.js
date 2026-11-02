@@ -69,7 +69,7 @@
     tut.innerHTML =
       '<button type="button" class="tut-close" aria-label="Close video">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' +
-      '<video controls playsinline preload="none" poster="/assets/video/scanmycard-tutorial-poster.jpg"></video>';
+      '<video controls playsinline preload="none" poster="/assets/video/scanmycard-tutorial-v5-poster.jpg"></video>';
     doc.body.appendChild(tut);
     var tutVideo = tut.querySelector('video');
     var closeTut = function () { tutVideo.pause(); if (tut.open) tut.close(); };
