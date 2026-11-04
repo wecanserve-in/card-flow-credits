@@ -239,6 +239,32 @@ export async function updateContact(contact: any) {
    GET CONTACTS
 ===================================================== */
 
+/** When a contact was first saved (from its id, e.g. "contact_1730000000000_ab12"). */
+export function addedAt(contact: any): number {
+  const fromId = Number(String(contact?.id || "").split("_")[1]);
+  return Number.isFinite(fromId) && fromId > 0 ? fromId : Number(contact?.updatedAt) || 0;
+}
+
+const newestFirst = (list: any[]) =>
+  [...list].sort((a, b) => addedAt(b) - addedAt(a));
+
+let lastServerFetch = 0;
+
+/** True when My Cards was read from the server within the last few minutes. */
+export const contactsFetchedRecently = (withinMs = 5 * 60 * 1000) =>
+  Date.now() - lastServerFetch < withinMs;
+
+/** The contacts saved on this phone last time (instant, may be slightly out of date). */
+export async function getCachedContacts(): Promise<any[]> {
+  try {
+    if (!auth.currentUser?.uid) return [];
+    const cache = await AsyncStorage.getItem(getStorageKey());
+    return cache ? newestFirst(JSON.parse(cache)) : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function getContacts() {
   try {
     const uid =
@@ -357,14 +383,16 @@ export async function getContacts() {
        TO CURRENT USER STORAGE KEY
     ================================================= */
 
-    await AsyncStorage.setItem(
-      getStorageKey(),
-      JSON.stringify(
-        contacts
-      )
-    );
+    const sorted = newestFirst(contacts);
+    lastServerFetch = Date.now();
 
-    return contacts;
+    try {
+      await AsyncStorage.setItem(getStorageKey(), JSON.stringify(sorted));
+    } catch {
+      // Cache is only a speed-up; a full phone storage must not hide fresh data.
+    }
+
+    return sorted;
   } catch (error) {
     console.error(
       "[Database] Read contacts error:",
@@ -382,7 +410,7 @@ export async function getContacts() {
         );
 
       return cache
-        ? JSON.parse(cache)
+        ? newestFirst(JSON.parse(cache))
         : [];
     } catch {
       return [];

@@ -36,6 +36,8 @@ import BottomNav from "@/components/BottomNav";
 
 import {
   getContacts,
+  getCachedContacts,
+  contactsFetchedRecently,
   getFolders,
   createFolder,
   setContactFolders,
@@ -163,16 +165,31 @@ export default function SavedContactsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadContacts();
+      loadContacts({ onFocus: true });
       loadFolders();
     }, [])
   );
 
 
   const loadContacts =
-    async () => {
+    async ({ onFocus = false }: { onFocus?: boolean } = {}) => {
       try {
-        setLoading(true);
+        // Show the cards saved on this phone straight away, then refresh quietly.
+        const cached = await getCachedContacts();
+
+        if (cached.length > 0) {
+          setContacts((current) => (current.length > 0 ? current : cached));
+          setLoading(false);
+        } else if (contacts.length === 0) {
+          setLoading(true);
+        }
+
+        // Coming back to this screen: the phone's copy is already up to date
+        // (saving, editing and deleting all update it), so skip the server read.
+        if (onFocus && cached.length > 0 && contactsFetchedRecently()) {
+          setContacts(cached);
+          return;
+        }
 
         const data =
           await getContacts();
@@ -191,7 +208,7 @@ export default function SavedContactsScreen() {
           error
         );
 
-        setContacts([]);
+        // Keep whatever is already on screen.
       } finally {
         setLoading(false);
       }

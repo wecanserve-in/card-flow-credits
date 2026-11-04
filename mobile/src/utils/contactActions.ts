@@ -48,23 +48,60 @@ export function splitPhones(phone?: string): string[] {
   return numbers.length > 0 ? numbers : [phone.trim()];
 }
 
-/** Digits for wa.me: Indian 10-digit numbers get the 91 country code. */
-export function whatsappDigits(number: string): string {
-  let digits = number.replace(/\D/g, "");
+/** Calling codes for the countries ScanMyCard users most often meet at trade fairs. */
+const CALLING_CODES: Record<string, string> = {
+  india: "91", "united states": "1", usa: "1", us: "1", america: "1", canada: "1",
+  "united kingdom": "44", uk: "44", england: "44", "great britain": "44",
+  "united arab emirates": "971", uae: "971", dubai: "971", "saudi arabia": "966",
+  qatar: "974", oman: "968", kuwait: "965", bahrain: "973",
+  germany: "49", france: "33", italy: "39", spain: "34", netherlands: "31",
+  belgium: "32", switzerland: "41", sweden: "46", poland: "48", turkey: "90",
+  australia: "61", "new zealand": "64", singapore: "65", malaysia: "60",
+  china: "86", "hong kong": "852", japan: "81", "south korea": "82", korea: "82",
+  bangladesh: "880", "sri lanka": "94", nepal: "977", pakistan: "92",
+  "south africa": "27", kenya: "254", nigeria: "234", russia: "7", brazil: "55",
+  mexico: "52", indonesia: "62", thailand: "66", vietnam: "84",
+};
+
+const isIndia = (country?: string) => {
+  const c = (country || "").trim().toLowerCase();
+  return !hasValue(country) || c === "india" || c === "bharat" || c === "in";
+};
+
+/**
+ * Digits for wa.me (country code + number), or null when the country code
+ * can't be worked out. Numbers written with + or 00 are used as they are;
+ * otherwise the card's country decides (India when unknown).
+ */
+export function whatsappDigits(number: string, country?: string): string | null {
+  const written = number.trim();
+  let digits = written.replace(/\D/g, "");
+
+  if (written.startsWith("+")) {
+    return digits;
+  }
 
   if (digits.startsWith("00")) {
-    digits = digits.slice(2);
+    return digits.slice(2);
   }
 
-  if (digits.length === 11 && digits.startsWith("0")) {
-    digits = digits.slice(1);
+  if (isIndia(country)) {
+    if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+    if (digits.length === 12 && digits.startsWith("91")) return digits;
+    return digits.length === 10 ? `91${digits}` : digits;
   }
 
-  if (digits.length === 10) {
-    digits = `91${digits}`;
+  const code = CALLING_CODES[(country || "").trim().toLowerCase()];
+  if (!code) {
+    return null;
   }
 
-  return digits;
+  if (digits.startsWith(code) && digits.length > code.length + 6) {
+    return digits;
+  }
+
+  // Drop the local trunk "0" (e.g. UK 07..., Germany 0151...).
+  return code + digits.replace(/^0+/, "");
 }
 
 /**
@@ -122,7 +159,17 @@ export async function openWhatsApp(contact: ContactLike, senderName?: string) {
     `Hi${firstName ? ` ${firstName}` : ""}, it was great meeting you!` +
     (senderName ? ` - ${senderName}` : "");
 
-  const url = `https://wa.me/${whatsappDigits(chosen[0])}?text=${encodeURIComponent(greeting)}`;
+  const digits = whatsappDigits(chosen[0], contact.country);
+
+  if (!digits) {
+    Alert.alert(
+      "Country Code Needed",
+      `This number has no country code and ScanMyCard doesn't know the code for "${contact.country}". Edit the contact and write the number with + and the country code, for example +44 7700 900123.`
+    );
+    return;
+  }
+
+  const url = `https://wa.me/${digits}?text=${encodeURIComponent(greeting)}`;
 
   try {
     await Linking.openURL(url);

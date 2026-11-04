@@ -1,11 +1,10 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  TextInput,
   Alert,
   ActivityIndicator,
   Modal,
@@ -44,7 +43,6 @@ type ContactItem = {
 export default function ContactsScreen() {
   const insets = useSafeAreaInsets();
 
-  const [search, setSearch] = useState("");
   const [contacts, setContacts] = useState<ContactItem[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -81,38 +79,8 @@ export default function ContactsScreen() {
     }, [])
   );
 
-  const filteredContacts = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-
-    if (!normalizedSearch) {
-      return contacts;
-    }
-
-    return contacts.filter((contact) => {
-      const searchableText = [
-        contact.name,
-        contact.designation,
-        contact.company,
-        contact.phone,
-        contact.email,
-        contact.website,
-        contact.address,
-        contact.country,
-        contact.notes,
-        ...(Array.isArray(contact.tags) ? contact.tags : []),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return searchableText.includes(normalizedSearch);
-    });
-  }, [contacts, search]);
-
   const handleEditContact = (index: number) => {
-    const originalIndex = contacts.findIndex(
-      (contact) => contact === filteredContacts[index]
-    );
+    const originalIndex = index;
 
     router.push({
       pathname: "/edit-contact",
@@ -222,7 +190,6 @@ export default function ContactsScreen() {
       setSelectionMode(false);
       setShowFolderPicker(false);
       setPendingFolderId(null);
-      setSearch("");
 
       if (result.skipped > 0 || result.updated > 0) {
         const parts = [];
@@ -516,51 +483,9 @@ export default function ContactsScreen() {
           )}
         </View>
 
-        {/* Search */}
-        <View style={styles.searchContainer}>
-          <Ionicons
-            name="search-outline"
-            size={21}
-            color="#8E969D"
-          />
-
-          <TextInput
-            placeholder="Search name, company, notes, tags"
-            placeholderTextColor="#A0A7AE"
-            style={styles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-          />
-
-          {search.length > 0 ? (
-            <TouchableOpacity
-              activeOpacity={0.7}
-              style={styles.clearButton}
-              onPress={() => setSearch("")}
-            >
-              <Ionicons
-                name="close-circle"
-                size={21}
-                color="#A6ADB3"
-              />
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.filterButton}>
-              <Ionicons
-                name="options-outline"
-                size={21}
-                color="#09A84E"
-              />
-            </View>
-          )}
-        </View>
-
-
-
         {/* Contact List */}
         <FlatList
-          data={filteredContacts}
+          data={contacts}
           keyExtractor={(item, index) =>
             `${
               item.filename ||
@@ -579,36 +504,28 @@ export default function ContactsScreen() {
               paddingBottom:
                 175 + insets.bottom,
             },
-            filteredContacts.length === 0 &&
+            contacts.length === 0 &&
               styles.emptyListContent,
           ]}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <View style={styles.emptyIcon}>
                 <Ionicons
-                  name={
-                    search
-                      ? "search-outline"
-                      : "people-outline"
-                  }
+                  name="people-outline"
                   size={38}
                   color="#09A84E"
                 />
               </View>
 
               <Text style={styles.emptyTitle}>
-                {search
-                  ? "No contacts found"
-                  : "No extracted contacts"}
+                No extracted contacts
               </Text>
 
               <Text style={styles.emptyDescription}>
-                {search
-                  ? "Try searching with a different name, company, phone number, or email."
-                  : "Scan a business card to extract and review its contact information."}
+                Scan a business card to extract and review its contact information.
               </Text>
 
-              {!search && (
+              {(
                 <TouchableOpacity
                   activeOpacity={0.84}
                   style={styles.scanButton}

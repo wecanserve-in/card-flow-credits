@@ -677,25 +677,6 @@ const usedPercent =
               }
             />
           </View>
-
-          {/* <View
-            style={{
-              width:
-                actionCardWidth,
-            }}
-          >
-            <ActionCard
-              title="Events"
-              icon="calendar-outline"
-              iconColor="#4B7BEC"
-              iconBackground="#EEF3FF"
-              onPress={() =>
-                router.push(
-                  "/events"
-                )
-              }
-            />
-          </View> */}
         </View>
 
         {/* Recent Activity */}
