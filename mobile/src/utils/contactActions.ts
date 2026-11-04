@@ -1,5 +1,7 @@
-import { Alert, Linking, Platform } from "react-native";
+import { Alert, Linking, Platform, Share } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
 import * as IntentLauncher from "expo-intent-launcher";
+import * as Sharing from "expo-sharing";
 
 type ContactLike = {
   name?: string;
@@ -232,4 +234,81 @@ export async function saveToPhoneContacts(contact: ContactLike) {
   } catch {
     Alert.alert("Unable to Open", "Your phone's contacts app could not be opened.");
   }
+}
+
+/* =====================================================
+   SHARE A CONTACT (WhatsApp, SMS, email...)
+===================================================== */
+
+const textLines = (contact: ContactLike) =>
+  [
+    contact.name,
+    [contact.designation, contact.company].filter(hasValue).join(", "),
+    ...splitPhones(contact.phone).map((p) => `Phone: ${p}`),
+    hasValue(contact.email) ? `Email: ${contact.email}` : "",
+    hasValue(contact.website) ? `Website: ${contact.website}` : "",
+    hasValue(contact.address) ? `Address: ${contact.address}` : "",
+  ].filter(hasValue);
+
+/** Shares the contact as plain text (private notes and tags are never included). */
+export async function shareContactAsText(contact: ContactLike) {
+  try {
+    await Share.share({ message: textLines(contact).join("\n") });
+  } catch {
+    // Share sheet closed.
+  }
+}
+
+const vEscape = (value?: string) =>
+  hasValue(value)
+    ? value
+        .trim()
+        .replace(/\\/g, "\\\\")
+        .replace(/([,;])/g, "\\$1")
+        .replace(/\r?\n/g, "\\n")
+    : "";
+
+/** Builds a vCard 3.0 that any phone can import as a contact. */
+export function toVCard(contact: ContactLike): string {
+  const name = hasValue(contact.name) ? contact.name.trim() : hasValue(contact.company) ? contact.company.trim() : "Contact";
+  const parts = name.split(/\s+/);
+  const last = parts.length > 1 ? parts[parts.length - 1] : "";
+  const first = parts.length > 1 ? parts.slice(0, -1).join(" ") : name;
+  const lines = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    `N:${vEscape(last)};${vEscape(first)};;;`,
+    `FN:${vEscape(name)}`,
+    hasValue(contact.company) ? `ORG:${vEscape(contact.company)}` : "",
+    hasValue(contact.designation) ? `TITLE:${vEscape(contact.designation)}` : "",
+    ...splitPhones(contact.phone).map((p) => `TEL;TYPE=CELL:${p.trim()}`),
+    hasValue(contact.email) ? `EMAIL;TYPE=WORK:${contact.email!.trim()}` : "",
+    hasValue(contact.website) ? `URL:${contact.website!.trim()}` : "",
+    hasValue(contact.address)
+      ? `ADR;TYPE=WORK:;;${vEscape(contact.address)};;;;${vEscape(contact.country)}`
+      : "",
+    "END:VCARD",
+  ];
+  return lines.filter(Boolean).join("\r\n") + "\r\n";
+}
+
+/** Shares the contact as a .vcf file the receiver can tap to save. */
+export async function shareContactAsFile(contact: ContactLike) {
+  try {
+    const safe = (hasValue(contact.name) ? contact.name : "contact").replace(/[^a-z0-9]+/gi, "_").slice(0, 40);
+    const uri = `${FileSystem.cacheDirectory}${safe || "contact"}.vcf`;
+    await FileSystem.writeAsStringAsync(uri, toVCard(contact));
+    await Sharing.shareAsync(uri, { mimeType: "text/x-vcard", dialogTitle: "Share contact" });
+  } catch {
+    Alert.alert("Couldn't Share", "Please try sharing as text instead.");
+  }
+}
+
+/** Lets the user pick text or contact file. */
+export function shareContact(contact: ContactLike) {
+  Alert.alert("Share Contact", "How would you like to share it?", [
+    { text: "As text", onPress: () => shareContactAsText(contact) },
+    { text: "As contact file", onPress: () => shareContactAsFile(contact) },
+    { text: "Cancel", style: "cancel" },
+  ]);
 }

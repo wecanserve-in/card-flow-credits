@@ -9,7 +9,10 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  Platform,
+  ToastAndroid,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -22,6 +25,7 @@ import {
   chooseNumbers,
   openWhatsApp,
   saveToPhoneContacts,
+  shareContact,
   splitPhones,
 } from "../utils/contactActions";
 
@@ -352,11 +356,14 @@ export default function ContactDetailsScreen() {
       </View>
     );
 
-    if (available && onPress) {
+    if (available) {
       return (
         <TouchableOpacity
-          activeOpacity={0.82}
+          activeOpacity={onPress ? 0.82 : 1}
           onPress={onPress}
+          onLongPress={() => copyValue(title, value!.trim())}
+          delayLongPress={350}
+          accessibilityHint="Press and hold to copy"
         >
           {content}
         </TouchableOpacity>
@@ -364,6 +371,28 @@ export default function ContactDetailsScreen() {
     }
 
     return content;
+  };
+
+  // Press and hold any detail to copy it (for pasting into a CRM or chat).
+  const copyValue = async (label: string, text: string) => {
+    await Clipboard.setStringAsync(text);
+    if (Platform.OS === "android") {
+      ToastAndroid.show(`${label} copied`, ToastAndroid.SHORT);
+    } else {
+      Alert.alert("Copied", `${label} copied.`);
+    }
+  };
+
+  // Opens the address in Google Maps (app if installed, else browser).
+  const openMaps = () => {
+    const query = [contact.address, contact.country]
+      .filter((part) => isAvailable(part))
+      .join(", ");
+    Linking.openURL(
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+    ).catch(() =>
+      Alert.alert("Unable to Open", "Google Maps could not be opened.")
+    );
   };
 
   const quickActions = [
@@ -626,6 +655,19 @@ export default function ContactDetailsScreen() {
             </Text>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.shareContactButton}
+            onPress={() => shareContact(contact)}
+          >
+            <Ionicons name="share-social-outline" size={20} color="#09A84E" />
+            <Text style={styles.shareContactText}>Share contact</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.copyHint}>
+            Tip: press and hold any detail below to copy it. Tap the address to open Maps.
+          </Text>
+
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
               Notes & Tags
@@ -770,6 +812,7 @@ export default function ContactDetailsScreen() {
               value={contact.address}
               iconColor="#ED5447"
               iconBackground="#FFF0EE"
+              onPress={openMaps}
             />
 
             <View style={styles.divider} />
@@ -1114,6 +1157,33 @@ const styles = StyleSheet.create({
     color: "#D93025",
     fontSize: 15,
     fontWeight: "800",
+  },
+
+  shareContactButton: {
+    marginTop: 10,
+    minHeight: 50,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: "#BFE8CF",
+    backgroundColor: "#F2FBF6",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+
+  shareContactText: {
+    color: "#078E42",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+
+  copyHint: {
+    marginTop: 10,
+    color: "#8E969D",
+    fontSize: 12,
+    fontWeight: "600",
+    textAlign: "center",
   },
 
   savePhoneButton: {

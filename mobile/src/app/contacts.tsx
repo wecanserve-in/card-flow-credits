@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Image,
 } from "react-native";
 import {
   SafeAreaView,
@@ -39,6 +40,7 @@ type ContactItem = {
   card_no?: string | number;
   notes?: string;
   tags?: string[];
+  sourceUri?: string;
 };
 
 export default function ContactsScreen() {
@@ -148,6 +150,8 @@ export default function ContactsScreen() {
     });
 
   // Throw away bad or unwanted scans without saving them.
+  const [zoomUri, setZoomUri] = useState<string | null>(null);
+
   const handleRemoveSelected = () => {
     const count = selectedContactIndices.length;
     if (count === 0 || saving) return;
@@ -293,11 +297,26 @@ export default function ContactsScreen() {
           </View>
         )}
 
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {initial}
-          </Text>
-        </View>
+        {item.sourceUri ? (
+          // The scanned card, so the user can check what the AI read. Tap to enlarge.
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setZoomUri(item.sourceUri!)}
+            accessibilityLabel="View scanned card"
+            style={styles.cardThumbWrap}
+          >
+            <Image source={{ uri: item.sourceUri }} style={styles.cardThumb} resizeMode="cover" />
+            <View style={styles.cardThumbZoom}>
+              <Ionicons name="expand-outline" size={12} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+              {initial}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.info}>
           <Text
@@ -629,6 +648,25 @@ export default function ContactsScreen() {
           </View>
         )}
 
+        {/* Full-size scanned card */}
+        <Modal
+          visible={zoomUri !== null}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setZoomUri(null)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.zoomOverlay}
+            onPress={() => setZoomUri(null)}
+          >
+            {zoomUri && (
+              <Image source={{ uri: zoomUri }} style={styles.zoomImage} resizeMode="contain" />
+            )}
+            <Text style={styles.zoomHint}>Tap anywhere to close</Text>
+          </TouchableOpacity>
+        </Modal>
+
         {/* Folder picker for selected cards */}
         <Modal
           visible={showFolderPicker}
@@ -848,6 +886,51 @@ const styles = StyleSheet.create({
       height: 3,
     },
     elevation: 2,
+  },
+
+  cardThumbWrap: {
+    width: 72,
+    height: 52,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#EEF2EF",
+  },
+
+  cardThumb: {
+    width: "100%",
+    height: "100%",
+  },
+
+  cardThumbZoom: {
+    position: "absolute",
+    right: 3,
+    bottom: 3,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  zoomOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  },
+
+  zoomImage: {
+    width: "100%",
+    height: "80%",
+  },
+
+  zoomHint: {
+    marginTop: 14,
+    color: "#C9D0CC",
+    fontSize: 13,
+    fontWeight: "600",
   },
 
   avatar: {
