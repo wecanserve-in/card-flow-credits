@@ -5,6 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
 
 import { auth } from "../services/firebase";
 import { initializePushNotifications } from "../services/notifications";
+import { restorePending } from "../services/pendingCards";
 import {
   hasSignedInOnThisPhone,
   markSignedInOnThisPhone,
@@ -38,6 +39,9 @@ export default function RootLayout() {
         }
 
         markSignedInOnThisPhone();
+
+        // Bring back cards that were scanned but not saved before the app closed.
+        await restorePending();
 
         if (isActive) {
           initializePushNotifications()

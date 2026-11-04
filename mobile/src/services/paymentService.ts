@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AxiosError } from "axios";
 import { doc, getDoc } from "firebase/firestore";
 
@@ -512,3 +513,84 @@ async (
     );
   }
 };
+
+/* =====================================================
+   PAYMENTS WAITING FOR CONFIRMATION
+
+   A successful payment is remembered on the phone until the
+   server confirms it. If the app is closed or the network drops
+   before that, the next visit to Home finishes the job. (The
+   server's Razorpay webhook also adds the credits on its own.)
+===================================================== */
+
+type PendingPayment = RazorpayPaymentSuccess & { savedAt: number };
+
+const PENDING_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+const pendingKey = () => {
+  const uid = auth.currentUser?.uid;
+  return uid ? `ScanMyCard_PENDING_PAYMENTS_${uid}` : null;
+};
+
+async function readPending(): Promise<PendingPayment[]> {
+  const key = pendingKey();
+  if (!key) return [];
+  try {
+    const raw = await AsyncStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writePending(list: PendingPayment[]) {
+  const key = pendingKey();
+  if (!key) return;
+  try {
+    await AsyncStorage.setItem(key, JSON.stringify(list));
+  } catch {
+    // Best effort; the server webhook is the main safety net.
+  }
+}
+
+export async function rememberPayment(payment: RazorpayPaymentSuccess) {
+  const list = (await readPending()).filter(
+    (p) => p.razorpay_payment_id !== payment.razorpay_payment_id
+  );
+  await writePending([...list, { ...payment, savedAt: Date.now() }]);
+}
+
+export async function forgetPayment(paymentId: string) {
+  const list = await readPending();
+  await writePending(list.filter((p) => p.razorpay_payment_id !== paymentId));
+}
+
+/**
+ * Confirms payments that were made but never confirmed (app closed, network
+ * dropped). Returns how many were confirmed now.
+ */
+export async function retryPendingPayments(): Promise<number> {
+  const list = await readPending();
+  if (list.length === 0) return 0;
+
+  let confirmed = 0;
+  const keep: PendingPayment[] = [];
+
+  for (const payment of list) {
+    try {
+      const { savedAt, ...payload } = payment;
+      const result = await recoverPayment(payload);
+      if (result?.success) confirmed += 1;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      // Keep trying on network/server trouble; stop on a clear "no" from the server.
+      const definite = /not belong|invalid|mismatch|refunded/i.test(message);
+      if (!definite && Date.now() - payment.savedAt < PENDING_MAX_AGE_MS) {
+        keep.push(payment);
+      }
+    }
+  }
+
+  await writePending(keep);
+  return confirmed;
+}

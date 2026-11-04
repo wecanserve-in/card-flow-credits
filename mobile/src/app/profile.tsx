@@ -40,6 +40,7 @@ import { api } from "../services/api";
 import BottomNav from "../components/BottomNav";
 import { uploadProfilePhoto } from "../services/uploadService";
 import { deleteAccount } from "../services/accountService";
+import { clearPending } from "../services/pendingCards";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -260,6 +261,7 @@ export default function ProfileScreen() {
             try {
               setDeleting(true);
               await deleteAccount();
+              await clearPending();
               await signOut(auth);
               router.replace("/login");
             } catch (error: any) {

@@ -109,12 +109,17 @@ class FakeRazorpay:
         self.orders = {}
         self.payments = {}
         self.bad_signatures = set()
+        self.bad_webhook = False
         outer = self
 
         class Utility:
             def verify_payment_signature(self, params):
                 if params["razorpay_signature"] in outer.bad_signatures:
                     raise ValueError("bad signature")
+
+            def verify_webhook_signature(self, body, signature, secret):
+                if outer.bad_webhook or not secret:
+                    raise ValueError("bad webhook signature")
 
         class Orders:
             def fetch(self, order_id):

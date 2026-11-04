@@ -28,7 +28,9 @@ import {
 } from "../utils/payment";
 import {
   refreshScanPack,
+  forgetPayment,
   recoverPayment,
+  rememberPayment,
   verifyPayment,
 } from "../services/paymentService";
 
@@ -217,6 +219,14 @@ export default function PaymentScreen() {
         messageHandledRef.current = true;
         setVerifying(true);
 
+        // Remember this payment until the server confirms it, so it can be
+        // finished later if the app closes or the network drops right now.
+        await rememberPayment({
+          razorpay_order_id: responseOrderId,
+          razorpay_payment_id: paymentId,
+          razorpay_signature: signature,
+        });
+
         try {
           const verificationResult =
             await verifyPayment({
@@ -257,6 +267,8 @@ export default function PaymentScreen() {
             );
           }
 
+          await forgetPayment(paymentId);
+
           router.replace({
             pathname: "/payment-success",
             params: {
@@ -288,6 +300,8 @@ export default function PaymentScreen() {
               try {
                 await refreshScanPack();
               } catch (_) {}
+
+              await forgetPayment(paymentId);
 
               router.replace({
                 pathname: "/payment-success",

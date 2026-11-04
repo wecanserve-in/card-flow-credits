@@ -19,6 +19,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import { updateContact } from "../services/database";
+import { setExtracted } from "../services/pendingCards";
 import {
   router,
   useLocalSearchParams,
@@ -151,8 +152,7 @@ export default function EditContact() {
       ...fields,
     };
 
-    (globalThis as any).extractedCards =
-      cards;
+    await setExtracted(cards);
 
     router.back();
   };

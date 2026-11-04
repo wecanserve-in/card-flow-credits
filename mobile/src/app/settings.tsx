@@ -31,6 +31,7 @@ import {
   auth,
   db,
 } from "../services/firebase";
+import { clearPending } from "../services/pendingCards";
 import BottomNav from "../components/BottomNav";
 import ReferralCard from "../components/ReferralCard";
 import { User } from "../types/user";
@@ -190,6 +191,7 @@ export default function SettingsScreen() {
             try {
               setLoggingOut(true);
 
+              await clearPending();
               await signOut(auth);
 
               router.replace("/login");

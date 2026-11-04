@@ -1,5 +1,6 @@
 import React, {
   useCallback,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -25,6 +26,7 @@ import {
 } from "expo-camera";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
+import { setQueue } from "../services/pendingCards";
 import { Accelerometer } from "expo-sensors";
 
 // How many photos can be picked from the gallery in one go.
@@ -128,8 +130,25 @@ export default function ScannerScreen() {
     }, [])
   );
 
+  // Start from the saved queue, so the save below never wipes it with an empty list.
   const [images, setImages] =
-    useState<string[]>([]);
+    useState<string[]>(() => {
+      const stored = (globalThis as any).scannedImages;
+      return Array.isArray(stored) ? [...stored] : [];
+    });
+
+  // Keep every captured card on the phone straight away (survives the app closing).
+  useEffect(() => {
+    let cancelled = false;
+    setQueue(images).then((kept) => {
+      if (!cancelled && kept.some((uri, i) => uri !== images[i])) {
+        setImages(kept);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [images]);
 
   useFocusEffect(
     useCallback(() => {
@@ -655,7 +674,7 @@ export default function ScannerScreen() {
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (images.length === 0) {
       Alert.alert(
         "No Cards Scanned",
@@ -668,8 +687,7 @@ export default function ScannerScreen() {
      * These are now cropped card images,
      * not the complete camera photos.
      */
-    (globalThis as any).scannedImages =
-      images;
+    await setQueue(images);
 
     router.push("/scanned-queue");
   };

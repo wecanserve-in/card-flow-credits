@@ -1,3 +1,4 @@
+import json
 import os
 import time
 from pathlib import Path
@@ -12,7 +13,9 @@ from fastapi import (
     APIRouter,
     Header,
     HTTPException,
+    Request,
 )
+from fastapi.concurrency import run_in_threadpool
 
 from firebase_admin import (
     auth as firebase_auth,
@@ -169,13 +172,21 @@ def _scan_pack_summary(user_data: dict, fallback_pack_id: str, fallback_pack_nam
     }
 
 
-def _add_credits(uid: str, pack_id: str, payment_id: str, order_id: str):
+def _add_credits(
+    uid: str,
+    pack_id: str,
+    payment_id: str,
+    order_id: str,
+    credits: Optional[int] = None,
+    amount_paise: Optional[int] = None,
+):
     db = _get_firestore()
     user_ref = db.collection("users").document(uid)
     payment_ref = db.collection("processedPayments").document(payment_id)
     now = int(time.time() * 1000)
     pack_name = PLAN_NAMES.get(pack_id, "Scan Pack")
-    purchased_scans = PLAN_SCAN_LIMITS.get(pack_id, 0)
+    purchased_scans = credits if credits is not None else PLAN_SCAN_LIMITS.get(pack_id, 0)
+    paid_amount = amount_paise if amount_paise is not None else _plan_total_rupees(pack_id) * 100
 
     if purchased_scans <= 0:
         raise HTTPException(status_code=500, detail="Invalid scan configuration.")
@@ -216,7 +227,7 @@ def _add_credits(uid: str, pack_id: str, payment_id: str, order_id: str):
                 "packName": pack_name,
                 "creditsAdded": purchased_scans,
                 "totalAfterPurchase": new_total,
-                "amount": _plan_total_rupees(pack_id) * 100,
+                "amount": paid_amount,
                 "currency": "INR",
                 "processedAt": now,
             },
@@ -258,6 +269,44 @@ def _add_credits(uid: str, pack_id: str, payment_id: str, order_id: str):
     }
 
 
+def _deal_from_order(order: dict, payment: dict, uid: Optional[str] = None):
+    """Checks a paid order and returns (uid, pack_id, credits, amount_paise)."""
+    notes = order.get("notes") or {}
+    order_uid = str(notes.get("uid", ""))
+    pack_id = str(notes.get("plan", "")).lower()
+
+    if uid is not None and order_uid != uid:
+        raise HTTPException(status_code=403, detail="Order does not belong to user.")
+
+    if not order_uid or pack_id not in PLAN_PRICES:
+        raise HTTPException(status_code=400, detail="Invalid scan pack.")
+
+    amount = order.get("amount")
+
+    if not amount or payment.get("amount") != amount or payment.get("order_id") != order.get("id"):
+        raise HTTPException(status_code=400, detail="Payment amount mismatch.")
+
+    # Orders made before the deal was stored in the notes must match today's price.
+    if "credits" not in notes and amount != _plan_total_rupees(pack_id) * 100:
+        raise HTTPException(status_code=400, detail="Payment amount mismatch.")
+
+    if payment.get("currency") != "INR":
+        raise HTTPException(status_code=400, detail="Invalid currency.")
+
+    if payment.get("status") != "captured" and order.get("status") != "paid":
+        raise HTTPException(status_code=400, detail="Payment not completed yet. Please try again later.")
+
+    if payment.get("amount_refunded"):
+        raise HTTPException(status_code=400, detail="This payment was refunded.")
+
+    try:
+        credits = int(notes.get("credits") or PLAN_SCAN_LIMITS[pack_id])
+    except (TypeError, ValueError):
+        credits = PLAN_SCAN_LIMITS[pack_id]
+
+    return order_uid, pack_id, credits, int(amount)
+
+
 @router.post("/create-order")
 def create_order(
     request: CreateOrderRequest,
@@ -277,7 +326,9 @@ def create_order(
                 "amount": amount,
                 "currency": "INR",
                 "payment_capture": 1,
-                "notes": {"uid": uid, "plan": pack_id},
+                # The deal is fixed here, so a later price or pack change can't
+                # block or alter this order when it is verified.
+                "notes": {"uid": uid, "plan": pack_id, "credits": str(PLAN_SCAN_LIMITS[pack_id])},
             }
         )
     except Exception as error:
@@ -322,28 +373,9 @@ def verify_payment(
         print("[Razorpay Fetch Error]", error)
         raise HTTPException(status_code=502, detail="Unable to fetch payment details.")
 
-    notes = order.get("notes", {})
-    order_uid = str(notes.get("uid", ""))
-    pack_id = str(notes.get("plan", "")).lower()
+    _, pack_id, credits, amount = _deal_from_order(order, payment, uid)
 
-    if order_uid != uid:
-        raise HTTPException(status_code=403, detail="Order does not belong to user.")
-
-    if pack_id not in PLAN_PRICES:
-        raise HTTPException(status_code=400, detail="Invalid scan pack.")
-
-    expected_amount = _plan_total_rupees(pack_id) * 100
-
-    if order.get("amount") != expected_amount or payment.get("amount") != expected_amount:
-        raise HTTPException(status_code=400, detail="Payment amount mismatch.")
-
-    if payment.get("currency") != "INR":
-        raise HTTPException(status_code=400, detail="Invalid currency.")
-
-    if order.get("status") != "paid":
-        raise HTTPException(status_code=400, detail="Order not paid.")
-
-    return _add_credits(uid, pack_id, data.razorpay_payment_id, data.razorpay_order_id)
+    return _add_credits(uid, pack_id, data.razorpay_payment_id, data.razorpay_order_id, credits, amount)
 
 
 @router.get("/history")
@@ -416,28 +448,64 @@ def recover_payment(
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid payment signature.")
 
-    notes = order.get("notes", {})
-    order_uid = str(notes.get("uid", ""))
-    pack_id = str(notes.get("plan", "")).lower()
-
-    if order_uid != uid:
-        raise HTTPException(status_code=403, detail="Order does not belong to user.")
-
-    if pack_id not in PLAN_PRICES:
-        raise HTTPException(status_code=400, detail="Invalid scan pack.")
-
     try:
         payment = client.payment.fetch(data.razorpay_payment_id)
     except Exception as error:
         print("[Payment Recover] Payment fetch error:", error)
         raise HTTPException(status_code=502, detail="Unable to fetch payment details.")
 
-    expected_amount = _plan_total_rupees(pack_id) * 100
+    _, pack_id, credits, amount = _deal_from_order(order, payment, uid)
 
-    if order.get("amount") != expected_amount or payment.get("amount") != expected_amount:
-        raise HTTPException(status_code=400, detail="Payment amount mismatch.")
+    return _add_credits(uid, pack_id, data.razorpay_payment_id, data.razorpay_order_id, credits, amount)
 
-    if payment.get("currency") != "INR":
-        raise HTTPException(status_code=400, detail="Invalid currency.")
 
-    return _add_credits(uid, pack_id, data.razorpay_payment_id, data.razorpay_order_id)
+WEBHOOK_EVENTS = {"payment.captured", "order.paid"}
+
+
+@router.post("/webhook")
+async def razorpay_webhook(request: Request):
+    """Razorpay calls this when a payment succeeds, so credits are added even if
+    the app was closed before it could confirm the payment. Safe to receive
+    more than once: each payment adds credits only once."""
+    secret = os.getenv("RAZORPAY_WEBHOOK_SECRET", "").strip()
+
+    if not secret:
+        raise HTTPException(status_code=503, detail="Webhook not configured.")
+
+    body = (await request.body()).decode("utf-8")
+    signature = request.headers.get("X-Razorpay-Signature", "")
+
+    try:
+        client.utility.verify_webhook_signature(body, signature, secret)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid webhook signature.")
+
+    event = json.loads(body)
+
+    if event.get("event") not in WEBHOOK_EVENTS:
+        return {"status": "ignored"}
+
+    payment = ((event.get("payload") or {}).get("payment") or {}).get("entity") or {}
+    order_id = payment.get("order_id")
+    payment_id = payment.get("id")
+
+    if not order_id or not payment_id:
+        return {"status": "ignored"}
+
+    def process():
+        order = client.order.fetch(order_id)
+        latest = client.payment.fetch(payment_id)
+        uid, pack_id, credits, amount = _deal_from_order(order, latest)
+        _add_credits(uid, pack_id, payment_id, order_id, credits, amount)
+        print("[Razorpay Webhook] Credits ensured for", payment_id, "pack", pack_id)
+
+    try:
+        await run_in_threadpool(process)
+    except HTTPException as error:
+        # Not a ScanMyCard pack payment, or refunded: acknowledge so Razorpay stops retrying.
+        if error.status_code < 500:
+            print("[Razorpay Webhook] Skipped", payment_id, error.detail)
+            return {"status": "skipped"}
+        raise
+
+    return {"status": "ok"}

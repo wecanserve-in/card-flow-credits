@@ -24,6 +24,7 @@ import {
   setContactFolders,
   FolderItem,
 } from "../services/database";
+import { setExtracted } from "../services/pendingCards";
 
 type ContactItem = {
   name?: string;
@@ -184,7 +185,7 @@ export default function ContactsScreen() {
 
       const remainingContacts = contacts.filter((_, index) => !selectedSet.has(index));
       setContacts(remainingContacts);
-      (globalThis as any).extractedCards = remainingContacts;
+      await setExtracted(remainingContacts);
       setDuplicateFlags(remainingContacts.map(() => false));
       setSelectedContactIndices([]);
       setSelectionMode(false);

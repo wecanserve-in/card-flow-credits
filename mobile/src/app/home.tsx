@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { onAuthStateChanged } from "firebase/auth";
 import {
@@ -26,6 +26,8 @@ import BottomNav from "../components/BottomNav";
 import FreeScansBanner from "../components/FreeScansBanner";
 import { auth, db } from "../services/firebase";
 import { ensureUserDocument } from "../services/userService";
+import { pendingCount } from "../services/pendingCards";
+import { retryPendingPayments } from "../services/paymentService";
 import { User } from "../types/user";
 
 import {
@@ -86,6 +88,18 @@ export default function HomeScreen() {
 
   const insets =
     useSafeAreaInsets();
+
+  // Extracted cards the user hasn't saved yet (kept on the phone).
+  const [unsavedCards, setUnsavedCards] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      setUnsavedCards(pendingCount());
+
+      // Finish any payment that was made but never confirmed (app closed mid-payment).
+      retryPendingPayments().catch(() => {});
+    }, [])
+  );
 
   const horizontalPadding =
     width < 380 ? 18 : 20;
@@ -590,6 +604,37 @@ const usedPercent =
             </Text>
           </View>
         </View>
+
+        {unsavedCards > 0 && (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push("/contacts")}
+            accessibilityLabel={`${unsavedCards} scanned cards waiting to be saved`}
+            style={{
+              marginTop: 18,
+              marginHorizontal: horizontalPadding,
+              padding: 14,
+              borderRadius: 18,
+              backgroundColor: "#FFF7E6",
+              borderWidth: 1,
+              borderColor: "#F5D48A",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <Ionicons name="alert-circle-outline" size={24} color="#B7791F" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: "#5C3D0A", fontSize: 14, fontWeight: "800" }}>
+                {unsavedCards} {unsavedCards === 1 ? "card is" : "cards are"} waiting to be saved
+              </Text>
+              <Text style={{ color: "#8A6A2E", fontSize: 12, fontWeight: "600", marginTop: 2 }}>
+                Tap to review and save them to My Cards
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#B7791F" />
+          </TouchableOpacity>
+        )}
 
         {/* Quick Actions */}
 

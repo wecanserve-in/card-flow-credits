@@ -35,6 +35,7 @@ import {
   isInsufficientCredits,
   uploadCards,
 } from "../services/scanService";
+import { addExtracted, setQueue } from "../services/pendingCards";
 
 const RETAKE_TIP =
   "Retake them in good light, hold the phone steady and fit all 4 corners inside the frame.";
@@ -471,7 +472,13 @@ const currentUsed =
         .filter((card) => card.unreadable && card.sourceUri)
         .map((card) => card.sourceUri);
 
+      // Keep cards that weren't sent this time, plus those that need a retake.
+      const notSent = queueImages.filter(
+        (uri) => !selectedImages.includes(uri)
+      );
+
       const keepInQueue = [
+        ...notSent,
         ...unreadableUris,
         ...(result.failedImages || []),
       ];
@@ -549,26 +556,11 @@ const currentUsed =
         total: newTotal,
       });
 
-      (
-        globalThis as any
-      ).extractedCards =
-        extractedCards;
+      // Saved on the phone and added after any cards still waiting to be saved.
+      await addExtracted(extractedCards);
 
       // Keep only the cards that still need attention in the queue.
-      const orientations =
-        (globalThis as any).scannedCardOrientations || {};
-
-      (
-        globalThis as any
-      ).scannedImages = keepInQueue;
-
-      (
-        globalThis as any
-      ).scannedCardOrientations = Object.fromEntries(
-        keepInQueue
-          .filter((uri) => orientations[uri])
-          .map((uri) => [uri, orientations[uri]])
-      );
+      await setQueue(keepInQueue);
 
       setQueueImages(keepInQueue);
       setSelectedCards(
@@ -670,13 +662,7 @@ const currentUsed =
           text: "Clear All",
           style: "destructive",
           onPress: () => {
-            (
-              globalThis as any
-            ).scannedImages = [];
-
-            (
-              globalThis as any
-            ).scannedCardOrientations = {};
+            setQueue([], {});
 
             setQueueImages([]);
             setSelectedCards([]);
