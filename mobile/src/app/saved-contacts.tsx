@@ -3364,14 +3364,14 @@ const styles =
       backgroundColor: "#FFFFFF",
       borderWidth: 1,
       borderColor: "#E5EAE7",
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
+      // Selection count on its own line, the three buttons below it.
+      flexDirection: "column",
+      alignItems: "stretch",
+      gap: 10,
     },
 
 
     bulkSelectionInfo: {
-      flex: 1,
       flexDirection: "row",
       alignItems: "center",
       minWidth: 0,
@@ -3407,12 +3407,13 @@ const styles =
     bulkActionButtons: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 7,
+      gap: 8,
     },
 
 
     bulkMoveButton: {
-      height: 40,
+      flex: 1,
+      height: 42,
       paddingHorizontal: 11,
       borderRadius: 12,
       backgroundColor: "#09A84E",
@@ -3431,7 +3432,8 @@ const styles =
 
 
     bulkDeleteButton: {
-      height: 40,
+      flex: 1,
+      height: 42,
       paddingHorizontal: 11,
       borderRadius: 12,
       backgroundColor: "#ED5447",

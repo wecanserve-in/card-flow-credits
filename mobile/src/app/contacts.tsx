@@ -637,9 +637,9 @@ export default function ContactsScreen() {
               ) : (
                 <>
                   <Ionicons name="save-outline" size={22} color="#FFFFFF" />
-                  <Text style={styles.saveText}>
+                  <Text style={styles.saveText} numberOfLines={1}>
                     {selectionMode
-                      ? `Save Selected (${selectedContactIndices.length})`
+                      ? `Save (${selectedContactIndices.length})`
                       : `Select Cards (${contacts.length})`}
                   </Text>
                 </>
