@@ -37,6 +37,8 @@ type ContactItem = {
   country?: string;
   filename?: string;
   card_no?: string | number;
+  notes?: string;
+  tags?: string[];
 };
 
 export default function ContactsScreen() {
@@ -96,6 +98,8 @@ export default function ContactsScreen() {
         contact.website,
         contact.address,
         contact.country,
+        contact.notes,
+        ...(Array.isArray(contact.tags) ? contact.tags : []),
       ]
         .filter(Boolean)
         .join(" ")
@@ -521,7 +525,7 @@ export default function ContactsScreen() {
           />
 
           <TextInput
-            placeholder="Search contacts"
+            placeholder="Search name, company, notes, tags"
             placeholderTextColor="#A0A7AE"
             style={styles.searchInput}
             value={search}

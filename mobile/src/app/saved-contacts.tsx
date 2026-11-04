@@ -1148,7 +1148,7 @@ export default function SavedContactsScreen() {
 
 
           <TextInput
-            placeholder="Search contacts"
+            placeholder="Search name, company, notes, tags"
             placeholderTextColor="#A0A7AE"
             value={search}
             onChangeText={

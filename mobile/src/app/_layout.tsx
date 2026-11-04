@@ -1,5 +1,6 @@
 import { Stack, router } from "expo-router";
 import { useEffect } from "react";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { auth } from "../services/firebase";
@@ -62,6 +63,8 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <Stack screenOptions={{ headerShown: false, animation: "none" }} />
+    <KeyboardProvider>
+      <Stack screenOptions={{ headerShown: false, animation: "none" }} />
+    </KeyboardProvider>
   );
 }

@@ -7,11 +7,10 @@ import {
   TouchableOpacity,
   Image,
   KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 import {
   SafeAreaView,
@@ -184,13 +183,9 @@ export default function SignupScreen() {
     >
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={
-          Platform.OS === "ios"
-            ? "padding"
-            : undefined
-        }
       >
-        <ScrollView
+        <KeyboardAwareScrollView
+            bottomOffset={24}
           showsVerticalScrollIndicator={
             false
           }
@@ -783,7 +778,7 @@ export default function SignupScreen() {
               are securely protected.
             </Text>
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

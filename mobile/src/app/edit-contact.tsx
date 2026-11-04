@@ -5,12 +5,11 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   KeyboardAvoidingView,
-  Platform,
   Alert,
   KeyboardTypeOptions,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 import {
   SafeAreaView,
@@ -319,11 +318,6 @@ export default function EditContact() {
     >
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={
-          Platform.OS === "ios"
-            ? "padding"
-            : undefined
-        }
       >
         <View style={styles.container}>
           {/* Header */}
@@ -376,7 +370,8 @@ export default function EditContact() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView
+          <KeyboardAwareScrollView
+            bottomOffset={24}
             showsVerticalScrollIndicator={
               false
             }
@@ -646,7 +641,7 @@ export default function EditContact() {
                 saving the contact.
               </Text>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           {/* Fixed Save Button */}
 

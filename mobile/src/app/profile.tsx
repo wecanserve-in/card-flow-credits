@@ -7,15 +7,14 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   Image,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -296,14 +295,10 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={
-          Platform.OS === "ios"
-            ? "padding"
-            : undefined
-        }
       >
         <View style={styles.container}>
-          <ScrollView
+          <KeyboardAwareScrollView
+            bottomOffset={24}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={[
@@ -617,7 +612,7 @@ export default function ProfileScreen() {
                 color="#C2C7CB"
               />
             </TouchableOpacity>
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           <BottomNav active="settings" />
         </View>

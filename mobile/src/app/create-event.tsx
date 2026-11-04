@@ -9,9 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
-  ScrollView,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 import {
   SafeAreaView,
@@ -71,11 +70,6 @@ export default function CreateEventScreen() {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={
-          Platform.OS === "ios"
-            ? "padding"
-            : undefined
-        }
       >
         <View style={styles.container}>
           <View style={styles.header}>
@@ -103,7 +97,8 @@ export default function CreateEventScreen() {
             </View>
           </View>
 
-          <ScrollView
+          <KeyboardAwareScrollView
+            bottomOffset={24}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={[
@@ -224,7 +219,7 @@ export default function CreateEventScreen() {
                 </View>
               </View>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           <View
             style={[
