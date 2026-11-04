@@ -220,8 +220,16 @@ Rules:
 - Use "Not available" for missing or unreadable values.
 - Ignore logos, decorative icons, and QR-code contents.
 - Preserve phone country and area codes.
+- phone: include EVERY phone number printed on the card (mobile,
+  office/landline, Tel, WhatsApp, toll-free; not fax), in the order
+  printed, separated by " / ". Keep each number as printed, with its
+  country code or STD/area code if one is printed.
 - Keep names, companies, designations, emails, websites,
   phone numbers, and addresses as printed.
+- Do not put GSTIN, PAN, CIN, qualifications (MBBS, CA), taglines or
+  product lists into name, company, designation or address.
+- If the card shows no person's name, name is "Not available"; do not
+  copy the company name into name.
 - Do not invent missing details.
 """
 

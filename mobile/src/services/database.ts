@@ -11,6 +11,8 @@ import {
   updateDoc,
   query,
   orderBy,
+  where,
+  deleteDoc,
 } from "firebase/firestore";
 
 import { encryptData, decryptData } from "./crypto";
@@ -33,9 +35,36 @@ const normalizePhone = (phone?: string) => {
   return digits.length >= 7 ? digits.slice(-10) : "";
 };
 
-/** Every phone number on the card (cards often print two). */
+/**
+ * The card's personal numbers, used to spot duplicates: Indian mobiles
+ * (10 digits starting 6-9) and foreign numbers written with a country code.
+ * Office landlines and toll-free numbers are left out, because colleagues
+ * often share them and would wrongly look like the same person.
+ */
 const normalizePhones = (phone?: string) =>
-  splitPhones(phone).map(normalizePhone).filter(Boolean);
+  splitPhones(phone)
+    .map((part) => {
+      const written = part.trim();
+      // Indian toll-free / shared business numbers (1800..., 1860...).
+      if (/^(1800|1860)/.test(written.replace(/\D/g, ""))) return "";
+      const last10 = normalizePhone(written);
+      if (!last10) return "";
+      const foreign = written.startsWith("+") && !written.replace(/\s/g, "").startsWith("+91");
+      return foreign || /^[6-9]\d{9}$/.test(last10) ? last10 : "";
+    })
+    .filter(Boolean);
+
+/** Shared mailboxes (info@, sales@...) say nothing about which person it is. */
+const ROLE_MAILBOXES = new Set([
+  "info", "sales", "contact", "office", "admin", "enquiry", "enquiries", "inquiry",
+  "hello", "support", "export", "exports", "marketing", "accounts", "hr", "mail",
+  "care", "customercare", "service", "team", "business",
+]);
+
+const duplicateEmail = (email?: string) => {
+  const normalized = normalizeEmail(email);
+  return normalized && !ROLE_MAILBOXES.has(normalized.split("@")[0]) ? normalized : "";
+};
 
 /** Fields the user adds after saving; kept when a card is re-saved. */
 const USER_FIELDS = ["notes", "tags"];
@@ -74,7 +103,7 @@ function buildDuplicateIndex(existingContacts: any[]) {
   existingPhones.clear();
 
   for (const contact of existingContacts) {
-    const email = normalizeEmail(contact.email);
+    const email = duplicateEmail(contact.email);
 
     if (email) {
       existingEmails.add(email);
@@ -91,7 +120,7 @@ function buildDuplicateIndex(existingContacts: any[]) {
 }
 
 function findMatch(byKey: Map<string, any>, contact: any) {
-  const email = normalizeEmail(contact.email);
+  const email = duplicateEmail(contact.email);
 
   if (email && byKey.has(`e:${email}`)) {
     return byKey.get(`e:${email}`);
@@ -186,7 +215,7 @@ export async function saveContacts(
 
       // Later cards in the same batch are checked against this one too.
       const stored = { id: documentId, folderIds: match?.folderIds || [], ...toStore };
-      const email = normalizeEmail(stored.email);
+      const email = duplicateEmail(stored.email);
       if (email) byKey.set(`e:${email}`, stored);
       for (const phone of normalizePhones(stored.phone)) byKey.set(`p:${phone}`, stored);
     }
@@ -810,6 +839,12 @@ export async function setContactFolders(
       }
     );
 
+    await patchCachedContacts((contact) =>
+      contact?.id === contactId
+        ? { ...contact, folderIds: normalizedFolderIds }
+        : contact
+    );
+
     return true;
   } catch (error) {
     console.error(
@@ -819,4 +854,71 @@ export async function setContactFolders(
 
     throw error;
   }
+}
+
+/** Applies a change to every contact in the phone's copy of My Cards. */
+async function patchCachedContacts(change: (contact: any) => any) {
+  try {
+    const key = getStorageKey();
+    const cached = JSON.parse((await AsyncStorage.getItem(key)) || "[]");
+    await AsyncStorage.setItem(key, JSON.stringify(cached.map(change)));
+  } catch {
+    // The copy refreshes from the server later anyway.
+  }
+}
+
+/** Renames a folder (names stay unique, ignoring case). */
+export async function renameFolder(folderId: string, name: string) {
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error("User not logged in");
+
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Folder name is required");
+
+  const folders = await getDocs(collection(db, "users", uid, "folders"));
+  const taken = folders.docs.some(
+    (d) =>
+      d.id !== folderId &&
+      String(d.data().name || "").trim().toLowerCase() === trimmed.toLowerCase()
+  );
+  if (taken) throw new Error("A folder with this name already exists");
+
+  await updateDoc(doc(db, "users", uid, "folders", folderId), { name: trimmed });
+  return trimmed;
+}
+
+/**
+ * Deletes a folder. The contacts inside are NOT deleted: they just leave this
+ * folder and stay in My Cards (and any other folders they are in).
+ */
+export async function deleteFolder(folderId: string) {
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error("User not logged in");
+
+  const contactsRef = collection(db, "users", uid, "contacts");
+  const inFolder = await getDocs(query(contactsRef, where("folderIds", "array-contains", folderId)));
+  const legacy = await getDocs(query(contactsRef, where("folderId", "==", folderId)));
+  const docs = new Map([...inFolder.docs, ...legacy.docs].map((d) => [d.id, d]));
+
+  const entries = Array.from(docs.values());
+  for (let i = 0; i < entries.length; i += 450) {
+    const batch = writeBatch(db);
+    for (const d of entries.slice(i, i + 450)) {
+      const data = d.data();
+      const remaining = (Array.isArray(data.folderIds) ? data.folderIds : [data.folderId])
+        .filter((id: string) => id && id !== folderId);
+      batch.update(d.ref, { folderIds: remaining, folderId: remaining[0] || null, updatedAt: Date.now() });
+    }
+    await batch.commit();
+  }
+
+  await deleteDoc(doc(db, "users", uid, "folders", folderId));
+
+  await patchCachedContacts((contact) =>
+    Array.isArray(contact?.folderIds) && contact.folderIds.includes(folderId)
+      ? { ...contact, folderIds: contact.folderIds.filter((id: string) => id !== folderId) }
+      : contact
+  );
+
+  return entries.length;
 }

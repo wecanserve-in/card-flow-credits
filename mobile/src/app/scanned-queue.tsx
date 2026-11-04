@@ -649,6 +649,32 @@ const currentUsed =
     }
   };
 
+  // Remove just the ticked cards (e.g. a blurry photo or a duplicate shot).
+  const removeSelected = () => {
+    const count = selectedCards.length;
+    if (count === 0 || loading) return;
+
+    Alert.alert(
+      count === 1 ? "Remove This Card?" : `Remove ${count} Cards?`,
+      "They will be taken out of the queue. No scans are used.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            const remaining = queueImages.filter(
+              (_, index) => !selectedCards.includes(index)
+            );
+            const kept = await setQueue(remaining);
+            setQueueImages(kept);
+            setSelectedCards(kept.map((_, index) => index));
+          },
+        },
+      ]
+    );
+  };
+
   const clearAll = () => {
     Alert.alert(
       "Clear All Cards?",
@@ -1001,6 +1027,28 @@ const currentUsed =
                 }
               />
             </TouchableOpacity>
+
+            {selectedCards.length > 0 &&
+              selectedCards.length < queueImages.length && (
+              <TouchableOpacity
+                activeOpacity={0.75}
+                style={styles.clearButton}
+                onPress={removeSelected}
+                disabled={loading}
+              >
+                <Ionicons
+                  name="remove-circle-outline"
+                  size={17}
+                  color="#E05252"
+                />
+
+                <Text
+                  style={styles.clearText}
+                >
+                  Remove selected ({selectedCards.length})
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               activeOpacity={0.75}

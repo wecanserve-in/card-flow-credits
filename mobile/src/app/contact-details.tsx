@@ -26,6 +26,7 @@ import {
 } from "../utils/contactActions";
 
 import {
+  deleteContacts,
   getFolders,
   setContactFolders,
   FolderItem,
@@ -400,6 +401,34 @@ export default function ContactDetailsScreen() {
     },
   ];
 
+
+  const [deleting, setDeleting] = useState(false);
+
+  const confirmDelete = () => {
+    if (!contact.id) return;
+    Alert.alert(
+      "Delete Contact?",
+      `${contact.name || contact.company || "This contact"} will be permanently deleted from My Cards. Contacts already saved to your phone are not affected.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeleting(true);
+              await deleteContacts([contact.id as string]);
+              router.back();
+            } catch {
+              setDeleting(false);
+              Alert.alert("Delete Failed", "Unable to delete this contact. Please check your internet and try again.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -753,6 +782,23 @@ export default function ContactDetailsScreen() {
               iconBackground="#FFF5DE"
             />
           </View>
+
+          {contact.id && (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.deleteButton}
+              onPress={confirmDelete}
+              disabled={deleting}
+              accessibilityLabel="Delete contact"
+            >
+              {deleting ? (
+                <ActivityIndicator size="small" color="#D93025" />
+              ) : (
+                <Ionicons name="trash-outline" size={19} color="#D93025" />
+              )}
+              <Text style={styles.deleteText}>Delete contact</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
 
         {/* Move to Folder Modal */}
@@ -1049,6 +1095,25 @@ const styles = StyleSheet.create({
 
   headerEditButton: {
     marginRight: 8,
+  },
+
+  deleteButton: {
+    marginTop: 22,
+    minHeight: 50,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#F5C2BE",
+    backgroundColor: "#FFF5F4",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+
+  deleteText: {
+    color: "#D93025",
+    fontSize: 15,
+    fontWeight: "800",
   },
 
   savePhoneButton: {

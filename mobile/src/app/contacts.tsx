@@ -147,6 +147,36 @@ export default function ContactsScreen() {
       );
     });
 
+  // Throw away bad or unwanted scans without saving them.
+  const handleRemoveSelected = () => {
+    const count = selectedContactIndices.length;
+    if (count === 0 || saving) return;
+
+    Alert.alert(
+      count === 1 ? "Remove This Card?" : `Remove ${count} Cards?`,
+      "They won't be saved to My Cards. The scans already used for them are not refunded.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            const selectedSet = new Set(selectedContactIndices);
+            const remaining = contacts.filter((_, index) => !selectedSet.has(index));
+            setContacts(remaining);
+            await setExtracted(remaining);
+            setDuplicateFlags((flags) => flags.filter((_, index) => !selectedSet.has(index)));
+            setSelectedContactIndices([]);
+            setSelectionMode(false);
+            if (remaining.length === 0) {
+              router.replace("/home");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleSaveSelectedToFolder = async (folderId: string | null) => {
     if (selectedContactIndices.length === 0 || saving) return;
 
@@ -554,11 +584,28 @@ export default function ContactsScreen() {
           <View
             style={[styles.bottomAction, { bottom: 76 + insets.bottom }]}
           >
+            {selectionMode && (
+              <TouchableOpacity
+                activeOpacity={0.86}
+                disabled={saving || selectedContactIndices.length === 0}
+                style={[
+                  styles.removeButton,
+                  (saving || selectedContactIndices.length === 0) && styles.disabledButton,
+                ]}
+                onPress={handleRemoveSelected}
+                accessibilityLabel="Remove selected cards"
+              >
+                <Ionicons name="trash-outline" size={21} color="#D93025" />
+                <Text style={styles.removeText}>Remove</Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               activeOpacity={0.86}
               disabled={saving || (selectionMode && selectedContactIndices.length === 0)}
               style={[
                 styles.saveButton,
+                { flex: 1 },
                 (saving || (selectionMode && selectedContactIndices.length === 0)) && styles.disabledButton,
               ]}
               onPress={selectionMode ? handleSaveSelectedContacts : () => setSelectionMode(true)}
@@ -1150,6 +1197,27 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     paddingTop: 10,
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  removeButton: {
+    height: 58,
+    paddingHorizontal: 16,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: "#F5C2BE",
+    backgroundColor: "#FFF5F4",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+
+  removeText: {
+    color: "#D93025",
+    fontSize: 15,
+    fontWeight: "800",
   },
 
   saveButton: {

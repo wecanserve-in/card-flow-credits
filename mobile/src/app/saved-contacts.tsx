@@ -40,6 +40,8 @@ import {
   contactsFetchedRecently,
   getFolders,
   createFolder,
+  deleteFolder,
+  renameFolder,
   setContactFolders,
   deleteContacts,
   FolderItem,
@@ -642,6 +644,79 @@ export default function SavedContactsScreen() {
 
       }
     };
+
+
+  /* =====================================================
+     RENAME / DELETE FOLDER (long-press a folder)
+  ===================================================== */
+
+  const [renamingFolder, setRenamingFolder] =
+    useState<FolderItem | null>(null);
+
+  const closeFolderModal = () => {
+    setFolderName("");
+    setRenamingFolder(null);
+    setShowCreateFolder(false);
+  };
+
+  const handleRenameFolder = async () => {
+    if (!renamingFolder || !folderName.trim()) return;
+    try {
+      await renameFolder(renamingFolder.id, folderName);
+      closeFolderModal();
+      await loadFolders();
+    } catch (error: any) {
+      Alert.alert(
+        "Unable to Rename Folder",
+        error?.message || "Something went wrong. Please try again."
+      );
+    }
+  };
+
+  const handleFolderOptions = (folder: FolderItem) => {
+    Alert.alert(folder.name, "What would you like to do with this folder?", [
+      {
+        text: "Rename",
+        onPress: () => {
+          setRenamingFolder(folder);
+          setFolderName(folder.name);
+          setShowCreateFolder(true);
+        },
+      },
+      {
+        text: "Delete folder",
+        style: "destructive",
+        onPress: () =>
+          Alert.alert(
+            `Delete "${folder.name}"?`,
+            "Only the folder is deleted. Its contacts stay in My Cards.",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Delete",
+                style: "destructive",
+                onPress: async () => {
+                  try {
+                    await deleteFolder(folder.id);
+                    if (selectedFolderId === folder.id) {
+                      setSelectedFolderId(null);
+                    }
+                    await loadFolders();
+                    await loadContacts();
+                  } catch (error: any) {
+                    Alert.alert(
+                      "Unable to Delete Folder",
+                      error?.message || "Please check your internet and try again."
+                    );
+                  }
+                },
+              },
+            ]
+          ),
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
 
 
   /* =====================================================
@@ -1250,6 +1325,9 @@ export default function SavedContactsScreen() {
                     active && styles.folderFilterBtnActive,
                   ]}
                   onPress={() => setSelectedFolderId(folder.id)}
+                  onLongPress={() => handleFolderOptions(folder)}
+                  delayLongPress={350}
+                  accessibilityHint="Long-press to rename or delete this folder"
                 >
                   <Ionicons
                     name="folder-outline"
@@ -1269,6 +1347,12 @@ export default function SavedContactsScreen() {
               );
             })}
           </ScrollView>
+
+          {folders.length > 0 && (
+            <Text style={{ marginTop: 6, color: "#8E969D", fontSize: 11.5, fontWeight: "600" }}>
+              Tip: press and hold a folder to rename or delete it.
+            </Text>
+          )}
         </View>
 
         {/* =================================================
@@ -1578,15 +1662,7 @@ export default function SavedContactsScreen() {
           }
           transparent
           animationType="fade"
-          onRequestClose={() => {
-
-            setFolderName("");
-
-            setShowCreateFolder(
-              false
-            );
-
-          }}
+          onRequestClose={closeFolderModal}
         >
 
           <View
@@ -1627,15 +1703,7 @@ export default function SavedContactsScreen() {
                   style={
                     styles.modalCloseButton
                   }
-                  onPress={() => {
-
-                    setFolderName("");
-
-                    setShowCreateFolder(
-                      false
-                    );
-
-                  }}
+                  onPress={closeFolderModal}
                 >
 
                   <Ionicons
@@ -1654,7 +1722,7 @@ export default function SavedContactsScreen() {
                   styles.folderModalTitle
                 }
               >
-                Create New Folder
+                {renamingFolder ? "Rename Folder" : "Create New Folder"}
               </Text>
 
 
@@ -1663,8 +1731,7 @@ export default function SavedContactsScreen() {
                   styles.folderModalSubtitle
                 }
               >
-                Organize your contacts
-                into folders
+                {renamingFolder ? "Contacts inside stay where they are" : "Organize your contacts into folders"}
               </Text>
 
 
@@ -1694,15 +1761,7 @@ export default function SavedContactsScreen() {
                   style={
                     styles.cancelFolderButton
                   }
-                  onPress={() => {
-
-                    setFolderName("");
-
-                    setShowCreateFolder(
-                      false
-                    );
-
-                  }}
+                  onPress={closeFolderModal}
                 >
 
                   <Text
@@ -1726,9 +1785,7 @@ export default function SavedContactsScreen() {
                   disabled={
                     !folderName.trim()
                   }
-                  onPress={
-                    handleCreateFolder
-                  }
+                  onPress={renamingFolder ? handleRenameFolder : handleCreateFolder}
                 >
 
                   <Text
@@ -1736,7 +1793,7 @@ export default function SavedContactsScreen() {
                       styles.createFolderConfirmText
                     }
                   >
-                    Create Folder
+                    {renamingFolder ? "Save" : "Create Folder"}
                   </Text>
 
                 </TouchableOpacity>
