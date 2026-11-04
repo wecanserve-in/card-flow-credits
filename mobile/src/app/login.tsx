@@ -19,6 +19,7 @@ import {
 
 import { router } from "expo-router";
 import {
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 
@@ -109,6 +110,40 @@ export default function LoginScreen() {
 
   const isLoading =
     loadingMethod !== null;
+
+
+  // Sends Firebase's password-reset link to the email typed above.
+  const handleForgotPassword = async () => {
+    const address = email.trim();
+
+    if (!address || !address.includes("@")) {
+      Alert.alert(
+        "Enter Your Email",
+        "Type the email you signed up with in the Email box above, then tap \"Forgot password?\" again."
+      );
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, address);
+    } catch (error: any) {
+      if (error?.code === "auth/invalid-email") {
+        Alert.alert("Invalid Email", "Please check the email address and try again.");
+        return;
+      }
+      if (error?.code === "auth/network-request-failed") {
+        Alert.alert("No Internet", "Please check your connection and try again.");
+        return;
+      }
+      // Other errors (e.g. no such account) get the same message below,
+      // so the screen never reveals which emails have accounts.
+    }
+
+    Alert.alert(
+      "Check Your Email",
+      `If an account exists for ${address}, we've sent a link to reset your password. Check your inbox and spam folder.`
+    );
+  };
 
   return (
     <SafeAreaView
@@ -319,6 +354,18 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </View>
             </View>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={{ alignSelf: "flex-end", paddingVertical: 8, marginTop: -6, marginBottom: 6 }}
+              onPress={handleForgotPassword}
+              disabled={isLoading}
+              accessibilityLabel="Forgot password"
+            >
+              <Text style={{ color: "#09A84E", fontSize: 14, fontWeight: "700" }}>
+                Forgot password?
+              </Text>
+            </TouchableOpacity>
 
             {/* Login Button */}
 

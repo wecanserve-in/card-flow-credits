@@ -534,8 +534,8 @@ const currentUsed =
           extractedCards.length === 1
             ? "business card was"
             : "business cards were"
-        } extracted successfully.`,
-        actionRoute: "/saved-contacts",
+        } extracted. Review and save them.`,
+        actionRoute: "/contacts",
         eventKey:
           `extraction-success-${Date.now()}-${extractedCards.length}`,
       });
@@ -546,8 +546,8 @@ const currentUsed =
           extractedCards.length === 1
             ? "business card was"
             : "business cards were"
-        } extracted successfully.`,
-        "/saved-contacts"
+        } extracted. Review and save them.`,
+        "/contacts"
       );
 
       await createCreditNotification({

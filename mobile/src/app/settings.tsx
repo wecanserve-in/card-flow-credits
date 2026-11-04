@@ -12,6 +12,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { appVersionLabel, openPlayStoreRating, shareApp } from "../utils/appInfo";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -69,6 +70,22 @@ const menuItems: MenuItem[] = [
     route: "/support",
     iconColor: "#7056B8",
     iconBackground: "#F1EDFF",
+  },
+  {
+    title: "Rate ScanMyCard",
+    subtitle: "Enjoying the app? Leave a review on Play Store",
+    icon: "star-outline",
+    route: "action:rate",
+    iconColor: "#EFA300",
+    iconBackground: "#FFF5DE",
+  },
+  {
+    title: "Share the App",
+    subtitle: "Tell a colleague about ScanMyCard",
+    icon: "share-social-outline",
+    route: "action:share",
+    iconColor: "#09A84E",
+    iconBackground: "#EAF8F0",
   },
   {
     title: "Privacy Policy",
@@ -351,11 +368,15 @@ export default function SettingsScreen() {
                       menuItems.length - 1 &&
                       styles.lastMenuItem,
                   ]}
-                  onPress={() =>
-                    router.push(
-                      item.route as any
-                    )
-                  }
+                  onPress={() => {
+                    if (item.route === "action:rate") {
+                      openPlayStoreRating();
+                    } else if (item.route === "action:share") {
+                      shareApp();
+                    } else {
+                      router.push(item.route as any);
+                    }
+                  }}
                 >
                   <View
                     style={[
@@ -471,7 +492,7 @@ export default function SettingsScreen() {
               </Text>
 
               <Text style={styles.version}>
-                Version 1.0.0
+                {appVersionLabel()}
               </Text>
             </View>
           </View>

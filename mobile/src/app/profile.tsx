@@ -31,6 +31,7 @@ import {
   signOut,
 } from "firebase/auth";
 import * as ImagePicker from "expo-image-picker";
+import ChangePasswordModal, { hasPasswordLogin } from "../components/ChangePasswordModal";
 
 import {
   auth,
@@ -247,6 +248,8 @@ export default function ProfileScreen() {
       setUploading(false);
     }
   };
+
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -576,6 +579,30 @@ export default function ProfileScreen() {
               />
             </View>
 
+            {/* Change Password (email + password accounts only) */}
+            {hasPasswordLogin() && (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={[styles.deleteButton, { borderColor: "#E1E6E3", marginBottom: 0 }]}
+                onPress={() => setShowChangePassword(true)}
+              >
+                <View style={[styles.deleteIcon, { backgroundColor: "#EAF8F0" }]}>
+                  <Ionicons name="key-outline" size={19} color="#09A84E" />
+                </View>
+
+                <View style={styles.deleteInformation}>
+                  <Text style={[styles.deleteText, { color: "#17261D" }]}>
+                    Change Password
+                  </Text>
+                  <Text style={styles.deleteDescription}>
+                    Set a new password for email sign-in
+                  </Text>
+                </View>
+
+                <Ionicons name="chevron-forward" size={20} color="#C2C7CB" />
+              </TouchableOpacity>
+            )}
+
             {/* Delete Account */}
             <TouchableOpacity
               activeOpacity={0.8}
@@ -617,6 +644,11 @@ export default function ProfileScreen() {
           </KeyboardAwareScrollView>
 
           <BottomNav active="settings" />
+
+          <ChangePasswordModal
+            visible={showChangePassword}
+            onClose={() => setShowChangePassword(false)}
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import { setExtracted } from "../services/pendingCards";
 import {
   router,
   useLocalSearchParams,
+  useNavigation,
 } from "expo-router";
 
 type ContactForm = {
@@ -81,6 +82,32 @@ export default function EditContact() {
         : "",
     });
 
+  // Ask before throwing away unsaved edits (back arrow, Android back, swipe).
+  const navigation = useNavigation();
+  const initialForm = useRef(JSON.stringify(form));
+  const leavingAfterSave = useRef(false);
+  const isDirty = JSON.stringify(form) !== initialForm.current;
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (event: any) => {
+      if (!isDirty || leavingAfterSave.current) return;
+      event.preventDefault();
+      Alert.alert(
+        "Discard Changes?",
+        "You have edits that aren't saved yet.",
+        [
+          { text: "Keep Editing", style: "cancel" },
+          {
+            text: "Discard",
+            style: "destructive",
+            onPress: () => navigation.dispatch(event.data.action),
+          },
+        ]
+      );
+    });
+    return unsubscribe;
+  }, [navigation, isDirty]);
+
   const handleChange = (
     key: keyof ContactForm,
     value: string
@@ -129,6 +156,7 @@ export default function EditContact() {
           ...fields,
         });
         (globalThis as any).selectedContact = updated;
+        leavingAfterSave.current = true;
         router.back();
       } catch (error: any) {
         Alert.alert(
@@ -153,6 +181,8 @@ export default function EditContact() {
     };
 
     await setExtracted(cards);
+
+    leavingAfterSave.current = true;
 
     router.back();
   };

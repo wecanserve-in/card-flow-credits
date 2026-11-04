@@ -75,7 +75,17 @@ export default function SignupScreen() {
   const isLoading =
     loadingMethod !== null;
 
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
   const handleSignup = async () => {
+    if (!agreedToTerms) {
+      Alert.alert(
+        "Please Accept the Terms",
+        "Tick the box to agree to the Terms of Service and Privacy Policy before creating your account."
+      );
+      return;
+    }
+
     if (
       !fullName.trim() ||
       !email.trim() ||
@@ -150,6 +160,14 @@ export default function SignupScreen() {
 
   const handleGoogleSignup =
     async () => {
+    if (!agreedToTerms) {
+      Alert.alert(
+        "Please Accept the Terms",
+        "Tick the box to agree to the Terms of Service and Privacy Policy before creating your account."
+      );
+      return;
+    }
+
       try {
         setLoadingMethod("google");
 
@@ -568,6 +586,35 @@ export default function SignupScreen() {
                   </Text>
                 </View>
               )}
+            </View>
+
+            {/* Terms & Privacy consent */}
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 4, marginBottom: 16 }}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setAgreedToTerms((v) => !v)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: agreedToTerms }}
+                accessibilityLabel="I agree to the Terms of Service and Privacy Policy"
+                style={{ paddingTop: 1 }}
+              >
+                <Ionicons
+                  name={agreedToTerms ? "checkbox" : "square-outline"}
+                  size={22}
+                  color={agreedToTerms ? "#09A84E" : "#8E969D"}
+                />
+              </TouchableOpacity>
+              <Text style={{ flex: 1, color: "#5F6B65", fontSize: 13, lineHeight: 19, fontWeight: "500" }}>
+                I agree to the{" "}
+                <Text style={{ color: "#09A84E", fontWeight: "800" }} onPress={() => router.push("/terms")}>
+                  Terms of Service
+                </Text>{" "}
+                and{" "}
+                <Text style={{ color: "#09A84E", fontWeight: "800" }} onPress={() => router.push("/privacy")}>
+                  Privacy Policy
+                </Text>
+                .
+              </Text>
             </View>
 
             {/* Create Account */}

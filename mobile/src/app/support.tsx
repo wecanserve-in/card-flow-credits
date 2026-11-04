@@ -9,6 +9,7 @@ import {
   LayoutAnimation,
   Alert,
 } from "react-native";
+import { appVersionLabel } from "../utils/appInfo";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -409,7 +410,7 @@ export default function SupportScreen() {
               </Text>
 
               <Text style={styles.version}>
-                Version 1.0.0
+                {appVersionLabel()}
               </Text>
             </View>
           </View>

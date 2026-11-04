@@ -8,6 +8,7 @@ import {
   Linking,
   Alert,
 } from "react-native";
+import { appVersionLabel } from "../utils/appInfo";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -439,7 +440,7 @@ support@scanmycard.in                </Text>
               </Text>
 
               <Text style={styles.version}>
-                Version 1.0.0
+                {appVersionLabel()}
               </Text>
             </View>
           </View>
