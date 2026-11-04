@@ -31,6 +31,7 @@ import {
 } from "expo-router";
 
 import { exportContactsToExcel } from "../services/excelService";
+import OptionSheet from "../components/OptionSheet";
 
 import BottomNav from "@/components/BottomNav";
 
@@ -41,6 +42,7 @@ import {
   getFolders,
   createFolder,
   deleteFolder,
+  addedAt,
   renameFolder,
   setContactFolders,
   deleteContacts,
@@ -84,6 +86,17 @@ export default function SavedContactsScreen() {
 
   const [contacts, setContacts] =
     useState<ContactItem[]>([]);
+
+  type SortKey = "newest" | "oldest" | "name" | "company";
+  const SORT_LABELS: Record<SortKey, string> = {
+    newest: "Newest first",
+    oldest: "Oldest first",
+    name: "Name (A–Z)",
+    company: "Company (A–Z)",
+  };
+  const [sortBy, setSortBy] = useState<SortKey>("newest");
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<"sort" | "tag" | null>(null);
 
   const [search, setSearch] =
     useState("");
@@ -249,6 +262,24 @@ export default function SavedContactsScreen() {
     );
   }, [contacts, selectedFolderId]);
 
+  const allTags = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const contact of contacts) {
+      for (const tag of Array.isArray(contact.tags) ? contact.tags : []) {
+        counts.set(tag, (counts.get(tag) || 0) + 1);
+      }
+    }
+    return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [contacts]);
+
+  const folderCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const contact of contacts) {
+      for (const id of contact.folderIds || []) counts[id] = (counts[id] || 0) + 1;
+    }
+    return counts;
+  }, [contacts]);
+
   const filteredContacts =
     useMemo(() => {
       let data = [...contacts];
@@ -259,32 +290,51 @@ export default function SavedContactsScreen() {
         );
       }
 
-      const keyword = search.trim().toLowerCase();
-
-      if (!keyword) {
-        return data;
+      if (tagFilter) {
+        data = data.filter((item) =>
+          (Array.isArray(item.tags) ? item.tags : []).includes(tagFilter)
+        );
       }
 
-      return data.filter((item) => {
-        const searchableText = [
-          item.name,
-          item.designation,
-          item.company,
-          item.phone,
-          item.email,
-          item.website,
-          item.address,
-          item.country,
-          item.notes,
-          ...(Array.isArray(item.tags) ? item.tags : []),
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
+      const keyword = search.trim().toLowerCase();
 
-        return searchableText.includes(keyword);
-      });
-    }, [contacts, search, selectedFolderId]);
+      if (keyword) {
+        data = data.filter((item) => {
+          const searchableText = [
+            item.name,
+            item.designation,
+            item.company,
+            item.phone,
+            item.email,
+            item.website,
+            item.address,
+            item.country,
+            item.notes,
+            ...(Array.isArray(item.tags) ? item.tags : []),
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+          return searchableText.includes(keyword);
+        });
+      }
+
+      const text = (value?: string) =>
+        value && value.trim().toLowerCase() !== "not available" ? value.trim() : "\uffff";
+
+      if (sortBy === "oldest") {
+        data.sort((a, b) => addedAt(a) - addedAt(b));
+      } else if (sortBy === "name") {
+        data.sort((a, b) => text(a.name).localeCompare(text(b.name), "en", { sensitivity: "base" }));
+      } else if (sortBy === "company") {
+        data.sort((a, b) => text(a.company).localeCompare(text(b.company), "en", { sensitivity: "base" }));
+      } else {
+        data.sort((a, b) => addedAt(b) - addedAt(a));
+      }
+
+      return data;
+    }, [contacts, search, selectedFolderId, tagFilter, sortBy]);
 
 
   /* =====================================================
@@ -722,6 +772,33 @@ export default function SavedContactsScreen() {
   /* =====================================================
      DIRECT EXCEL EXPORT
   ===================================================== */
+
+  const shareExcel = async (list: any[], title: string) => {
+    const fileUri = await exportContactsToExcel(list);
+    if (!fileUri) {
+      Alert.alert("Export Failed", "Failed to generate the Excel file.");
+      return;
+    }
+    if (!(await Sharing.isAvailableAsync())) {
+      Alert.alert("Export Ready", "The Excel file was generated, but sharing is not available on this device.");
+      return;
+    }
+    await Sharing.shareAsync(fileUri, {
+      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      dialogTitle: title,
+      UTI: "org.openxmlformats.spreadsheetml.sheet",
+    });
+  };
+
+  const handleExportSelected = async () => {
+    const chosen = contacts.filter((contact) => selectedContactIds.includes(contact.id as string));
+    if (chosen.length === 0) return;
+    try {
+      await shareExcel(chosen, `Export ${chosen.length} ${chosen.length === 1 ? "contact" : "contacts"}`);
+    } catch {
+      Alert.alert("Export Failed", "Unable to export the selected contacts. Please try again.");
+    }
+  };
 
   const handleDirectExcelExport = async () => {
     try {
@@ -1169,6 +1246,63 @@ export default function SavedContactsScreen() {
                 style={styles.menuItem}
                 onPress={() => {
                   setShowMenu(false);
+                  router.push({ pathname: "/edit-contact", params: { mode: "new" } });
+                }}
+              >
+                <View style={styles.menuItemIconGreen}>
+                  <Ionicons name="person-add-outline" size={19} color="#09A84E" />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Add Contact</Text>
+                  <Text style={styles.menuItemSubtitle}>Type in a contact without a card</Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                activeOpacity={0.78}
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowMenu(false);
+                  setSheet("sort");
+                }}
+              >
+                <View style={styles.menuItemIconPurple}>
+                  <Ionicons name="swap-vertical-outline" size={19} color="#7056B8" />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Sort</Text>
+                  <Text style={styles.menuItemSubtitle}>{SORT_LABELS[sortBy]}</Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                activeOpacity={0.78}
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowMenu(false);
+                  setSheet("tag");
+                }}
+              >
+                <View style={styles.menuItemIconGreen}>
+                  <Ionicons name="pricetags-outline" size={19} color="#09A84E" />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>Filter by Tag</Text>
+                  <Text style={styles.menuItemSubtitle}>{tagFilter ? `Showing "${tagFilter}"` : "Show contacts with one tag"}</Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                activeOpacity={0.78}
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowMenu(false);
                   handleStartSelection();
                 }}
               >
@@ -1223,6 +1357,28 @@ export default function SavedContactsScreen() {
           </View>
         </Modal>
 
+
+        <OptionSheet
+          visible={sheet === "sort"}
+          title="Sort contacts"
+          options={(Object.keys(SORT_LABELS) as SortKey[]).map((key) => ({ key, label: SORT_LABELS[key] }))}
+          selectedKey={sortBy}
+          onSelect={(key) => setSortBy(key as SortKey)}
+          onClose={() => setSheet(null)}
+        />
+
+        <OptionSheet
+          visible={sheet === "tag"}
+          title="Filter by tag"
+          options={[
+            ...(tagFilter ? [{ key: "__all__", label: "Show all contacts" }] : []),
+            ...allTags.map(([tag, count]) => ({ key: tag, label: tag, hint: `${count} ${count === 1 ? "contact" : "contacts"}` })),
+          ]}
+          selectedKey={tagFilter}
+          emptyText="No tags yet. Add tags to a contact from its Edit screen."
+          onSelect={(key) => setTagFilter(key === "__all__" ? null : key)}
+          onClose={() => setSheet(null)}
+        />
 
         {/* =================================================
             SEARCH
@@ -1341,12 +1497,35 @@ export default function SavedContactsScreen() {
                       active && styles.folderFilterTextActive,
                     ]}
                   >
-                    {folder.name}
+                    {folder.name} ({folderCounts[folder.id] || 0})
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
+
+          {(tagFilter || sortBy !== "newest") && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+              {sortBy !== "newest" && (
+                <TouchableOpacity
+                  onPress={() => setSortBy("newest")}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: "#F1EDFF" }}
+                >
+                  <Text style={{ color: "#5B44A0", fontSize: 12, fontWeight: "700" }}>Sorted: {SORT_LABELS[sortBy]}</Text>
+                  <Ionicons name="close" size={14} color="#5B44A0" />
+                </TouchableOpacity>
+              )}
+              {tagFilter && (
+                <TouchableOpacity
+                  onPress={() => setTagFilter(null)}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: "#EAF8F0" }}
+                >
+                  <Text style={{ color: "#078E42", fontSize: 12, fontWeight: "700" }}>Tag: {tagFilter}</Text>
+                  <Ionicons name="close" size={14} color="#078E42" />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           {folders.length > 0 && (
             <Text style={{ marginTop: 6, color: "#8E969D", fontSize: 11.5, fontWeight: "600" }}>
@@ -1466,6 +1645,28 @@ export default function SavedContactsScreen() {
                 />
                 <Text style={styles.bulkMoveButtonText}>
                   Move
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.82}
+                disabled={selectedContactIds.length === 0}
+                style={[
+                  styles.bulkMoveButton,
+                  { backgroundColor: "#4B7BEC" },
+                  selectedContactIds.length === 0 &&
+                    styles.bulkActionDisabled,
+                ]}
+                onPress={handleExportSelected}
+                accessibilityLabel="Export selected contacts to Excel"
+              >
+                <Ionicons
+                  name="download-outline"
+                  size={19}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.bulkMoveButtonText}>
+                  Excel
                 </Text>
               </TouchableOpacity>
 

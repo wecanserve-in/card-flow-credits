@@ -18,7 +18,7 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
-import { updateContact } from "../services/database";
+import { findDuplicates, saveContacts, updateContact } from "../services/database";
 import { setExtracted } from "../services/pendingCards";
 import {
   router,
@@ -55,13 +55,17 @@ export default function EditContact() {
   const { index, mode } = useLocalSearchParams();
 
   // "saved": editing a contact already in My Cards. Otherwise a freshly extracted card.
+  // "new": typing in a contact by hand (no card).
   const isSaved = mode === "saved";
+  const isNew = mode === "new";
 
   const contactIndex = Number(index);
 
-  const contact = isSaved
-    ? (globalThis as any).selectedContact || {}
-    : (globalThis as any).extractedCards?.[contactIndex] || {};
+  const contact = isNew
+    ? {}
+    : isSaved
+      ? (globalThis as any).selectedContact || {}
+      : (globalThis as any).extractedCards?.[contactIndex] || {};
 
   const [saving, setSaving] = useState(false);
 
@@ -123,10 +127,11 @@ export default function EditContact() {
       return;
     }
 
-    if (!form.name.trim()) {
+    // Shop or company-only cards have no person's name, so either is enough.
+    if (!form.name.trim() && !form.company.trim()) {
       Alert.alert(
-        "Name Required",
-        "Please enter the contact's name."
+        "Name or Company Required",
+        "Please enter the contact's name or company."
       );
       return;
     }
@@ -147,6 +152,45 @@ export default function EditContact() {
       notes: form.notes.trim(),
       tags,
     };
+
+    if (isNew) {
+      try {
+        setSaving(true);
+        const [match] = await findDuplicates([fields]);
+        let replaceDuplicates = false;
+
+        if (match) {
+          const choice = await new Promise<"update" | "cancel">((resolve) =>
+            Alert.alert(
+              "Already in My Cards",
+              `This looks like ${match.name || match.company || "a saved contact"} (same mobile or email). Update that contact with these details?`,
+              [
+                { text: "Cancel", style: "cancel", onPress: () => resolve("cancel") },
+                { text: "Update", onPress: () => resolve("update") },
+              ],
+              { cancelable: true, onDismiss: () => resolve("cancel") }
+            )
+          );
+          if (choice === "cancel") {
+            setSaving(false);
+            return;
+          }
+          replaceDuplicates = true;
+        }
+
+        await saveContacts([fields], { replaceDuplicates });
+        leavingAfterSave.current = true;
+        router.back();
+      } catch (error: any) {
+        Alert.alert(
+          "Save Failed",
+          error?.message || "Unable to save the contact. Please try again."
+        );
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
 
     if (isSaved) {
       try {
@@ -373,7 +417,7 @@ export default function EditContact() {
               <Text
                 style={styles.headerTitle}
               >
-                Edit Contact
+                {isNew ? "Add Contact" : "Edit Contact"}
               </Text>
 
               <Text
@@ -383,6 +427,8 @@ export default function EditContact() {
               >
                 {isSaved
                   ? "Update saved contact details"
+                  : isNew
+                  ? "Type in a contact without a card"
                   : "Update extracted card details"}
               </Text>
             </View>
