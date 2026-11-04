@@ -910,8 +910,7 @@ export default function ContactDetailsScreen() {
                   </Text>
 
                   <Text style={styles.moveNoFoldersText}>
-                    Create a folder in the
-                    "My Cards" screen first.
+                    Create a folder in My Cards first.
                   </Text>
                 </View>
               ) : (
