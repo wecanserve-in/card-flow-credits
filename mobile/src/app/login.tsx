@@ -844,6 +844,7 @@ const styles = StyleSheet.create({
   signupContainer: {
     marginTop: 24,
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
   },

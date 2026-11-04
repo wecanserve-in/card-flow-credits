@@ -712,9 +712,9 @@ export default function EditContact() {
               </View>
 
               <Text style={styles.infoText}>
-                Review the extracted
-                information carefully before
-                saving the contact.
+                {isNew
+                  ? "Enter the contact's details, then save it to My Cards."
+                  : "Review the extracted information carefully before saving the contact."}
               </Text>
             </View>
           </KeyboardAwareScrollView>
@@ -753,7 +753,7 @@ export default function EditContact() {
                 <Text
                   style={styles.saveText}
                 >
-                  Save Changes
+                  {isNew ? "Save Contact" : "Save Changes"}
                 </Text>
 
                 <Text
@@ -765,7 +765,9 @@ export default function EditContact() {
                     ? "Saving..."
                     : isSaved
                       ? "Update this saved contact"
-                      : "Update this extracted contact"}
+                      : isNew
+                        ? "Add this contact to My Cards"
+                        : "Update this extracted contact"}
                 </Text>
               </View>
 

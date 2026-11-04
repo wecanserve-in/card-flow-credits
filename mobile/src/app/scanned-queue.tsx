@@ -779,6 +779,9 @@ const currentUsed =
                   style={
                     styles.summaryTitle
                   }
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
                 >
                   {selectedCards.length} of{" "}
                   {
@@ -875,7 +878,7 @@ const currentUsed =
             style={{ flex: 1 }}
             contentContainerStyle={[
               styles.masonryContainer,
-              { paddingBottom: 150 + insets.bottom },
+              { paddingBottom: 205 + insets.bottom },
             ]}
             showsVerticalScrollIndicator={false}
           >
@@ -1489,8 +1492,9 @@ const styles = StyleSheet.create({
 
   zoomButton: {
     position: "absolute",
-    top: 10,
-    right: 10,
+    // Top-left: top-right holds the selection tick, bottom-left the "Card N" label.
+    top: 8,
+    left: 8,
     width: 34,
     height: 34,
     borderRadius: 11,

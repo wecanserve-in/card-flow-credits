@@ -1151,6 +1151,7 @@ const styles = StyleSheet.create({
   loginContainer: {
     marginTop: 24,
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1209,12 +1210,15 @@ const styles = StyleSheet.create({
 
   securityNote: {
     alignSelf: "center",
+    maxWidth: 300,
     marginTop: 18,
     flexDirection: "row",
     alignItems: "center",
   },
 
   securityText: {
+    flexShrink: 1,
+    textAlign: "center",
     marginLeft: 7,
     color: "#829089",
     fontSize: 10.5,

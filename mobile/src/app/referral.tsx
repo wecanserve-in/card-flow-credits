@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -67,9 +67,12 @@ export default function ReferralScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.content}
-        behavior="padding"
+      <KeyboardAwareScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={24}
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.logoContainer}>
           <Image
@@ -143,7 +146,7 @@ export default function ReferralScreen() {
             Skip
           </Text>
         </TouchableOpacity>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -154,9 +157,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#F7F9F8",
   },
 
-  content: {
+  scroll: {
     flex: 1,
+  },
+
+  content: {
+    flexGrow: 1,
     paddingHorizontal: 26,
+    paddingVertical: 24,
     alignItems: "center",
     justifyContent: "center",
   },

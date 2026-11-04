@@ -128,6 +128,9 @@ export default function ReferralCard({ user }: Props) {
             <Text
               style={styles.code}
               selectable
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
             >
               {code}
             </Text>
@@ -238,6 +241,7 @@ const styles = StyleSheet.create({
 
   codeBox: {
     flex: 1,
+    minWidth: 0,
     minHeight: 58,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -278,7 +282,7 @@ const styles = StyleSheet.create({
   },
 
   shareButton: {
-    minWidth: 96,
+    minWidth: 84,
     paddingHorizontal: 14,
     borderRadius: 15,
     backgroundColor: "#09A84E",

@@ -331,11 +331,16 @@ export default function ProfileScreen() {
               </TouchableOpacity>
 
               <View style={styles.headerText}>
-                <Text style={styles.heading}>
+                <Text
+                  style={styles.heading}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.75}
+                >
                   Edit Profile
                 </Text>
 
-                <Text style={styles.subtitle}>
+                <Text style={styles.subtitle} numberOfLines={2}>
                   Manage your personal information
                 </Text>
               </View>
@@ -371,7 +376,7 @@ export default function ProfileScreen() {
                       color="#FFFFFF"
                     />
                     <Text style={styles.headerSaveText}>
-                      {isEditing ? "Save" : "Edit Profile"}
+                      {isEditing ? "Save" : "Edit"}
                     </Text>
                   </>
                 )}
@@ -413,12 +418,16 @@ export default function ProfileScreen() {
                 ) : null}
               </View>
 
-              <Text style={styles.profileName}>
+              <Text style={styles.profileName} numberOfLines={2}>
                 {name.trim() ||
                   "Your Name"}
               </Text>
 
-              <Text style={styles.profileEmail}>
+              <Text
+                style={styles.profileEmail}
+                numberOfLines={1}
+                ellipsizeMode="middle"
+              >
                 {user?.email ||
                   "No email available"}
               </Text>
@@ -797,13 +806,15 @@ const styles = StyleSheet.create({
 
   headerText: {
     flex: 1,
+    minWidth: 0,
     marginLeft: 13,
+    marginRight: 10,
   },
 
   headerEditButton: {
-    minWidth: 112,
+    minWidth: 0,
     height: 42,
-    paddingHorizontal: 13,
+    paddingHorizontal: 14,
     borderRadius: 13,
     backgroundColor: "#09AA4D",
     flexDirection: "row",
@@ -820,9 +831,9 @@ const styles = StyleSheet.create({
   },
 
   headerSaveButton: {
-    minWidth: 82,
+    minWidth: 0,
     height: 42,
-    paddingHorizontal: 13,
+    paddingHorizontal: 14,
     borderRadius: 13,
     backgroundColor: "#09AA4D",
     flexDirection: "row",
@@ -864,6 +875,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 22,
     paddingVertical: 23,
+    paddingHorizontal: 16,
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#E7ECE9",
@@ -910,6 +922,7 @@ const styles = StyleSheet.create({
     color: "#20262C",
     fontSize: 17,
     fontWeight: "800",
+    textAlign: "center",
   },
 
   profileEmail: {
@@ -922,9 +935,11 @@ const styles = StyleSheet.create({
   photoActionsRow: {
     marginTop: 13,
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 10,
+    paddingHorizontal: 16,
   },
 
   changePhoto: {

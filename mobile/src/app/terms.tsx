@@ -155,7 +155,12 @@ export default function TermsScreen() {
             </TouchableOpacity>
 
             <View style={styles.headerText}>
-              <Text style={styles.heading}>
+              <Text
+                style={styles.heading}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
                 Terms & Conditions
               </Text>
 
@@ -491,7 +496,9 @@ const styles = StyleSheet.create({
 
   headerText: {
     flex: 1,
+    minWidth: 0,
     marginLeft: 13,
+    marginRight: 10,
   },
 
   heading: {
@@ -584,6 +591,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
     marginTop: 16,
     paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 12,
     backgroundColor: "#EAF8F0",
     flexDirection: "row",
@@ -591,6 +599,7 @@ const styles = StyleSheet.create({
   },
 
   heroNoteText: {
+    flexShrink: 1,
     marginLeft: 7,
     color: "#078E42",
     fontSize: 11.5,

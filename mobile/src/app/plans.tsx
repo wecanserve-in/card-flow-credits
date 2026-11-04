@@ -240,7 +240,12 @@ export default function PlansScreen() {
           </TouchableOpacity>
 
           <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>
+            <Text
+              style={styles.headerTitle}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+            >
               Choose Your Plan
             </Text>
 
@@ -304,7 +309,7 @@ export default function PlansScreen() {
             styles.scrollContent,
             {
               paddingBottom:
-                175 + insets.bottom,
+                193 + insets.bottom,
             },
           ]}
         >
@@ -372,6 +377,7 @@ export default function PlansScreen() {
                   <View style={styles.planTopRow}>
                     <View style={styles.planLeft}>
                       <Text
+                        numberOfLines={2}
                         style={[
                           styles.planName,
                           {
@@ -385,6 +391,9 @@ export default function PlansScreen() {
                       <View style={styles.priceRow}>
                         <Text
                           style={styles.planPrice}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.7}
                         >
                           {formatPrice(plan.price)}
                         </Text>
@@ -392,7 +401,7 @@ export default function PlansScreen() {
                         <Text
                           style={styles.planGst}
                         >
-                          {" + 18% GST"}
+                          + 18% GST
                         </Text>
                       </View>
                     </View>
@@ -469,7 +478,7 @@ export default function PlansScreen() {
           style={[
             styles.bottomSection,
             {
-              bottom: 72 + insets.bottom,
+              bottom: 90 + insets.bottom,
             },
           ]}
         >
@@ -547,7 +556,13 @@ export default function PlansScreen() {
             {selectedPlan && (
               <>
                 <View style={styles.modalPlanCard}>
-                  <View>
+                  <View
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      marginRight: 12,
+                    }}
+                  >
                     <Text
                       style={styles.modalPlanName}
                     >
@@ -709,6 +724,7 @@ const styles = StyleSheet.create({
 
   headerTextContainer: {
     flex: 1,
+    minWidth: 0,
     marginLeft: 2,
   },
 
@@ -835,7 +851,8 @@ const styles = StyleSheet.create({
 
   planLeft: {
     flex: 1,
-    paddingRight: 10,
+    minWidth: 0,
+    marginRight: 10,
   },
 
   planName: {
@@ -845,8 +862,6 @@ const styles = StyleSheet.create({
 
   priceRow: {
     marginTop: 11,
-    flexDirection: "row",
-    alignItems: "baseline",
   },
 
   planPrice: {
@@ -857,14 +872,14 @@ const styles = StyleSheet.create({
   },
 
   planGst: {
-    marginLeft: 5,
+    marginTop: 1,
     color: "#9AA1A8",
     fontSize: 12,
     fontWeight: "600",
   },
 
   planRight: {
-    minWidth: 135,
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",

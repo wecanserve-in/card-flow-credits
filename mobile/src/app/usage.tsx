@@ -399,12 +399,12 @@ const progressPercentage =
                   />
                 </View>
 
-                <View>
+                <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={styles.infoTitle}>
                     Plan
                   </Text>
 
-                  <Text style={styles.infoValue}>
+                  <Text style={styles.infoValue} numberOfLines={1}>
                     {planName}
                   </Text>
                 </View>
@@ -438,12 +438,12 @@ const progressPercentage =
                   />
                 </View>
 
-                <View>
+                <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={styles.infoTitle}>
                     Subscription Status
                   </Text>
 
-                  <Text style={styles.infoValue}>
+                  <Text style={styles.infoValue} numberOfLines={1}>
                     {userData?.packId === "free"
                       ? "Free Plan"
                       : "Purchased"}
@@ -481,7 +481,7 @@ const progressPercentage =
           style={[
             styles.bottomCTA,
             {
-              bottom: 76 + insets.bottom,
+              bottom: 90 + insets.bottom,
             },
           ]}
         >

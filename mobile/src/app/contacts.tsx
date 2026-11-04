@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Modal,
   Image,
+  ScrollView,
 } from "react-native";
 import {
   SafeAreaView,
@@ -333,8 +334,8 @@ export default function ContactsScreen() {
                 size={12}
                 color="#7A5200"
               />
-              <Text style={styles.duplicateBadgeText}>
-                Already in My Cards
+              <Text style={styles.duplicateBadgeText} numberOfLines={1}>
+                In My Cards
               </Text>
             </View>
           )}
@@ -456,13 +457,15 @@ export default function ContactsScreen() {
           </View>
         </View>
 
-        <View style={styles.editButton}>
-          <Ionicons
-            name="create-outline"
-            size={21}
-            color="#09A84E"
-          />
-        </View>
+        {!selectionMode && (
+          <View style={styles.editButton}>
+            <Ionicons
+              name="create-outline"
+              size={21}
+              color="#09A84E"
+            />
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -473,7 +476,12 @@ export default function ContactsScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerText}>
-            <Text style={styles.title}>
+            <Text
+              style={styles.title}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+            >
               Extracted Contacts
             </Text>
 
@@ -552,7 +560,7 @@ export default function ContactsScreen() {
             styles.listContent,
             {
               paddingBottom:
-                175 + insets.bottom,
+                190 + insets.bottom,
             },
             contacts.length === 0 &&
               styles.emptyListContent,
@@ -601,7 +609,7 @@ export default function ContactsScreen() {
         {/* Page-level selection and save actions */}
         {contacts.length > 0 && (
           <View
-            style={[styles.bottomAction, { bottom: 76 + insets.bottom }]}
+            style={[styles.bottomAction, { bottom: 90 + Math.max(insets.bottom, 6) }]}
           >
             {selectionMode && (
               <TouchableOpacity
@@ -675,9 +683,9 @@ export default function ContactsScreen() {
           onRequestClose={() => setShowFolderPicker(false)}
         >
           <View style={styles.saveModalOverlay}>
-            <View style={styles.folderPickerModal}>
+            <View style={[styles.folderPickerModal, { paddingBottom: 25 + insets.bottom }]}>
               <View style={styles.saveModalHeader}>
-                <View>
+                <View style={{ flex: 1, paddingRight: 12 }}>
                   <Text style={styles.saveModalTitle}>
                     Save Selected Cards
                   </Text>
@@ -699,45 +707,50 @@ export default function ContactsScreen() {
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                activeOpacity={0.82}
-                style={[styles.folderChoice, pendingFolderId === null && styles.folderChoiceActive]}
-                onPress={() => setPendingFolderId(null)}
+              <ScrollView
+                style={{ flexShrink: 1 }}
+                keyboardShouldPersistTaps="handled"
               >
-                <Ionicons
-                  name="people-outline"
-                  size={22}
-                  color="#09A84E"
-                />
-                <Text style={styles.folderChoiceText}>General</Text>
-              </TouchableOpacity>
-
-              {folders.map((folder) => (
                 <TouchableOpacity
-                  key={folder.id}
                   activeOpacity={0.82}
-                  style={[styles.folderChoice, pendingFolderId === folder.id && styles.folderChoiceActive]}
-                  onPress={() => setPendingFolderId(folder.id)}
+                  style={[styles.folderChoice, pendingFolderId === null && styles.folderChoiceActive]}
+                  onPress={() => setPendingFolderId(null)}
                 >
                   <Ionicons
-                    name="folder-outline"
+                    name="people-outline"
                     size={22}
-                    color="#EFA300"
+                    color="#09A84E"
                   />
-                  <Text
-                    numberOfLines={1}
-                    style={styles.folderChoiceText}
-                  >
-                    {folder.name}
-                  </Text>
+                  <Text style={styles.folderChoiceText}>General</Text>
                 </TouchableOpacity>
-              ))}
 
-              {folders.length === 0 && (
-                <Text style={styles.noFolderPickerText}>
-                  No folders created yet. Create one from Saved Contacts.
-                </Text>
-              )}
+                {folders.map((folder) => (
+                  <TouchableOpacity
+                    key={folder.id}
+                    activeOpacity={0.82}
+                    style={[styles.folderChoice, pendingFolderId === folder.id && styles.folderChoiceActive]}
+                    onPress={() => setPendingFolderId(folder.id)}
+                  >
+                    <Ionicons
+                      name="folder-outline"
+                      size={22}
+                      color="#EFA300"
+                    />
+                    <Text
+                      numberOfLines={1}
+                      style={styles.folderChoiceText}
+                    >
+                      {folder.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+
+                {folders.length === 0 && (
+                  <Text style={styles.noFolderPickerText}>
+                    No folders created yet. Create one from Saved Contacts.
+                  </Text>
+                )}
+              </ScrollView>
 
               <TouchableOpacity
                 activeOpacity={0.85}
@@ -962,6 +975,7 @@ const styles = StyleSheet.create({
 
   duplicateBadge: {
     alignSelf: "flex-start",
+    maxWidth: "100%",
     marginTop: 5,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -973,6 +987,7 @@ const styles = StyleSheet.create({
   },
 
   duplicateBadgeText: {
+    flexShrink: 1,
     color: "#7A5200",
     fontSize: 11,
     fontWeight: "800",
@@ -1233,7 +1248,7 @@ const styles = StyleSheet.create({
 
   folderPickerModal: {
     width: "100%",
-    maxHeight: "70%",
+    maxHeight: "80%",
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -1326,6 +1341,7 @@ const styles = StyleSheet.create({
   },
 
   saveText: {
+    flexShrink: 1,
     marginLeft: 9,
     color: "#FFFFFF",
     fontSize: 16,

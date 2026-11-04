@@ -221,7 +221,12 @@ export default function ExportScreen() {
             <View
               style={styles.headerContent}
             >
-              <Text style={styles.title}>
+              <Text
+                style={styles.title}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
                 Export Contacts
               </Text>
 
@@ -301,6 +306,8 @@ export default function ExportScreen() {
                   <Text
                     style={styles.fileName}
                     numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.75}
                   >
                     business_cards.xlsx
                   </Text>
@@ -482,7 +489,7 @@ export default function ExportScreen() {
                     styles.previewHeader
                   }
                 >
-                  <View>
+                  <View style={{ flex: 1, minWidth: 0, marginRight: 10 }}>
                     <Text
                       style={
                         styles.previewTitle
@@ -849,11 +856,21 @@ function StatCard({
       </View>
 
       <View style={styles.statContent}>
-        <Text style={styles.statNumber}>
+        <Text
+          style={styles.statNumber}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
           {value}
         </Text>
 
-        <Text style={styles.statLabel}>
+        <Text
+          style={styles.statLabel}
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
           {label}
         </Text>
       </View>
@@ -1092,8 +1109,8 @@ const styles = StyleSheet.create({
   },
 
   statIcon: {
-    width: 42,
-    height: 42,
+    width: 36,
+    height: 36,
     borderRadius: 14,
     backgroundColor: "#EAF8F0",
     justifyContent: "center",
@@ -1102,7 +1119,7 @@ const styles = StyleSheet.create({
 
   statContent: {
     flex: 1,
-    marginLeft: 11,
+    marginLeft: 8,
   },
 
   statNumber: {
@@ -1314,6 +1331,8 @@ const styles = StyleSheet.create({
 
   more: {
     marginLeft: 7,
+    flexShrink: 1,
+    textAlign: "center",
     color: "#078E42",
     fontSize: 10.5,
     fontWeight: "700",

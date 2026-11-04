@@ -87,8 +87,14 @@ function correctionForOrientation(orientation: number): QuarterTurn {
 
 export default function ScannerScreen() {
   const insets = useSafeAreaInsets();
-  const { width: screenWidth } =
-    useWindowDimensions();
+  const {
+    width: screenWidth,
+    height: screenHeight,
+  } = useWindowDimensions();
+
+  // Height of the bottom panel, measured on layout, so the frame can stay above it.
+  const [bottomPanelHeight, setBottomPanelHeight] =
+    useState(210);
 
   const [
     permission,
@@ -193,15 +199,47 @@ export default function ScannerScreen() {
     260
   );
 
-  const frameWidth =
+  const frameAspect =
+    cardOrientation === "landscape"
+      ? 1 / 1.62
+      : 1.62; // height / width
+
+  /*
+   * Keep the scanner area below the top bar, and the frame + helper text
+   * above the bottom panel on short screens. The crop is taken from the
+   * frame's measured on-screen position, so it follows whatever size is shown.
+   */
+  const scannerAreaTop = Math.max(
+    insets.top + 76,
+    screenHeight *
+      (cardOrientation === "landscape" ? 0.18 : 0.15)
+  );
+
+  const controlsAboveFrame = 103; // orientation selector + "hold steady" badge
+  const helperTextAllowance = 60;
+  const bottomPanelGap = 10 + 8; // panel's bottom offset + breathing room
+
+  const maxFrameHeight = Math.max(
+    110,
+    screenHeight -
+      scannerAreaTop -
+      controlsAboveFrame -
+      helperTextAllowance -
+      bottomPanelHeight -
+      bottomPanelGap
+  );
+
+  const preferredFrameWidth =
     cardOrientation === "landscape"
       ? landscapeFrameWidth
       : portraitFrameWidth;
 
-  const frameHeight =
-    cardOrientation === "landscape"
-      ? frameWidth / 1.62
-      : frameWidth * 1.62;
+  const frameHeight = Math.min(
+    preferredFrameWidth * frameAspect,
+    maxFrameHeight
+  );
+
+  const frameWidth = frameHeight / frameAspect;
 
   /**
    * Measures the green scanner frame relative
@@ -823,12 +861,18 @@ export default function ScannerScreen() {
         >
           <Text
             style={styles.screenTitle}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
           >
             Scan Business Card
           </Text>
 
           <Text
             style={styles.screenSubtitle}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
           >
             Position the card inside the
             frame
@@ -868,9 +912,7 @@ export default function ScannerScreen() {
       <View
         style={[
           styles.scannerArea,
-          cardOrientation ===
-            "portrait" &&
-            styles.portraitScannerArea,
+          { top: scannerAreaTop },
         ]}
       >
         <View
@@ -1026,6 +1068,17 @@ export default function ScannerScreen() {
             ),
           },
         ]}
+        onLayout={(event) => {
+          const measured = Math.round(
+            event.nativeEvent.layout.height
+          );
+          if (
+            measured > 0 &&
+            measured !== bottomPanelHeight
+          ) {
+            setBottomPanelHeight(measured);
+          }
+        }}
       >
         <View style={styles.counterRow}>
           <View
@@ -1334,15 +1387,11 @@ const styles = StyleSheet.create({
   },
 
   scannerArea: {
+    // top is set inline (below the top bar, above the bottom panel)
     position: "absolute",
-    top: "18%",
     left: 0,
     right: 0,
     alignItems: "center",
-  },
-
-  portraitScannerArea: {
-    top: "15%",
   },
 
   orientationSelector: {

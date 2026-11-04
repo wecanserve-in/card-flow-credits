@@ -280,7 +280,7 @@ export default function SettingsScreen() {
                 Settings
               </Text>
 
-              <Text style={styles.headerSubtitle}>
+              <Text style={styles.headerSubtitle} numberOfLines={2}>
                 Manage your account and preferences
               </Text>
             </View>
@@ -327,7 +327,10 @@ export default function SettingsScreen() {
                   color="#D99300"
                 />
 
-                <Text style={styles.planBadgeText}>
+                <Text
+                  style={styles.planBadgeText}
+                  numberOfLines={1}
+                >
                   {planName}
                 </Text>
               </View>
@@ -629,6 +632,7 @@ const styles = StyleSheet.create({
 
   profileInfo: {
     flex: 1,
+    minWidth: 0,
     marginLeft: 14,
     paddingRight: 10,
   },
@@ -648,6 +652,7 @@ const styles = StyleSheet.create({
 
   planBadge: {
     alignSelf: "flex-start",
+    maxWidth: "100%",
     minHeight: 25,
     marginTop: 9,
     paddingHorizontal: 9,
@@ -658,6 +663,7 @@ const styles = StyleSheet.create({
   },
 
   planBadgeText: {
+    flexShrink: 1,
     marginLeft: 5,
     color: "#D48A00",
     fontSize: 11,

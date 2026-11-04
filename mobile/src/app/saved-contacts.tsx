@@ -17,6 +17,8 @@ import {
   Alert,
 } from "react-native";
 
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -1079,17 +1081,19 @@ export default function SavedContactsScreen() {
 
         {/* Arrow */}
 
-        <View
-          style={
-            styles.chevronButton
-          }
-        >
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color="#AAB1B7"
-          />
-        </View>
+        {!selectionMode && (
+          <View
+            style={
+              styles.chevronButton
+            }
+          >
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color="#AAB1B7"
+            />
+          </View>
+        )}
 
       </TouchableOpacity>
     );
@@ -1125,6 +1129,8 @@ export default function SavedContactsScreen() {
             <Text
               style={styles.title}
               numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
               ellipsizeMode="tail"
             >
               Saved Contacts
@@ -1153,6 +1159,15 @@ export default function SavedContactsScreen() {
               <TouchableOpacity
                 activeOpacity={0.82}
                 style={styles.selectAllButton}
+                accessibilityLabel={
+                  filteredContacts.length > 0 &&
+                  selectedContactIds.length ===
+                    filteredContacts.filter(
+                      (contact) => contact.id
+                    ).length
+                    ? "Deselect all contacts"
+                    : "Select all contacts"
+                }
                 onPress={() => {
                   const visibleCount =
                     filteredContacts.filter(
@@ -1189,8 +1204,8 @@ export default function SavedContactsScreen() {
                     filteredContacts.filter(
                       (contact) => contact.id
                     ).length
-                    ? "Deselect"
-                    : "Select All"}
+                    ? "None"
+                    : "All"}
                 </Text>
               </TouchableOpacity>
 
@@ -1240,7 +1255,7 @@ export default function SavedContactsScreen() {
               onPress={() => setShowMenu(false)}
             />
 
-            <View style={styles.menuCard}>
+            <View style={[styles.menuCard, { marginTop: insets.top + 64 }]}>
               <TouchableOpacity
                 activeOpacity={0.78}
                 style={styles.menuItem}
@@ -1292,7 +1307,7 @@ export default function SavedContactsScreen() {
                 </View>
                 <View style={styles.menuItemContent}>
                   <Text style={styles.menuItemTitle}>Filter by Tag</Text>
-                  <Text style={styles.menuItemSubtitle}>{tagFilter ? `Showing "${tagFilter}"` : "Show contacts with one tag"}</Text>
+                  <Text style={styles.menuItemSubtitle} numberOfLines={1}>{tagFilter ? `Showing "${tagFilter}"` : "Show contacts with one tag"}</Text>
                 </View>
               </TouchableOpacity>
 
@@ -1396,7 +1411,7 @@ export default function SavedContactsScreen() {
 
 
           <TextInput
-            placeholder="Search name, company, notes, tags"
+            placeholder="Search name, company, tags"
             placeholderTextColor="#A0A7AE"
             value={search}
             onChangeText={
@@ -1497,7 +1512,17 @@ export default function SavedContactsScreen() {
                       active && styles.folderFilterTextActive,
                     ]}
                   >
-                    {folder.name} ({folderCounts[folder.id] || 0})
+                    {folder.name}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.folderFilterText,
+                      styles.folderFilterCount,
+                      active && styles.folderFilterTextActive,
+                    ]}
+                  >
+                    ({folderCounts[folder.id] || 0})
                   </Text>
                 </TouchableOpacity>
               );
@@ -1509,25 +1534,25 @@ export default function SavedContactsScreen() {
               {sortBy !== "newest" && (
                 <TouchableOpacity
                   onPress={() => setSortBy("newest")}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: "#F1EDFF" }}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: "#F1EDFF", maxWidth: "100%" }}
                 >
-                  <Text style={{ color: "#5B44A0", fontSize: 12, fontWeight: "700" }}>Sorted: {SORT_LABELS[sortBy]}</Text>
+                  <Text numberOfLines={1} style={{ color: "#5B44A0", fontSize: 12, fontWeight: "700", flexShrink: 1 }}>Sorted: {SORT_LABELS[sortBy]}</Text>
                   <Ionicons name="close" size={14} color="#5B44A0" />
                 </TouchableOpacity>
               )}
               {tagFilter && (
                 <TouchableOpacity
                   onPress={() => setTagFilter(null)}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: "#EAF8F0" }}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: "#EAF8F0", maxWidth: "100%" }}
                 >
-                  <Text style={{ color: "#078E42", fontSize: 12, fontWeight: "700" }}>Tag: {tagFilter}</Text>
+                  <Text numberOfLines={1} style={{ color: "#078E42", fontSize: 12, fontWeight: "700", flexShrink: 1 }}>Tag: {tagFilter}</Text>
                   <Ionicons name="close" size={14} color="#078E42" />
                 </TouchableOpacity>
               )}
             </View>
           )}
 
-          {folders.length > 0 && (
+          {folders.length > 0 && !selectionMode && (
             <Text style={{ marginTop: 6, color: "#8E969D", fontSize: 11.5, fontWeight: "600" }}>
               Tip: press and hold a folder to rename or delete it.
             </Text>
@@ -1538,6 +1563,7 @@ export default function SavedContactsScreen() {
             DOWNLOAD CARD
         ================================================= */}
 
+        {!selectionMode && (
         <TouchableOpacity
           activeOpacity={0.84}
           style={styles.downloadContactsCard}
@@ -1566,7 +1592,7 @@ export default function SavedContactsScreen() {
             >
               Download Contacts
             </Text>
-            <Text style={styles.downloadContactsSubtitle}>
+            <Text style={styles.downloadContactsSubtitle} numberOfLines={2}>
               {activeExportContacts.length === 0
                 ? "No contacts available"
                 : selectedFolderId
@@ -1608,6 +1634,7 @@ export default function SavedContactsScreen() {
             />
           </View>
         </TouchableOpacity>
+        )}
 
         {selectionMode && (
           <View style={styles.bulkActionBar}>
@@ -1643,7 +1670,7 @@ export default function SavedContactsScreen() {
                   size={19}
                   color="#FFFFFF"
                 />
-                <Text style={styles.bulkMoveButtonText}>
+                <Text style={styles.bulkMoveButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
                   Move
                 </Text>
               </TouchableOpacity>
@@ -1665,7 +1692,7 @@ export default function SavedContactsScreen() {
                   size={19}
                   color="#FFFFFF"
                 />
-                <Text style={styles.bulkMoveButtonText}>
+                <Text style={styles.bulkMoveButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
                   Excel
                 </Text>
               </TouchableOpacity>
@@ -1685,7 +1712,7 @@ export default function SavedContactsScreen() {
                   size={19}
                   color="#FFFFFF"
                 />
-                <Text style={styles.bulkDeleteButtonText}>
+                <Text style={styles.bulkDeleteButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
                   Delete
                 </Text>
               </TouchableOpacity>
@@ -1872,6 +1899,11 @@ export default function SavedContactsScreen() {
             }
           >
 
+            <KeyboardAvoidingView
+              behavior="padding"
+              style={{ flex: 1, justifyContent: "center", width: "100%", alignItems: "center" }}
+            >
+
             <View
               style={
                 styles.folderModal
@@ -1969,6 +2001,9 @@ export default function SavedContactsScreen() {
                     style={
                       styles.cancelFolderText
                     }
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
                   >
                     Cancel
                   </Text>
@@ -1993,6 +2028,9 @@ export default function SavedContactsScreen() {
                     style={
                       styles.createFolderConfirmText
                     }
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
                   >
                     {renamingFolder ? "Save" : "Create Folder"}
                   </Text>
@@ -2002,6 +2040,8 @@ export default function SavedContactsScreen() {
               </View>
 
             </View>
+
+            </KeyboardAvoidingView>
 
           </View>
 
@@ -2023,7 +2063,7 @@ export default function SavedContactsScreen() {
           }}
         >
           <View style={styles.moveOverlay}>
-            <View style={styles.moveModal}>
+            <View style={[styles.moveModal, { paddingBottom: 25 + insets.bottom }]}>
               <View style={styles.moveModalHeader}>
                 <View style={styles.moveModalIcon}>
                   <Ionicons
@@ -2270,9 +2310,10 @@ export default function SavedContactsScreen() {
           >
 
             <View
-              style={
-                styles.moveModal
-              }
+              style={[
+                styles.moveModal,
+                { paddingBottom: 25 + insets.bottom },
+              ]}
             >
 
               {/* HEADER */}
@@ -3347,8 +3388,12 @@ const styles =
       color: "#687078",
       fontSize: 12.5,
       fontWeight: "700",
-      maxWidth: 135,
       flexShrink: 1,
+    },
+
+    folderFilterCount: {
+      marginLeft: 4,
+      flexShrink: 0,
     },
 
     folderFilterTextActive: {
@@ -3356,7 +3401,6 @@ const styles =
     },
 
     bulkActionBar: {
-      minHeight: 58,
       marginBottom: 13,
       paddingHorizontal: 11,
       paddingVertical: 8,
@@ -3379,7 +3423,8 @@ const styles =
 
 
     bulkSelectionBadge: {
-      width: 34,
+      minWidth: 34,
+      paddingHorizontal: 6,
       height: 34,
       borderRadius: 12,
       backgroundColor: "#EAF8F0",
@@ -3414,7 +3459,7 @@ const styles =
     bulkMoveButton: {
       flex: 1,
       height: 42,
-      paddingHorizontal: 11,
+      paddingHorizontal: 6,
       borderRadius: 12,
       backgroundColor: "#09A84E",
       flexDirection: "row",
@@ -3424,6 +3469,7 @@ const styles =
 
 
     bulkMoveButtonText: {
+      flexShrink: 1,
       marginLeft: 5,
       color: "#FFFFFF",
       fontSize: 12,
@@ -3434,7 +3480,7 @@ const styles =
     bulkDeleteButton: {
       flex: 1,
       height: 42,
-      paddingHorizontal: 11,
+      paddingHorizontal: 6,
       borderRadius: 12,
       backgroundColor: "#ED5447",
       flexDirection: "row",
@@ -3444,6 +3490,7 @@ const styles =
 
 
     bulkDeleteButtonText: {
+      flexShrink: 1,
       marginLeft: 5,
       color: "#FFFFFF",
       fontSize: 12,
@@ -3732,7 +3779,8 @@ const styles =
 
     cancelFolderButton: {
       flex: 1,
-      height: 48,
+      minHeight: 48,
+      paddingHorizontal: 8,
       borderRadius: 14,
       backgroundColor:
         "#F1F3F2",
@@ -3752,7 +3800,8 @@ const styles =
 
     createFolderConfirmButton: {
       flex: 1,
-      height: 48,
+      minHeight: 48,
+      paddingHorizontal: 8,
       borderRadius: 14,
       backgroundColor:
         "#ED5447",

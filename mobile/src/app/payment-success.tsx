@@ -1,10 +1,16 @@
 import React, { useEffect } from "react";
 import {
+  Alert,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
+  ToastAndroid,
   TouchableOpacity,
   View,
 } from "react-native";
+
+import * as Clipboard from "expo-clipboard";
 
 import {
   SafeAreaView,
@@ -57,7 +63,14 @@ export default function PaymentSuccessScreen() {
         <View style={styles.topDecoration} />
         <View style={styles.bottomDecoration} />
 
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: 120 + insets.bottom },
+          ]}
+        >
           <View style={styles.successIconOuter}>
             <View style={styles.successIconInner}>
               <Ionicons
@@ -175,7 +188,7 @@ export default function PaymentSuccessScreen() {
               Your updated scan limit and subscription benefits are now available.
             </Text>
           </View>
-        </View>
+        </ScrollView>
 
         <View
           style={[
@@ -236,6 +249,20 @@ function DetailRow({
   icon: keyof typeof Ionicons.glyphMap;
   last?: boolean;
 }) {
+  const copyValue = async () => {
+    try {
+      await Clipboard.setStringAsync(value);
+
+      if (Platform.OS === "android") {
+        ToastAndroid.show("Copied", ToastAndroid.SHORT);
+      } else {
+        Alert.alert("Copied", `${label} copied to clipboard.`);
+      }
+    } catch {
+      Alert.alert("Error", "Could not copy. Please try again.");
+    }
+  };
+
   return (
     <View
       style={[
@@ -268,6 +295,8 @@ function DetailRow({
       <TouchableOpacity
         activeOpacity={0.7}
         style={styles.copyButton}
+        onPress={copyValue}
+        accessibilityLabel={`Copy ${label}`}
       >
         <Ionicons
           name="copy-outline"
@@ -311,12 +340,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#EFF9F3",
   },
 
-  content: {
+  scroll: {
     flex: 1,
+  },
+
+  content: {
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 22,
-    paddingBottom: 120,
+    paddingTop: 24,
   },
 
   successIconOuter: {

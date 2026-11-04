@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -103,8 +104,16 @@ export default function ChangePasswordModal({ visible, onClose }: Props) {
     <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
       <KeyboardAvoidingView behavior="padding" style={styles.overlay}>
         <View style={styles.sheet}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.sheetContent}
+          >
           <Text style={styles.title}>Change Password</Text>
-          <Text style={styles.subtitle}>For {auth.currentUser?.email}</Text>
+          <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="middle">
+            For {auth.currentUser?.email}
+          </Text>
 
           {field("Current password", current, setCurrent)}
           {field("New password", next, setNext)}
@@ -126,6 +135,7 @@ export default function ChangePasswordModal({ visible, onClose }: Props) {
               {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveText}>Save</Text>}
             </TouchableOpacity>
           </View>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -134,7 +144,8 @@ export default function ChangePasswordModal({ visible, onClose }: Props) {
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(15,23,20,0.45)", justifyContent: "center", padding: 22 },
-  sheet: { backgroundColor: "#FFFFFF", borderRadius: 22, padding: 20 },
+  sheet: { backgroundColor: "#FFFFFF", borderRadius: 22, maxHeight: "100%", overflow: "hidden" },
+  sheetContent: { padding: 20 },
   title: { fontSize: 19, fontWeight: "800", color: "#17261D" },
   subtitle: { marginTop: 4, marginBottom: 14, fontSize: 13, color: "#7B8580", fontWeight: "500" },
   field: { marginBottom: 12 },

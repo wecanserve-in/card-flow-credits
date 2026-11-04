@@ -41,6 +41,7 @@ type ActionCardProps = {
   iconColor: string;
   iconBackground: string;
   onPress: () => void;
+  compact?: boolean;
 };
 
 function ActionCard({
@@ -49,6 +50,7 @@ function ActionCard({
   iconColor,
   iconBackground,
   onPress,
+  compact = false,
 }: ActionCardProps) {
   return (
     <TouchableOpacity
@@ -63,18 +65,28 @@ function ActionCard({
             backgroundColor:
               iconBackground,
           },
+          compact && {
+            width: 40,
+            height: 40,
+            borderRadius: 13,
+          },
         ]}
       >
         <Ionicons
           name={icon}
-          size={27}
+          size={compact ? 23 : 27}
           color={iconColor}
         />
       </View>
 
       <Text
-        style={styles.actionTitle}
-        numberOfLines={2}
+        style={[
+          styles.actionTitle,
+          compact && { marginLeft: 10 },
+        ]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
       >
         {title}
       </Text>
@@ -106,11 +118,15 @@ export default function HomeScreen() {
 
   const actionGap = 13;
 
-  const actionCardWidth =
+  const actionCardWidth = Math.floor(
     (width -
       horizontalPadding * 2 -
       actionGap) /
-    2;
+      2
+  );
+
+  const compactActions =
+    actionCardWidth < 150;
 
   const [loading, setLoading] =
     useState(true);
@@ -656,6 +672,7 @@ const usedPercent =
             }}
           >
             <ActionCard
+              compact={compactActions}
               title="Scan Card"
               icon="scan-outline"
               iconColor="#09A84E"
@@ -673,6 +690,7 @@ const usedPercent =
             }}
           >
             <ActionCard
+              compact={compactActions}
               title="My Cards"
               icon="albums-outline"
               iconColor="#ED5447"
@@ -692,6 +710,7 @@ const usedPercent =
             }}
           >
             <ActionCard
+              compact={compactActions}
               title="Export"
               icon="download-outline"
               iconColor="#EFA300"
@@ -711,6 +730,7 @@ const usedPercent =
             }}
           >
             <ActionCard
+              compact={compactActions}
               title="History"
               icon="time-outline"
               iconColor="#7056B8"

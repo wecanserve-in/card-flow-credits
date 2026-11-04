@@ -241,7 +241,12 @@ export default function PurchaseHistoryScreen() {
                   />
                 </View>
 
-                <Text style={styles.summaryNumber}>
+                <Text
+                  style={styles.summaryNumber}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}
+                >
                   {payments.length}
                 </Text>
 
@@ -264,7 +269,12 @@ export default function PurchaseHistoryScreen() {
                   />
                 </View>
 
-                <Text style={styles.summaryNumber}>
+                <Text
+                  style={styles.summaryNumber}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}
+                >
                   {formatPrice(totalSpent)}
                 </Text>
 
@@ -287,7 +297,12 @@ export default function PurchaseHistoryScreen() {
                   />
                 </View>
 
-                <Text style={styles.summaryNumber}>
+                <Text
+                  style={styles.summaryNumber}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}
+                >
                   {totalScansAdded}
                 </Text>
 
@@ -440,6 +455,7 @@ export default function PurchaseHistoryScreen() {
                           }
                         >
                           <Text
+                            numberOfLines={1}
                             style={
                               styles.paymentAmount
                             }
@@ -479,9 +495,10 @@ export default function PurchaseHistoryScreen() {
                         </View>
 
                         <View
-                          style={
-                            styles.detailItem
-                          }
+                          style={[
+                            styles.detailItem,
+                            { flex: 1, minWidth: 0 },
+                          ]}
                         >
                           <Ionicons
                             name="finger-print-outline"
@@ -491,6 +508,7 @@ export default function PurchaseHistoryScreen() {
 
                           <Text
                             numberOfLines={1}
+                            ellipsizeMode="middle"
                             style={[
                               styles.detailText,
                               styles.paymentIdText,
@@ -597,6 +615,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 14,
+    paddingHorizontal: 8,
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#E7ECE9",
@@ -823,6 +842,6 @@ const styles = StyleSheet.create({
   },
 
   paymentIdText: {
-    maxWidth: 160,
+    flexShrink: 1,
   },
 });

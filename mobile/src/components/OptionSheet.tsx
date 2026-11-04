@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type SheetOption = {
   key: string;
@@ -34,10 +35,12 @@ export default function OptionSheet({
   onSelect,
   onClose,
 }: Props) {
+  const insets = useSafeAreaInsets();
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity activeOpacity={1} style={styles.backdrop} onPress={onClose} />
-      <View style={styles.sheet}>
+      <View style={[styles.sheet, { paddingBottom: 26 + insets.bottom }]}>
         <View style={styles.handle} />
         <Text style={styles.title}>{title}</Text>
 

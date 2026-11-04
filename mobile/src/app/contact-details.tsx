@@ -332,7 +332,6 @@ export default function ContactDetailsScreen() {
           </Text>
 
           <Text
-            selectable
             style={[
               styles.detailValue,
               !available && styles.unavailableValue,
@@ -484,11 +483,16 @@ export default function ContactDetailsScreen() {
             </TouchableOpacity>
 
             <View style={styles.headerText}>
-              <Text style={styles.headerTitle}>
+              <Text
+                style={styles.headerTitle}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
                 Contact Details
               </Text>
 
-              <Text style={styles.headerSubtitle}>
+              <Text style={styles.headerSubtitle} numberOfLines={1}>
                 View saved contact information
               </Text>
             </View>
@@ -554,6 +558,8 @@ export default function ContactDetailsScreen() {
 
             <Text
               numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
               style={styles.name}
             >
               {name}
@@ -616,6 +622,9 @@ export default function ContactDetailsScreen() {
                 </View>
 
                 <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
                   style={[
                     styles.actionTitle,
                     !item.available &&
@@ -626,6 +635,9 @@ export default function ContactDetailsScreen() {
                 </Text>
 
                 <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
                   style={[
                     styles.actionSubtitle,
                     !item.available &&
@@ -854,7 +866,7 @@ export default function ContactDetailsScreen() {
           }
         >
           <View style={styles.moveOverlay}>
-            <View style={styles.moveModal}>
+            <View style={[styles.moveModal, { paddingBottom: 30 + insets.bottom }]}>
               <View style={styles.moveModalHeader}>
                 <View style={styles.moveModalHeaderText}>
                   <Text style={styles.moveModalTitle}>
@@ -1114,6 +1126,7 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
     marginLeft: 13,
+    marginRight: 8,
   },
 
   headerTitle: {
@@ -1395,7 +1408,7 @@ const styles = StyleSheet.create({
   actionButton: {
     width: "23.5%",
     minHeight: 118,
-    paddingHorizontal: 7,
+    paddingHorizontal: 3,
     paddingVertical: 14,
     borderRadius: 18,
     backgroundColor: "#FFFFFF",
