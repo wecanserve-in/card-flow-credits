@@ -45,6 +45,18 @@
         {
           "defaultChannel": "default"
         }
+      ],
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "1709064220923679",
+          "clientToken": "1791a17059975bd67a038c6197859f76",
+          "displayName": "ScanMyCard",
+          "scheme": "fb1709064220923679",
+          "isAutoInitEnabled": true,
+          "autoLogAppEventsEnabled": true,
+          "advertiserIDCollectionEnabled": true
+        }
       ]
     ],
     "experiments": {
