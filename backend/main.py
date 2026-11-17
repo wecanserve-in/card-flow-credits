@@ -9,6 +9,7 @@ from firebase_admin import firestore
 
 from gemini_extractor import extract_multiple_with_gemini
 from payments import router as payment_router, _verify_firebase_token, _get_firestore
+from apple_payments import router as apple_payment_router
 from notifications import router as notification_router
 from free_scans import router as free_scans_router
 from verification_email import router as verification_email_router
@@ -20,6 +21,7 @@ MAX_CARD_IMAGE_BYTES = 10 * 1024 * 1024
 app = FastAPI()
 
 app.include_router(payment_router)
+app.include_router(apple_payment_router)
 app.include_router(notification_router)
 app.include_router(free_scans_router)
 app.include_router(verification_email_router)

@@ -179,7 +179,10 @@ def _add_credits(
     order_id: str,
     credits: Optional[int] = None,
     amount_paise: Optional[int] = None,
+    extra: Optional[dict] = None,
 ):
+    """Adds a pack's credits once per payment_id. `extra` adds fields to the payment record
+    (Apple purchases use it for their source and currency)."""
     db = _get_firestore()
     user_ref = db.collection("users").document(uid)
     payment_ref = db.collection("processedPayments").document(payment_id)
@@ -230,6 +233,7 @@ def _add_credits(
                 "amount": paid_amount,
                 "currency": "INR",
                 "processedAt": now,
+                **(extra or {}),
             },
         )
         return True, {**user_data, **updated}
