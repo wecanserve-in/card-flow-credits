@@ -83,7 +83,7 @@
     <p class="eyebrow">Legal</p>
     <h1>Privacy Policy</h1>
     <p class="lead">Plain English, no surprises: what we collect, why, who helps us, and how to delete it.</p>
-    <p class="updated">Last updated: 27 October 2026</p>
+    <p class="updated">Last updated: 17 November 2026</p>
   </div>
 </section>
 
@@ -126,6 +126,7 @@
       <li><strong>Purchase history:</strong> which credit packs you bought, the amount, the date, your credit balance and the payment reference from our payment processor. We do not receive or store your full card number, CVV or UPI PIN.</li>
       <li><strong>Push-notification token:</strong> a device token that lets us send you notifications about scan results, low credits and payments.</li>
       <li><strong>Free-scan check:</strong> a one-way scrambled (hashed) copy of your device ID and email address, used only to make sure the free scans are given once per phone and once per email. It can't be turned back into the original.</li>
+      <li><strong>App install and open events (Android):</strong> the Meta (Facebook) SDK in the app sends Meta a record when the app is installed and opened, together with your device's advertising ID. We use this only to measure which of our ads lead to installs. It does not include your contacts, card images or account details.</li>
       <li><strong>Technical logs:</strong> like most online services, our servers and providers keep short-lived logs (such as IP address, time of request and error messages) to keep the service secure and fix problems.</li>
     </ul>
     <p>We do not read your phone's contact list or track your location. The app uses the camera only when you choose to scan a card, and your photo gallery only when you choose to pick a photo.</p>
@@ -140,7 +141,7 @@
       <li>To send notifications about scan results, low credits and payments.</li>
       <li>To answer your support requests and keep records the law requires.</li>
     </ul>
-    <p>We do not use your data for advertising, and we do not build advertising profiles.</p>
+    <p>We do not use your contacts, card images or account details for advertising. The only advertising-related data is the install/open event and advertising ID described above, which Meta uses to measure our ad campaigns. You can reset or delete your advertising ID at any time in your phone's settings (Settings &gt; Google &gt; Ads on most Android phones).</p>
 
     <h2 id="images">How card images are processed</h2>
     <p>When you scan a card, the image is sent over an encrypted connection to our server and to Google's Gemini AI (through Google Cloud / Vertex AI) <strong>only to extract the text</strong>. The extracted details are sent back to your phone for you to review.</p>
@@ -167,12 +168,13 @@
           <tr><td>Razorpay</td><td>Processing payments (UPI, cards, netbanking, wallets). We never see full card or UPI details.</td></tr>
           <tr><td>Expo</td><td>Delivering push notifications</td></tr>
           <tr><td>Cloudflare</td><td>Storing profile photos (R2) and network services</td></tr>
+          <tr><td>Meta Platforms (Facebook SDK, Android app)</td><td>Measuring app installs from our Facebook and Instagram ads (install/open events and advertising ID only)</td></tr>
         </tbody>
       </table>
     </div>
 
     <h2 id="sharing">Sharing and selling</h2>
-    <p>We do <strong>not</strong> sell your personal data or your contacts, and we do not share them with advertisers. We share data only with the service providers listed above, when you choose to share an export yourself, or when the law requires it (for example, a valid order from a court or government authority).</p>
+    <p>We do <strong>not</strong> sell your personal data or your contacts, and we do not share them with advertisers. The only data shared with an advertising partner is the app install/open event and advertising ID sent to Meta, as described above. We share data only with the service providers listed above, when you choose to share an export yourself, or when the law requires it (for example, a valid order from a court or government authority).</p>
 
     <h2 id="security">Security</h2>
     <ul>
