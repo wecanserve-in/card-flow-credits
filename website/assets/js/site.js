@@ -4,6 +4,7 @@
 
   /* ---- Site constants: edit here ---- */
   var PLAY_URL = 'https://play.google.com/store/apps/details?id=com.wecanserve.scanmycard';
+  var APP_STORE_URL = 'https://apps.apple.com/in/app/id6835748731';
   var SUPPORT_EMAIL = 'support@scanmycard.in';
   var GST_RATE = 0.18;
 
@@ -40,6 +41,24 @@
 
   /* ---- Play Store links all point at the one constant ---- */
   $all('[data-play]').forEach(function (a) { a.setAttribute('href', PLAY_URL); });
+  $all('[data-appstore]').forEach(function (a) { a.setAttribute('href', APP_STORE_URL); });
+
+  /* ---- On iPhone/iPad, the single-store buttons (header, sticky bar) go to the App Store ---- */
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIOS) {
+    $all('.header__cta[data-play]').forEach(function (a) { a.setAttribute('href', APP_STORE_URL); });
+    $all('.playbar .play-badge[data-play]').forEach(function (a) {
+      a.setAttribute('href', APP_STORE_URL);
+      a.setAttribute('aria-label', 'Download on the App Store');
+      a.classList.add('app-badge');
+      a.removeAttribute('data-play');
+      var logo = a.querySelector('.play-badge__logo');
+      if (logo) logo.outerHTML = '<svg class="play-badge__logo" viewBox="0 0 24 28" aria-hidden="true"><path fill="#fff" d="M19.6 14.9c0-3 2.5-4.5 2.6-4.6-1.4-2.1-3.6-2.4-4.4-2.4-1.9-.2-3.7 1.1-4.6 1.1-1 0-2.4-1.1-4-1.1-2 0-3.9 1.2-5 3.1-2.1 3.7-.5 9.2 1.5 12.2 1 1.5 2.2 3.1 3.8 3 1.5-.1 2.1-1 3.9-1 1.8 0 2.4 1 4 1 1.6 0 2.7-1.5 3.7-3 1.2-1.7 1.6-3.3 1.7-3.4-.1 0-3.2-1.2-3.2-4.9zM16.6 6c.8-1 1.4-2.4 1.2-3.8-1.2.1-2.6.8-3.5 1.8-.8.9-1.4 2.3-1.2 3.7 1.3.1 2.7-.7 3.5-1.7z"/></svg>';
+      var t = a.querySelector('.play-badge__text');
+      if (t) t.innerHTML = '<small>Download on the</small><strong>App Store</strong>';
+    });
+  }
 
   /* ---- Current page in nav ---- */
   var path = location.pathname.replace(/\/index\.html$/, '/').replace(/\/+$/, '') || '/';

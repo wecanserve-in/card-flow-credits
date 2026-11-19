@@ -128,6 +128,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .play-badge--sm .play-badge__logo { width: 20px; height: 22px; }
 .play-badge--sm .play-badge__text small { font-size: .5625rem; margin-bottom: 2px; }
 .play-badge--sm .play-badge__text strong { font-size: 1.0625rem; }
+/* App Store badge reuses the Play badge look; both sit side by side */
+.app-badge .play-badge__logo { width: 24px; height: 28px; }
+.app-badge.play-badge--sm .play-badge__logo { width: 19px; height: 22px; }
+.app-badge .play-badge__text small { text-transform: none; letter-spacing: .01em; font-size: .6875rem; }
+.store-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.store-badges > .play-badge { min-width: 196px; }
+.cta .store-badges { margin-bottom: 4px; }
 
 /* ---------- Header ---------- */
 .site-header {
